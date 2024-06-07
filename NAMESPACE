@@ -1,0 +1,13 @@
+
+# Import necessary packages
+import(CAGEfightR)
+importFrom(DAPAR, nonzero)
+
+
+# Export functions
+
+## Complexity functions
+export("calcComplexity")
+export("calcCTSSComplexity")
+export("calcGeneComplexity")
+export("calcDivergentLociComplexity")
