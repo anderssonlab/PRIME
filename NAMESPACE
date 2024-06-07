@@ -11,3 +11,9 @@ export("calcComplexity")
 export("calcCTSSComplexity")
 export("calcGeneComplexity")
 export("calcDivergentLociComplexity")
+
+## Correlation functions
+export("corrProfiles")
+
+
+
