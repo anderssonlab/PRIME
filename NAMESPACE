@@ -1,10 +1,15 @@
 
 ## Import necessary packages
 import(CAGEfightR)
+import(GRanges)
+import(SummarizedExperiment)
+import(caTools)
 
 ## Import necessary functions
-importFrom(assert_that, assertthat)
+importFrom(assertthat, assert_that)
 importFrom(DAPAR, nonzero)
+importFrom(methods, as)
+importFrom(bcp, bcp)
 
 
 ## Export functions
@@ -18,5 +23,6 @@ export("calcDivergentLociComplexity")
 # Correlation functions
 export("corrProfiles")
 
-
+## Cumulative genomic distributions
+export("cumulativeFractionAroundLoci")
 
