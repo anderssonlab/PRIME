@@ -14,6 +14,7 @@
 #' @export
 #' 
 #' @import GenomicRanges
+#' @importFrom stats acf ccf
 #' 
 corrProfiles <- function(object, pooled, flank=300, lag.max=300) {
   
@@ -36,7 +37,7 @@ corrProfiles <- function(object, pooled, flank=300, lag.max=300) {
   
   message("Calculating autocorrelation profiles for sense strand")
   ac_matrix <- t(sapply(1:length(object), function(i) {
-    acf(sense_matrix[i,],plot=FALSE,lag.max=lag.max)$acf[,1,1]
+    stats::acf(sense_matrix[i,],plot=FALSE,lag.max=lag.max)$acf[,1,1]
   }))
   
   message("Calculating crosscorrelation profiles")

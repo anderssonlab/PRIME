@@ -18,6 +18,7 @@
 #' @import SummarizedExperiment
 #' @importFrom assertthat assert_that
 #' @importFrom methods is as
+#' @importFrom GenomeInfoDb seqlengths
 #' 
 decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
   

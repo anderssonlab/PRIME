@@ -8,6 +8,7 @@
 #' @param column column in \code{mcols(data)} to consider.
 #' @param transform_fn function applied on data for each region 
 #' (e.g. to reduce dimension, defaults to identity).
+#' @param ... additional arguments to pass to \code{transform_fn}.
 #' 
 #' @return list of matrices with data for each strand.
 #' 
@@ -17,6 +18,7 @@
 #' @import IRanges
 #' @import CAGEfightR
 #' @importFrom assertthat assert_that
+#' @importFrom GenomeInfoDb seqlevels seqlevels<-
 #' 
 heatmapData <- function(regions, data, column="score", 
                         transform_fn=identity, ...) {
@@ -29,8 +31,8 @@ heatmapData <- function(regions, data, column="score",
   if (!all(seqlevels(regions) %in% sl) || !all(seqlevels(data) %in% sl)) {
     warning(paste0("seqlevels differ between regions and data GRanges",
                    "objects, subsetting to intersection"))
-    seqlevels(regions, pruning.mode="coarse") <- 
-      seqlevels(data, pruning.mode="coarse") <- sl
+    GenomeInfoDb::seqlevels(regions, pruning.mode="coarse") <- sl
+    GenomeInfoDb::seqlevels(data, pruning.mode="coarse") <- sl
   }   
   
   regionsByStrand <- CAGEfightR:::splitByStrand(regions)

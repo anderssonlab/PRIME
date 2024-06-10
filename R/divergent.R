@@ -251,6 +251,13 @@ quantifyClustersOlap <- function(object, clusters, inputAssay) {
 ## strand-wise manner
 
 #' import BiocGenerics
+#' 
+#' @param loci A \code{GRanges} object containing the divergent loci.
+#' @param ctss A \code{RangedSummarizedExperiment} resulting from
+#' \code{CAGEfightR::quantifyCTSSs()}.
+#' @param inputAssay The assay to use for quantification.
+#' @param requireDisjoint Logical indicating whether to require divergent
+#' loci to be disjoint.
 quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts", 
                                             requireDisjoint=TRUE) {
   win_1 <- loci

@@ -13,7 +13,7 @@
 #' 
 #' @export
 #' 
-#' @import Matrix
+#' @importFrom Matrix rowSums
 #' @importFrom assertthat assert_that
 #' @import SummarizedExperiment
 #' 

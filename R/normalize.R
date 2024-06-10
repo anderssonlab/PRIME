@@ -21,9 +21,10 @@
 #' @export
 #' 
 #' @importFrom Hmisc cut2
-#' @importFrom stats smooth.spline
-#' @import Matrix
 #' @import S4Vectors
+#' @importFrom stats smooth.spline predict
+#' @importFrom assertthat assert_that
+#' @importFrom methods is
 #' 
 conditionalNormalize <- function(object, inputAssay="counts", 
                                  outputAssay="normalized", 
@@ -31,7 +32,7 @@ conditionalNormalize <- function(object, inputAssay="counts",
                                  bins=200, sizeFactors=NULL, minCount=1, 
                                  minSamples=1,aggregate.fn=sum) {
   
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
+  assert_that(is(object, "SummarizedExperiment"),
                           inputAssay %in% assayNames(object),
                           conditionalColumn %in% colnames(mcols(object)))
   
@@ -76,13 +77,13 @@ conditionalNormalize <- function(object, inputAssay="counts",
       b.m.i <- b.m.i[-missing]
       f.i <- f.i[-missing]
     }
-    smooth.spline(b.m.i, f.i, spar=1)
+    stats::smooth.spline(b.m.i, f.i, spar=1)
   })
   
   message("normalizing data according to enrichments...")
   
   offset <- -1*Matrix::Matrix(sapply(1:ncol(y), function(i) {
-    predict(fit[[i]],b.m[b])$y}))
+    stats::predict(fit[[i]],b.m[b])$y}))
   y_normed <- Matrix::Matrix(round(y * 2^(offset)))
   y_normed <- Matrix::Matrix(sapply(1:ncol(y), function(i) {
     x <- y_normed[,i]
@@ -110,7 +111,8 @@ conditionalNormalize <- function(object, inputAssay="counts",
 #' 
 #' @export
 #' 
-#' @import Matrix
+#' @importFrom Matrix t rowSums colSums
+#' @importClassesFrom Matrix dgCMatrix
 #' @importFrom assertthat assert_that
 #' @importFrom methods is
 #' 

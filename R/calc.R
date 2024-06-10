@@ -1,7 +1,7 @@
 
 ## Helper function
 ## Calculate number of unique CTSS positions
-#' @importFrom assertthat assert_that not_empty
+#' @importFrom assertthat assert_that not_empty is.string
 #' @importFrom methods is
 #' @import CAGEfightR
 #' @import SummarizedExperiment

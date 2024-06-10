@@ -12,7 +12,7 @@
 #' @export
 #' 
 #' @import SummarizedExperiment
-#' @import Matrix
+#' @importFrom Matrix rowMeans
 #' @importFrom zoo rollapply
 #' 
 DMadjustedCV <- function(object, inputAssay="TPM", prefix="") {
