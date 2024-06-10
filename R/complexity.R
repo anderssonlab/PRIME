@@ -3,9 +3,9 @@
 #' This function calculates the CTSS and gene complexity of a given CTSS
 #' dataset.
 #'
-#' @param object A RangedSummarizedExperiment resulting from
+#' @param object A \code{RangedSummarizedExperiment} resulting from
 #' CAGEfightR::quantifyCTSSs().
-#' @param txModels A TxDb object containing the gene models.
+#' @param txModels A \code{TxDb} object containing the gene models.
 #' @param step The step size for the subsampling.
 #' @param CTSSunexpressed The count threshold for considering a CTSS to be
 #' unexpressed.
@@ -74,7 +74,7 @@ calcComplexity <- function(object, txModels, step = 1e6, CTSSunexpressed = 1,
 #' This function calculates the CTSS complexity of a given CTSS
 #' dataset.
 #'
-#' @param object A RangedSummarizedExperiment resulting from
+#' @param object A \code{RangedSummarizedExperiment} resulting from
 #' CAGEfightR::quantifyCTSSs().
 #' @param step The step size for the subsampling.
 #' @param CTSSunexpressed The count threshold for considering a CTSS to be
@@ -130,9 +130,9 @@ calcCTSSComplexity <- function(object, step = 1e6, CTSSunexpressed = 1,
 #' This function calculates the gene complexity of a given CTSS
 #' dataset.
 #'
-#' @param object A RangedSummarizedExperiment resulting from
-#' CAGEfightR::quantifyCTSSs().
-#' @param txModels A TxDb object containing the gene models.
+#' @param object A \code{RangedSummarizedExperiment} resulting from
+#' \code{CAGEfightR::quantifyCTSSs()}.
+#' @param txModels A \code{TxDb} object containing the gene models.
 #' @param step The step size for the subsampling.
 #' @param CTSSunexpressed The count threshold for considering a CTSS to be
 #' unexpressed.
@@ -198,9 +198,9 @@ calcGeneComplexity <- function(object, txModels, step = 1e6,
 #' This function calculates the divergent loci complexity of a given CTSS
 #' dataset.
 #'
-#' @param object A RangedSummarizedExperiment resulting from
+#' @param object A \code{RangedSummarizedExperiment} resulting from
 #' CAGEfightR::quantifyCTSSs().
-#' @param loci A GRanges object containing the tag clusters from which 
+#' @param loci A \code{GRanges} object containing the tag clusters from which 
 #' divergent loci should be called.
 #' @param step The step size for the subsampling.
 #' @param CTSSunexpressed The count threshold for considering a CTSS to be

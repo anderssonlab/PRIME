@@ -1,14 +1,14 @@
 #' Calculate the auto correlation of CTSSs over tag clusters according to 
 #' pooled values and the cross correlation with opposite strand CTSSs
 #'
-#' @param object A GRanges object of tag clusters.
-#' @param pooled A RangedSummarizedExperiment object containing the CTSSs and
+#' @param object A \code{GRanges} object of tag clusters.
+#' @param pooled A \code{RangedSummarizedExperiment} object containing the CTSSs and
 #' the pooled values in the score column (resulting from 
-#' CAGEfightR::calcPooled()).
+#' \code{CAGEfightR::calcPooled()}).
 #' @param flank The number of base pairs to consider around each tag cluster.
 #' @param lag.max The maximum lag to consider for the correlation.
 #' 
-#' @return A list containing the auto correlation matrix and cross correlation
+#' @return A \code{list} containing the auto correlation matrix and cross correlation
 #' matrix
 #'
 #' @export

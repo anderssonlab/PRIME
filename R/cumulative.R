@@ -1,8 +1,8 @@
 #' Calculate the auto correlation of CTSSs over tag clusters according to 
 #' pooled values and the cross correlation with opposite strand CTSSs
 #'
-#' @param loci A GRanges object of loci to focus on.
-#' @param ctss A RangedSummarizedExperiment object containing the CTSSs.
+#' @param loci A \code{GRanges} object of loci to focus on.
+#' @param ctss A \code{RangedSummarizedExperiment} object containing the CTSSs.
 #' @param max_dist The number of base pairs to consider around each locus.
 #' 
 #' @return A data frame containing the cumulative fraction of CTSSs around

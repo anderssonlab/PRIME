@@ -1,14 +1,14 @@
 #' Decompose tag clusters according to CTSS correlations across samples
 #'
-#' @param object A GRanges object of tag clusters.
-#' @param ctss A RangedSummarizedExperiment object containing the CTSSs.
+#' @param object A \code{GRanges} object of tag clusters.
+#' @param ctss A \code{RangedSummarizedExperiment} object containing the CTSSs.
 #' @param fn A function that carries out the actual decomposition. 
 #' Implemented functions are: corr_decompose.
 #' It takes as input a RangedSummarizedExperiment object (and optional 
 #' arguments) and returns an IRanges object.
 #' @param ... Additional arguments passed on to the decomposition function.
 #' 
-#' @return A GRanges object of decomposed tag clusters.
+#' @return A \code{GRanges} object of decomposed tag clusters.
 #'
 #' @export
 decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
@@ -69,15 +69,15 @@ decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
 #' Decompose tag clusters according to pooled values and a decomposition 
 #' function (implemented functions: summit_decompose and local_maxima_decompose)
 #'
-#' @param object A GRanges object of tag clusters.
-#' @param ctss A RangedSummarizedExperiment object containing the CTSSs.
+#' @param object A \code{GRanges} object of tag clusters.
+#' @param ctss A \code{RangedSummarizedExperiment} object containing the CTSSs.
 #' @param fn A function that carries out the actual decomposition. 
 #' Implemented functions are summit_decompose and local_maxima_decompose.
 #' It takes as input a Views object (and optional arguments) and returns an
 #' IRanges object
 #' @param ... Additional arguments passed on to the decomposition function.
 #' 
-#' @return A GRanges object of decomposed tag clusters.
+#' @return A \code{GRanges} object of decomposed tag clusters.
 #'
 #' @export
 decompose <- function(object, pooled, fn=summit_decompose, ...) {
@@ -131,15 +131,15 @@ decompose <- function(object, pooled, fn=summit_decompose, ...) {
 }
 
 #' Decompose tag cluster into subclusters according to CTSS expression
-#' fraction of summit CTSS expression. Subclusters within mergeDist bp 
+#' fraction of summit CTSS expression. Subclusters within mergeDist bp
 #' will be merged.
 #'
-#' @param views A Views object of tag clusters.
+#' @param views A \code{Views} object of tag clusters.
 #' @param fraction The fraction of the summit CTSS expression that a CTSS
 #' must have to be considered part of the tag cluster.
 #' @param mergeDist The distance within which subclusters will be merged.
 #' 
-#' @return An IRanges object of decomposed tag clusters.
+#' @return An \code{IRanges} object of decomposed tag clusters.
 #'
 #' @export
 summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
@@ -191,15 +191,15 @@ summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
 #' Decompose tag cluster into subclusters according to CTSS expression
 #' correlation across samples.
 #'
-#' @param rse A RangedSummarizedExperiment object containing the CTSSs.
-#' @param gr A GRanges object of tag clusters.
+#' @param rse A \code{RangedSummarizedExperiment} object containing the CTSSs.
+#' @param gr A \code{GRanges} object of tag clusters.
 #' @param assay The assay to use for the correlation calculation.
 #' @param thres The threshold for the Bayesian change point analysis.
 #' @param merge If TRUE, subclusters will be merged if positively correlated.
 #' @param scale If TRUE, the assay values will be scaled before correlation 
 #' calculation.
 #' 
-#' @return An IRanges object of decomposed tag clusters.
+#' @return An \code{IRanges} object of decomposed tag clusters.
 #'
 #' @export
 corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE, 
@@ -288,7 +288,7 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
 #' criterion will also be included. Final subclusters within mergeDist bp 
 #' will be merged.
 #'
-#' @param views A Views object of tag clusters.
+#' @param views A \code{Views} object of tag clusters.
 #' @param fraction The fraction of the summit CTSS expression that a CTSS
 #' must have to be considered part of the tag cluster.
 #' @param maximaDist The distance within which local maxima are considered.
@@ -298,7 +298,7 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
 #' @param smoothPad The distance within which neighbouring non-zero CTSSs will
 #' be included.
 #' 
-#' @return An IRanges object of decomposed tag clusters.
+#' @return An \code{IRanges} object of decomposed tag clusters.
 #'
 #' @export
 local_maxima_decompose <- function(views, fraction = 0.1, maximaDist=20, 
