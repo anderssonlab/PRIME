@@ -3,7 +3,7 @@ PRIME - an R package for regulatory element analysis using transcription initiat
 
 ### Installation:
 ```
-install_github("anderssonlab/PRIME")
+devtools::install_github("anderssonlab/PRIME")
 ```
 
 Note: to install bcp, use install_github("swang87/bcp")
