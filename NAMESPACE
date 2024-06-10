@@ -3,12 +3,13 @@
 import(CAGEfightR)
 import(GRanges)
 import(SummarizedExperiment)
-import(caTools)
 
 ## Import necessary functions
 importFrom(assertthat, assert_that)
+importFrom(assertthat, not_empty)
 importFrom(DAPAR, nonzero)
 importFrom(methods, as)
+importFrom(methods, is)
 importFrom(bcp, bcp)
 importFrom(caTools, runmax)
 
