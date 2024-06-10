@@ -1,4 +1,6 @@
-# PRIME - regulatory element analysis using transcription initiation data
+# PRIME '
+
+### PRIME - regulatory element analysis using transcription initiation data
 
 Using CAGEfightR as a base, PRIME gathers a suite of functions for
 
