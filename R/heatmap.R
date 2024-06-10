@@ -1,21 +1,28 @@
 
 #' Extract heatmap-like CTSS data for regions of fixed width.
 #' 
-#' @param data \code{GRanges} with value to consider in specified column 
-#' (score).
 #' @param regions \code{GRanges} with regions to extract data for 
 #' (must be of the same size).
-#' @param transform function applied on data for each region 
+#' @param data \code{GRanges} with value to consider in specified column 
+#' (score).
+#' @param column column in \code{mcols(data)} to consider.
+#' @param transform_fn function applied on data for each region 
 #' (e.g. to reduce dimension, defaults to identity).
 #' 
 #' @return list of matrices with data for each strand.
 #' 
 #' @export
+#' 
+#' @import GenomicRanges
+#' @import IRanges
+#' @import CAGEfightR
+#' @importFrom assertthat assert_that
+#' 
 heatmapData <- function(regions, data, column="score", 
                         transform_fn=identity, ...) {
   
   ## Check regions
-  assertthat::assert_that(length(unique(width(regions)))==1,
+  assert_that(length(unique(width(regions)))==1,
                           column %in% colnames(mcols(data)))
   
   sl <- intersect(seqlevels(regions),seqlevels(data))

@@ -1,5 +1,5 @@
 #' Calculate the distance to the median (DM) adjusted CV2 for a given 
-#' \{RangedSummarizedExperiment} object. Inspired by the method outlined in
+#' \code{RangedSummarizedExperiment} object. Inspired by the method outlined in
 #' Kolodziejczyk et al., 2015, Cell Stem Cell.
 #' 
 #' @param object A \code{RangedSummarizedExperiment} object.
@@ -10,6 +10,11 @@
 #' in the metadata columns.
 #' 
 #' @export
+#' 
+#' @import SummarizedExperiment
+#' @import Matrix
+#' @importFrom zoo rollapply
+#' 
 DMadjustedCV <- function(object, inputAssay="TPM", prefix="") {
   
   object <- calcCV(object, inputAssay, paste(prefix,"CV",sep=""))
@@ -19,7 +24,7 @@ DMadjustedCV <- function(object, inputAssay="TPM", prefix="") {
   
   mean_order <- order(rowData(object)[,paste(prefix,"mean",sep="")])
   
-  rolling_median <- zoo::rollapply(
+  rolling_median <- rollapply(
     mcols(object)[,paste(prefix,"log10_CV2",sep="")][mean_order],
     width=50,by=25,FUN=median,
     fill=list("extend","extend","NA"))

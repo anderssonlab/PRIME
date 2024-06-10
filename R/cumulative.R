@@ -9,6 +9,11 @@
 #' the loci, for each sample.
 #'
 #' @export
+#' 
+#' @import GenomicRanges
+#' @import CAGEfightR
+#' 
+#' 
 cumulativeFractionAroundLoci <- function(loci, ctss, max_dist=1000) {
   
   p <- GRanges(seqnames=seqnames(loci),loci$thick,strand="+")
@@ -28,7 +33,7 @@ cumulativeFractionAroundLoci <- function(loci, ctss, max_dist=1000) {
   
   if (!"totalTags" %in% colnames(colData(ctss))) {
     message("calculating number of tags per sample...")
-    ctss <- CAGEfightR::calcTotalTags(ctss)
+    ctss <- calcTotalTags(ctss)
   }
   
   message("calculating cumulative fractions...")
@@ -48,7 +53,7 @@ cumulativeFractionAroundLoci <- function(loci, ctss, max_dist=1000) {
   })
   cat("\n")
   fracs <- sapply(colnames(fracs),function(n) {
-    cumsum(fracs[,n]/ctss$totalTags[n]))
+    cumsum(fracs[,n]/ctss$totalTags[n])
   })
 
 cumfrac <- cbind(data.frame(distance=seq(0,max_dist,by=1),fracs))

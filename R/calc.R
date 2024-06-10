@@ -1,12 +1,17 @@
 
 ## Helper function
 ## Calculate number of unique CTSS positions
+#' @importFrom assertthat assert_that not_empty
+#' @importFrom methods is
+#' @import CAGEfightR
+#' @import SummarizedExperiment
+
 calcNumberCTSSs <- function(object, inputAssay = "counts", 
                             outputColumn = "numberCTSSs", 
                             unexpressed = 0) {
   ## Prechecks
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
-                          assertthat::not_empty(object),
+  assert_that(is(object, "SummarizedExperiment"),
+                          not_empty(object),
                           inputAssay %in% assayNames(object),
                           is.string(inputAssay),
                           is.string(outputColumn))
@@ -31,8 +36,8 @@ calcNumberGenes <- function(object, txModels, inputAssay = "counts",
                             outputColumn = "numberGenes", 
                             unexpressed = 0) {
   ## Prechecks
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
-                          assertthat::not_empty(object),
+  assert_that(is(object, "SummarizedExperiment"),
+                          not_empty(object),
                           inputAssay %in% assayNames(object),
                           is.string(inputAssay),
                           is.string(outputColumn))
@@ -45,7 +50,7 @@ calcNumberGenes <- function(object, txModels, inputAssay = "counts",
   if (!"geneID" %in% colnames(mcols(object)))
     object <- assignGeneID(object, geneModels = txModels, 
                            outputColumn = "geneID")
-  genelevel <- CAGEfightR::quantifyGenes(object, genes="geneID", 
+  genelevel <- quantifyGenes(object, genes="geneID", 
                                          inputAssay=inputAssay)
   
   ## Calculate number of expressed genes
@@ -64,8 +69,8 @@ calcNumberDivergentLoci <- function(object, loci, inputAssay="counts",
                                     unexpressed = 0, 
                                     requirebidirectional=FALSE) {
   ## Prechecks
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
-                          assertthat::not_empty(object),
+  assert_that(is(object, "SummarizedExperiment"),
+                          not_empty(object),
                           inputAssay %in% assayNames(object),
                           is.string(inputAssay),
                           is.string(outputColumn))

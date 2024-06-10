@@ -19,13 +19,15 @@
 #' "totalTags").
 #'
 #' @export
+#' 
+#' @import CAGEfightR
 calcComplexity <- function(object, txModels, step = 1e6, CTSSunexpressed = 1,
                            geneunexpressed = 9, minCTSSsupport = 2) {
   
-  object <- suppressWarnings(CAGEfightR::calcTotalTags(object, 
+  object <- suppressWarnings(calcTotalTags(object, 
                                                        inputAssay = "counts"))
   object <- suppressMessages(suppressWarnings(
-    CAGEfightR::assignGeneID(object, 
+    assignGeneID(object, 
                              geneModels = txModels, 
                              outputColumn = "geneID")))
   
@@ -39,9 +41,9 @@ calcComplexity <- function(object, txModels, step = 1e6, CTSSunexpressed = 1,
       message(t)
       
       x <- subsampleTarget(object, "counts", t)
-      x <- suppressWarnings(CAGEfightR::calcTotalTags(x, inputAssay = "counts"))
+      x <- suppressWarnings(calcTotalTags(x, inputAssay = "counts"))
       if (minCTSSsupport > 1) {
-        x <- suppressMessages(CAGEfightR::subsetBySupport(x, 
+        x <- suppressMessages(subsetBySupport(x, 
                                               unexpressed = CTSSunexpressed, 
                                               minSamples = minCTSSsupport))
       }
@@ -86,10 +88,11 @@ calcComplexity <- function(object, txModels, step = 1e6, CTSSunexpressed = 1,
 #' for each sample and target (column "totalTags").
 #'
 #' @export
+#' 
 calcCTSSComplexity <- function(object, step = 1e6, CTSSunexpressed = 1, 
                                minCTSSsupport = 2) {
   
-  object <- suppressWarnings(CAGEfightR::calcTotalTags(object, 
+  object <- suppressWarnings(calcTotalTags(object, 
                                                        inputAssay = "counts"))
   
   targets <- seq(step, max(object$totalTags), by = step)
@@ -102,10 +105,10 @@ calcCTSSComplexity <- function(object, step = 1e6, CTSSunexpressed = 1,
       message(t)
       
       x <- subsampleTarget(object, "counts", t)
-      x <- suppressWarnings(CAGEfightR::calcTotalTags(x, inputAssay = "counts"))
+      x <- suppressWarnings(calcTotalTags(x, inputAssay = "counts"))
       if (minCTSSsupport > 1) {
         x <- suppressMessages(
-          CAGEfightR::subsetBySupport(x, 
+          subsetBySupport(x, 
                                       unexpressed = CTSSunexpressed, 
                                       minSamples = minCTSSsupport))
       }
@@ -149,10 +152,10 @@ calcGeneComplexity <- function(object, txModels, step = 1e6,
                                CTSSunexpressed = 1, geneunexpressed = 9, 
                                minCTSSsupport = 2) {
   object <- suppressWarnings(
-    CAGEfightR::calcTotalTags(object, inputAssay = "counts"))
+    calcTotalTags(object, inputAssay = "counts"))
   object <- suppressMessages(
     suppressWarnings(
-      CAGEfightR::assignGeneID(object, 
+      assignGeneID(object, 
                                geneModels = txModels, 
                                outputColumn = "geneID")))
   
@@ -167,16 +170,16 @@ calcGeneComplexity <- function(object, txModels, step = 1e6,
       
       x <- subsampleTarget(object, "counts", t)
       x <- suppressWarnings(
-        CAGEfightR::calcTotalTags(x, inputAssay = "counts"))
+        calcTotalTags(x, inputAssay = "counts"))
       if (minCTSSsupport > 1) {
         x <- suppressMessages(
-          CAGEfightR::subsetBySupport(x, 
+          subsetBySupport(x, 
                                       unexpressed = CTSSunexpressed, 
                                       minSamples = minCTSSsupport))
       }
       
       x <- suppressWarnings(
-        CAGEfightR::calcNumberGenes(x, 
+        calcNumberGenes(x, 
                                     txModels, 
                                     inputAssay = "counts", 
                                     unexpressed = geneunexpressed))
@@ -223,7 +226,7 @@ calcDivergentLociComplexity <- function(object, loci, step = 1e6,
                                         minCTSSsupport = 2) {
   
   object <- suppressWarnings(
-    CAGEfightR::calcTotalTags(object, inputAssay = "counts"))
+    calcTotalTags(object, inputAssay = "counts"))
   
   targets <- seq(step, max(object$totalTags), by = step)
   
@@ -236,10 +239,10 @@ calcDivergentLociComplexity <- function(object, loci, step = 1e6,
       
       x <- subsampleTarget(object, "counts", t)
       x <- suppressWarnings(
-        CAGEfightR::calcTotalTags(x, inputAssay = "counts"))
+        calcTotalTags(x, inputAssay = "counts"))
       if (minCTSSsupport > 1) {
         x <- suppressMessages(
-          CAGEfightR::subsetBySupport(x, unexpressed = CTSSunexpressed, 
+          subsetBySupport(x, unexpressed = CTSSunexpressed, 
                                       minSamples = minCTSSsupport))
       }
       

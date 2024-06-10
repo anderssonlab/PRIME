@@ -19,6 +19,12 @@
 #' @return A \code{SummarizedExperiment} object with the normalized counts.
 #' 
 #' @export
+#' 
+#' @importFrom Hmisc cut2
+#' @importFrom stats smooth.spline
+#' @import Matrix
+#' @import S4Vectors
+#' 
 conditionalNormalize <- function(object, inputAssay="counts", 
                                  outputAssay="normalized", 
                                  conditionalColumn="GC", offsetAssay=NULL, 
@@ -103,10 +109,15 @@ conditionalNormalize <- function(object, inputAssay="counts",
 #' @return A \code{SummarizedExperiment} object with the normalized counts.
 #' 
 #' @export
+#' 
+#' @import Matrix
+#' @importFrom assertthat assert_that
+#' @importFrom methods is
+#' 
 normalizeBySizeFactors <- function(object, sizeFactors, inputAssay="counts", 
                                    outputAssay="normalized") {
   
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
+  assert_that(is(object, "SummarizedExperiment"),
                           inputAssay %in% assayNames(object),
                           length(sizeFactors) == ncol(object))
   
@@ -129,7 +140,7 @@ normalizeBySizeFactors <- function(object, sizeFactors, inputAssay="counts",
 TPMnormalizeBySizeFactors <- function(object, sizeFactors, inputAssay="counts", 
                                       outputAssay="TPM") {
   
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
+  assert_that(is(object, "SummarizedExperiment"),
                           inputAssay %in% assayNames(object),
                           length(sizeFactors) == ncol(object))
   

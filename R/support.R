@@ -12,6 +12,11 @@
 #' @return A \code{SummarizedExperiment} object with the batch support column.
 #' 
 #' @export
+#' 
+#' @import Matrix
+#' @importFrom assertthat assert_that
+#' @import SummarizedExperiment
+#' 
 calcBatchSupport <- function(object, batch, inputAssay="counts", 
                              outputColumn="batchSupport", unexpressed=0, 
                              minSamples=1) {

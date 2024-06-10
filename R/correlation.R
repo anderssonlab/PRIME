@@ -12,6 +12,9 @@
 #' matrix
 #'
 #' @export
+#' 
+#' @import GenomicRanges
+#' 
 corrProfiles <- function(object, pooled, flank=300, lag.max=300) {
   
   ## flank TCs around their summits

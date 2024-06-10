@@ -13,12 +13,19 @@
 #' @return A \code{GRanges} object containing the divergent loci.
 #' 
 #' @export
+#' 
+#' @import GenomicRanges
+#' @import SummarizedExperiment
+#' @import IRanges
+#' @import CAGEfightR
+#' @importFrom igraph graph_from_edgelist components
+#' 
 divergentLoci <- function(object, ctss, max_gap=400, win_size=200, 
                           inputAssay="counts") {
   
   message("Removing overlapping TCs by strand...")
   ## Split on strand
-  TCsByStrand <- splitByStrand(object)
+  TCsByStrand <- CAGEfightR:::splitByStrand(object)
   
   ## Find overlaps between TCs on separate strands
   olaps <- findOverlaps(TCsByStrand$'-',TCsByStrand$'+',maxgap=-1,
@@ -160,6 +167,9 @@ divergentLoci <- function(object, ctss, max_gap=400, win_size=200,
 #' divergent loci.
 #' 
 #' @export
+#' 
+#' @import S4Vectors
+#' 
 quantifyDivergentLoci <- function(loci, ctss, inputAssay="counts", 
                                   requireDisjoint=TRUE) {
   
@@ -167,15 +177,15 @@ quantifyDivergentLoci <- function(loci, ctss, inputAssay="counts",
                                          inputAssay, 
                                          requireDisjoint)
   
-  o <- SummarizedExperiment::SummarizedExperiment(
+  o <- SummarizedExperiment(
     assays = S4Vectors::SimpleList(
-      SummarizedExperiment::assays(res$'-')[[inputAssay]] +
-        SummarizedExperiment::assays(res$'+')[[inputAssay]]
+      assays(res$'-')[[inputAssay]] +
+        assays(res$'+')[[inputAssay]]
     ),
     rowRanges = loci,
-    colData = SummarizedExperiment::colData(ctss)
+    colData = colData(ctss)
   )
-  SummarizedExperiment::assayNames(o) <- inputAssay
+  assayNames(o) <- inputAssay
   
   o
 }
@@ -191,9 +201,11 @@ quantifyDivergentLoci <- function(loci, ctss, inputAssay="counts",
 #' tag clusters.
 #' 
 #' @export
+#' 
+#' @importFrom BiocParallel bplapply
 quantifyClustersOlap <- function(object, clusters, inputAssay) {
   
-  revmap <- GenomicRanges::reduce(clusters, with.revmap=TRUE)$revmap
+  revmap <- reduce(clusters, with.revmap=TRUE)$revmap
   max.nr <- max(sapply(revmap, length))
   ids <- lapply(1:max.nr, function(level) {
     setdiff(sapply(revmap, `[`, level),NA)})
@@ -218,34 +230,36 @@ quantifyClustersOlap <- function(object, clusters, inputAssay) {
     ))
     if (spec)
       m_ <- m_[1]
-    SummarizedExperiment::assays(m_)[[inputAssay]]
+    assays(m_)[[inputAssay]]
   })
   
   mat <- do.call("rbind", res)[order(unlist(ids)),]
   
   rownames(mat) <- names(clusters)
   
-  o <- SummarizedExperiment::SummarizedExperiment(
+  o <- SummarizedExperiment(
     assays = S4Vectors::SimpleList(mat),
     rowRanges = clusters,
-    colData = SummarizedExperiment::colData(object))
+    colData = colData(object))
   
-  SummarizedExperiment::assayNames(o) <- inputAssay
+  assayNames(o) <- inputAssay
   
   o
 }
 
 ## Helper function, quantify the expression of divergent loci in a 
 ## strand-wise manner
+
+#' import BiocGenerics
 quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts", 
                                             requireDisjoint=TRUE) {
   win_1 <- loci
-  BiocGenerics::end(win_1) <- start(loci$thick) - 1
-  BiocGenerics::strand(win_1) <- "-"
+  end(win_1) <- start(loci$thick) - 1
+  strand(win_1) <- "-"
   
   win_2 <- loci
-  BiocGenerics::start(win_2) <- start(loci$thick) + 1
-  BiocGenerics::strand(win_2) <- "+"
+  start(win_2) <- start(loci$thick) + 1
+  strand(win_2) <- "+"
   
   m1 <- matrix()
   if (!requireDisjoint && !isDisjoint(win_1)) {
@@ -254,15 +268,15 @@ quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts",
       clusters = win_1,
       inputAssay = inputAssay
     )
-    m1 <- SummarizedExperiment::assays(m1_)[[inputAssay]]
+    m1 <- assays(m1_)[[inputAssay]]
   }
   else {
-    m1_ <- CAGEfightR::quantifyClusters(
+    m1_ <- quantifyClusters(
       object = ctss,
       clusters = win_1,
       inputAssay = inputAssay
     )
-    m1 <- SummarizedExperiment::assays(m1_)[[inputAssay]]
+    m1 <- assays(m1_)[[inputAssay]]
   }
   
   m2 <- matrix()
@@ -272,32 +286,32 @@ quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts",
       clusters = win_2,
       inputAssay = inputAssay
     )
-    m2 <- SummarizedExperiment::assays(m1_)[[inputAssay]]
+    m2 <- assays(m1_)[[inputAssay]]
   }
   else {
-    m2_ <- CAGEfightR::quantifyClusters(
+    m2_ <- quantifyClusters(
       object = ctss,
       clusters = win_2,
       inputAssay = inputAssay
     )
-    m2 <- SummarizedExperiment::assays(m2_)[[inputAssay]]
+    m2 <- assays(m2_)[[inputAssay]]
   }
   
-  m <- SummarizedExperiment::SummarizedExperiment(
+  m <- SummarizedExperiment(
     assays = S4Vectors::SimpleList(m1),
     rowRanges = loci,
-    colData = SummarizedExperiment::colData(ctss)
+    colData = colData(ctss)
   )
-  SummarizedExperiment::assayNames(m) <- inputAssay
-  p <- SummarizedExperiment::SummarizedExperiment(
+  assayNames(m) <- inputAssay
+  p <- SummarizedExperiment(
     assays = S4Vectors::SimpleList(m2),
     rowRanges = loci,
-    colData = SummarizedExperiment::colData(ctss)
+    colData = colData(ctss)
   )
-  SummarizedExperiment::assayNames(p) <- inputAssay
+  assayNames(p) <- inputAssay
   
-  res <- base::list(m,p)
-  base::names(res) <- c("-","+")
+  res <- list(m,p)
+  names(res) <- c("-","+")
   
   res
 }

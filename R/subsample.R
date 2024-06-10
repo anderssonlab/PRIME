@@ -7,9 +7,15 @@
 #' @return A \code{SummarizedExperiment} object with the subsampled counts.
 #' 
 #' @export
+#' 
+#' @importFrom assertthat assert_that
+#' @importFrom methods is
+#' @import Matrix
+#' @importFrom stats rbinom
+#' 
 subsampleTarget <- function(object, inputAssay = "counts", target) {
   
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
+  assert_that(is(object, "SummarizedExperiment"),
                           inputAssay %in% assayNames(object),
                           is.numeric(target), target > 0)
   
@@ -46,7 +52,7 @@ subsampleTarget <- function(object, inputAssay = "counts", target) {
 #' @export
 subsampleProportion <- function(object, inputAssay = "counts", proportion) {
   
-  assertthat::assert_that(methods::is(object, "SummarizedExperiment"),
+  assert_that(is(object, "SummarizedExperiment"),
                           inputAssay %in% assayNames(object),
                           is.numeric(proportion), 
                           proportion > 0 && proportion <=1)

@@ -73,6 +73,10 @@ estimateNoise <- function(object, mask, mappable, map_frac=0.5, win_size=200,
 #' @return A matrix with the quantiles for each sample.
 #' 
 #' @export
+#' 
+#' @import GenomicRanges
+#' @import CAGEfightR
+#' 
 estimateDivergentNoise <- function(object, mask, mappable_minus, mappable_plus, 
                                    map_frac=0.5, win_size=200, num_win=1e6, 
                                    inputAssay="counts", 
