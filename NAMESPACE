@@ -43,4 +43,7 @@ export("divergentLoci")
 export("quantifyDivergentLoci")
 export("quantifyClustersOlap")
 
+## Heatmap data functions
+export("heatmapData")
+
 
