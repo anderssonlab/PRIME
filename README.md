@@ -1,9 +1,8 @@
 # PRIME '
 
-### PRIME - regulatory element analysis using transcription initiation data
+## PRIME - regulatory element analysis using transcription initiation data
 
-Using CAGEfightR as a base, PRIME gathers a suite of functions for
-
+PRIME gathers a suite of R functions for:
 * calling enhancers from CAGE data
 * analyzing divergent transcription
 * subsampling of CAGE data, e.g. for saturation analyses
@@ -12,9 +11,21 @@ Using CAGEfightR as a base, PRIME gathers a suite of functions for
 * normalization across libraries versus GC content
 * calculation of bias in expression coverage and expression support versus batch
 
-### Installation:
+## Installation:
 ```
 devtools::install_github("anderssonlab/PRIME")
 ```
 
-Note: to install bcp, use install_github("swang87/bcp")
+## Notes:
+* PRIME uses [CAGEfightR](https://github.com/MalteThodberg/CAGEfightR) as a base for CAGE data loading and handling
+* R package bcp is not vailable from CRAN for R >= 4.3. To install bcp, use `install_github("swang87/bcp")`
+
+## Contributors
+* Robin Andersson
+* Natsuda Navamajiti
+* Hjorleifur Einarsson
+* Robert Krautz
+* Nicolas Alcaraz
+
+## TO DO
+* write vignettes
