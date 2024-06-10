@@ -10,6 +10,8 @@ importFrom(assertthat, assert_that)
 importFrom(DAPAR, nonzero)
 importFrom(methods, as)
 importFrom(bcp, bcp)
+importFrom(caTools, runmax)
+
 
 
 ## Export functions
@@ -25,4 +27,12 @@ export("corrProfiles")
 
 ## Cumulative genomic distributions
 export("cumulativeFractionAroundLoci")
+
+## Decomposition functions
+export("decomposeCorr")
+export("decompose")
+export("summit_decompose")
+export("local_maxima_decompose")
+export("decompose_corr")
+
 
