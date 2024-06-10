@@ -6,7 +6,6 @@ import(SummarizedExperiment)
 import(Matrix)
 import(S4Vectors)
 
-
 ## Import necessary functions
 importFrom(assertthat, assert_that)
 importFrom(assertthat, not_empty)
@@ -61,3 +60,9 @@ export("conditionalNormalize")
 export("normalizeBySizeFactors")
 export("TPMnormalizeBySizeFactors")
 
+## Subsampling functions
+export("subsampleTarget")
+export("subsampleProportion")
+
+## Support functions
+export("calcBatchSupport")
