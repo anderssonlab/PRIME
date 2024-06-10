@@ -1,18 +1,21 @@
 
-# Import necessary packages
+## Import necessary packages
 import(CAGEfightR)
+
+## Import necessary functions
+importFrom(assert_that, assertthat)
 importFrom(DAPAR, nonzero)
 
 
-# Export functions
+## Export functions
 
-## Complexity functions
+# Complexity functions
 export("calcComplexity")
 export("calcCTSSComplexity")
 export("calcGeneComplexity")
 export("calcDivergentLociComplexity")
 
-## Correlation functions
+# Correlation functions
 export("corrProfiles")
 
 

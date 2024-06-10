@@ -1,6 +1,3 @@
-
-## object: GRanges
-## pooled: RangedSummarizedExperiment
 #' Calculate the auto correlation of CTSSs over tag clusters according to 
 #' pooled values and the cross correlation with opposite strand CTSSs
 #'
