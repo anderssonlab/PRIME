@@ -3,6 +3,9 @@
 import(CAGEfightR)
 import(GenomicRanges)
 import(SummarizedExperiment)
+import(Matrix)
+import(S4Vectors)
+
 
 ## Import necessary functions
 importFrom(assertthat, assert_that)
@@ -14,7 +17,8 @@ importFrom(bcp, bcp)
 importFrom(caTools, runmax)
 importFrom(igraph, graph_from_edgelist)
 importFrom(igraph, components)
-importFrom(DescTools,)
+importFrom(zoo,rollapply)
+importFrom(Hmisc,cut2)
 
 ## Export functions
 
@@ -51,4 +55,9 @@ export("DMadjustedCV")
 ## Noise functions
 export("estimateNoise")
 export("estimatedDivergentNoise")
+
+## Normalization functions
+export("conditionalNormalize")
+export("normalizeBySizeFactors")
+export("TPMnormalizeBySizeFactors")
 
