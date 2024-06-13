@@ -23,11 +23,12 @@
 divergentLoci <- function(object, ctss, max_gap=400, win_size=200, 
                           inputAssay="counts") {
   
-    ## Format pooled signal for inputAssay
+  ## Format pooled signal for inputAssay
   object <- quantifyClusters(ctss, object)
-  object <- calcPooled(object, inputAssay=inputAssay)
+  object <- suppressWarnings(calcPooled(object, inputAssay=inputAssay))
   object <- rowRanges(object)
-  ctss <- calcPooled(ctss,inputAssay=inputAssay)
+  ctss <- suppressWarnings(calcPooled(ctss,inputAssay=inputAssay))
+  
   
   message("Removing overlapping TCs by strand...")
   ## Split on strand
@@ -353,16 +354,18 @@ quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts",
 #' @import SummarizedExperiment
 #' @import IRanges
 #' @import CAGEfightR
+#' @import data.table
 #' @importFrom igraph graph_from_edgelist components
+#' @importFrom BiocParallel bplapply
 #' 
-divergentLociTCsSummit<- function(object, ctss, max_gap=400, win_size=200, 
+divergentLociSummit<- function(object, ctss, max_gap=400, win_size=200, 
                                   inputAssay="counts") {
 
   ## Format pooled signal for inputAssay
   object <- quantifyClusters(ctss, object)
-  object <- calcPooled(object, inputAssay=inputAssay)
+  object <- suppressWarnings(calcPooled(object, inputAssay=inputAssay))
   object <- rowRanges(object)
-  ctss <- calcPooled(ctss,inputAssay=inputAssay)
+  ctss <- suppressWarnings(calcPooled(ctss,inputAssay=inputAssay))
   
   message("Removing overlapping TCs by strand...")
   object <- swapRanges(object) #Summit focused
@@ -439,7 +442,7 @@ divergentLociTCsSummit<- function(object, ctss, max_gap=400, win_size=200,
   
   gr <- GRanges(seqnames=div_chr,IRanges(start=mid,end=mid))
   seqlevels(ctss,pruning.mode="coarse") <- seqlevels(gr)
-  seqinfo(ctss) <- seqinfo(gr)
+  seqinfo(gr) <- seqinfo(ctss)
   
   cat("\r")
   message("Calculating directionality...")
@@ -491,4 +494,3 @@ divergentLociTCsSummit<- function(object, ctss, max_gap=400, win_size=200,
   ## Remove non-divergent cases
   gr
 }
-
