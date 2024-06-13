@@ -23,6 +23,13 @@
 divergentLoci <- function(object, ctss, max_gap=400, win_size=200, 
                           inputAssay="counts") {
   
+  ## Format pooled signal for inputAssay
+  object <- quantifyClusters(ctss, object)
+  object <- suppressWarnings(calcPooled(object, inputAssay=inputAssay))
+  object <- rowRanges(object)
+  ctss <- suppressWarnings(calcPooled(ctss,inputAssay=inputAssay))
+  
+  
   message("Removing overlapping TCs by strand...")
   ## Split on strand
   TCsByStrand <- CAGEfightR:::splitByStrand(object)
@@ -92,10 +99,13 @@ divergentLoci <- function(object, ctss, max_gap=400, win_size=200,
   div_chr <- as.character(sapply(names(div_chr), 
                                  function(n) strsplit(n,":")[[1]][1]))
   
-  covByStrand <- CAGEfightR:::splitPooled(methods::as(rowRanges(ctss),
-                                                      "GRanges"))
+
   gr <- GRanges(seqnames=div_chr,IRanges(start=div_mid,end=div_mid))
+  seqlevels(ctss,pruning.mode="coarse") <- seqlevels(gr)
   seqinfo(gr) <- seqinfo(ctss)
+
+  covByStrand <- CAGEfightR:::splitPooled(methods::as(rowRanges(ctss),
+                                          "GRanges"))
   
   cat("\r")
   message("Calculating directionality...")
@@ -321,4 +331,166 @@ quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts",
   names(res) <- c("-","+")
   
   res
+}
+
+
+
+#' Identify divergent loci from tag clusters with summit centering.
+#'
+#' @param object A \code{GRanges} object containing the tag clusters.
+#' @param ctss A \code{RangedSummarizedExperiment} resulting from
+#' \code{CAGEfightR::quantifyCTSSs()}.
+#' @param max_gap Maximum distance between tag clusters to be considered
+#' part of a divergent locus.
+#' @param win_size Size of the flanking windows around the midpoint of the
+#' divergent locus.
+#' @param inputAssay The assay to use for quantification.
+#' 
+#' @return A \code{GRanges} object containing the divergent loci.
+#' 
+#' @export
+#' 
+#' @import GenomicRanges
+#' @import SummarizedExperiment
+#' @import IRanges
+#' @import CAGEfightR
+#' @import data.table
+#' @importFrom igraph graph_from_edgelist components
+#' @importFrom BiocParallel bplapply
+#' 
+divergentLociSummit<- function(object, ctss, max_gap=400, win_size=200, 
+                                  inputAssay="counts") {
+
+  ## Format pooled signal for inputAssay
+  object <- quantifyClusters(ctss, object)
+  object <- suppressWarnings(calcPooled(object, inputAssay=inputAssay))
+  object <- rowRanges(object)
+  ctss <- suppressWarnings(calcPooled(ctss,inputAssay=inputAssay))
+  
+  message("Removing overlapping TCs by strand...")
+  object <- swapRanges(object) #Summit focused
+  TCsByStrand <- CAGEfightR:::splitByStrand(object)
+  
+  ## Find overlapping and book-ended summits between strands
+  olaps <- findOverlaps(TCsByStrand$'-',TCsByStrand$'+',maxgap=0,type="any",select="all",ignore.strand=TRUE)
+  m_score <-  mcols(TCsByStrand$'-')$score
+  p_score <-  mcols(TCsByStrand$'+')$score
+  
+  m_rem <- queryHits(olaps)[which(m_score[queryHits(olaps)] <= p_score[subjectHits(olaps)])]
+  p_rem <- subjectHits(olaps)[which(p_score[subjectHits(olaps)] < m_score[queryHits(olaps)])]
+  
+  ## remove overlapping TCs
+  if (length(m_rem)>0) {
+    TCsByStrand$'-' <- TCsByStrand$'-'[-m_rem]
+  }
+  if (length(p_rem)>0) {
+    TCsByStrand$'+' <- TCsByStrand$'+'[-p_rem]
+  }
+  
+  message("Finding divergent TC pairs...")
+  ## Find divergent TC pairs
+  m_pad <- flank(TCsByStrand$'-', width=max_gap, start=TRUE, both=FALSE)
+  pairs <- findOverlaps(m_pad,TCsByStrand$'+',maxgap=-1,type="any",select="all",ignore.strand=TRUE)
+  
+  ## Find connected components of TC pair graphs
+  edge_list <- cbind(names(TCsByStrand$'-')[queryHits(pairs)],
+                     names(TCsByStrand$'+')[subjectHits(pairs)])
+  g <- igraph::graph_from_edgelist(edge_list,directed=FALSE)
+  con <- igraph::components(g)
+  
+  ## Keep only relevant TCs
+  object <- object[names(con$membership)]
+  
+  message("Merging into divergent loci...")
+  covByStrand <- CAGEfightR:::splitPooled(methods::as(rowRanges(ctss),"GRanges"))
+  
+  mergeLoci <- function(m, p) {
+    
+    m.i <- 1
+    p.i <- 1
+    
+    while ((p[p.i,start] < m[m.i,start]) || ((p[p.i,start]-m[m.i,start]) > max_gap)) {
+      if ((p[p.i,score] < m[m.i,score]) && (p.i < nrow(p)) && ((p[p.i+1,start]-m[m.i,start]) < max_gap)) {
+        p.i <- p.i + 1
+      } else {
+        m.i <- m.i + 1
+      }
+    }
+    floor(m[m.i,start] + ((p[p.i,start] - m[m.i,start]) / 2))
+  }
+  
+  dt <- data.table(strand=as.character(strand(object)),
+                   start=start(object),
+                   score=object$score,
+                   locus=con$membership,
+                   stringsAsFactors=FALSE)
+  
+  dt <- split(dt, dt$strand)
+  setorder(dt$'-', -score, start) ## order by score, then by position (prioritize rightmost)
+  setorder(dt$'+', -score, -start) ## order by score, then by position (prioritize leftmost)
+  
+  loci.m <- split(dt$'-', dt$'-'$'locus')
+  loci.p <- split(dt$'+', dt$'+'$'locus')
+  
+  mid <- bplapply(1:length(loci.m), function(i) mergeLoci(loci.m[[i]], loci.p[[i]]))
+  mid <- unlist(mid)
+  
+  ## Extract seqnames for loci
+  div_chr <- con$membership[match(1:con$no,con$membership)]
+  div_chr <- as.character(sapply(names(div_chr), function(n) strsplit(n,":")[[1]][1]))
+  
+  
+  gr <- GRanges(seqnames=div_chr,IRanges(start=mid,end=mid))
+  seqlevels(ctss,pruning.mode="coarse") <- seqlevels(gr)
+  seqinfo(gr) <- seqinfo(ctss)
+  
+  cat("\r")
+  message("Calculating directionality...")
+  
+  win_1 <- flank(gr,width=win_size,start=TRUE,both=FALSE)
+  win_2 <- flank(gr,width=win_size,start=FALSE,both=FALSE)
+  
+  covByStrand <- CAGEfightR:::splitPooled(methods::as(rowRanges(ctss),"GRanges"))
+  
+  ## Quantify strand-wise in flanking windows around midpoint
+  M1 <- unlist(viewSums(Views(covByStrand$`-`, win_1)))
+  P2 <- unlist(viewSums(Views(covByStrand$`+`, win_2)))
+  M2 <- unlist(viewSums(Views(covByStrand$`-`, win_2)))
+  P1 <- unlist(viewSums(Views(covByStrand$`+`, win_1)))
+  
+  ## Calculate directionality
+  pooled_directionality <- (P2-M1) / (P2+M1)
+  
+  ## Test if divergent
+  divergent <- (M1>P1) & (P2>M2)
+  
+  message("Calculating coverage across samples...")
+  
+  ## Quantify strand-wise in flanking windows around midpoint
+  strand(win_1) <- "-"
+  strand(win_2) <- "+"
+  mat_2_plus <- suppressMessages(assay(quantifyClusters(ctss, win_2, inputAssay = inputAssay),inputAssay) > 0)
+  mat_1_minus <- suppressMessages(assay(quantifyClusters(ctss, win_1, inputAssay = inputAssay),inputAssay) > 0)
+  
+  ## Quntify number of bidirectional cases (both strands expressed)
+  bidirectional <- rowSums(mat_1_minus & mat_2_plus)
+  
+  message("Preparing output...")
+  
+  ## Build GRanges object
+  start(gr) <- start(gr)-win_size
+  end(gr) <- end(gr)+win_size
+  gr$score <- M1+P2
+  gr$thick <- IRanges(start=mid,width=1)
+  
+  mcols(gr)[, "directionality"] <- pooled_directionality
+  mcols(gr)[, "bidirectionality"] <- bidirectional
+  mcols(gr)[, "divergent"] <- divergent
+  
+  ids <- paste0(seqnames(gr), ":", start(gr), "-", end(gr))
+  names(gr) <- ids
+  names(gr$thick) <- ids
+  
+  ## Remove non-divergent cases
+  gr
 }
