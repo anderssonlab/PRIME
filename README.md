@@ -1,8 +1,8 @@
 # PRIME '
 
-## PRIME - regulatory element analysis using transcription initiation data
+## `PRIME` - regulatory element analysis using transcription initiation data
 
-PRIME gathers a suite of R functions for:
+`PRIME` gathers a suite of `R` functions for:
 * calling enhancers from CAGE data
 * analyzing divergent transcription
 * subsampling of CAGE data, e.g. for saturation analyses
