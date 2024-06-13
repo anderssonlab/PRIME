@@ -12,13 +12,18 @@ PRIME gathers a suite of R functions for:
 * calculation of bias in expression coverage and expression support versus batch
 
 ## Installation:
+
+Install `PRIME` directly from GitHub using `devtools`:
+
 ```
 devtools::install_github("anderssonlab/PRIME")
 ```
 
+You may need to manually install dependencies (See `DESRIPTION`).
+
 ## Notes:
 * PRIME uses [CAGEfightR](https://github.com/MalteThodberg/CAGEfightR) as a base for CAGE data loading and handling
-* R package bcp is not vailable from CRAN for R >= 4.3. To install bcp, use `install_github("swang87/bcp")`
+* R package `bcp` is not vailable from CRAN for `R` >= 4.3. To install `bcp`, use `install_github("swang87/bcp")`
 
 ## Contributors
 * Robin Andersson
@@ -29,3 +34,7 @@ devtools::install_github("anderssonlab/PRIME")
 
 ## TO DO
 * write vignettes
+
+## Future development
+* ATAC-CAGE integration
+* QC tools and visualization
