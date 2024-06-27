@@ -36,7 +36,7 @@ heatmapData <- function(regions, data, column="score",
   }   
   
   regionsByStrand <- CAGEfightR:::splitByStrand(regions)
-  dataByStrand <- splitPooled(data, weight=column)
+  dataByStrand <- splitPooledWeight(data, weight=column)
   
   nr <- names(regionsByStrand)[sapply(regionsByStrand, 
                                       function(x) length(x)>0)]
@@ -74,7 +74,7 @@ heatmapData <- function(regions, data, column="score",
 
 ## Helper function, not exported, adds functionality to CAGEfightR:::splitPooled
 ## by allowing to focus on another column than "score"
-splitPooled <- function(object, weight="score"){
+splitPooledWeight <- function(object, weight="score"){
 
     ## Split by strand
     o <- splitByStrand(object)
