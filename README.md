@@ -3,10 +3,10 @@
 ## `PRIME` - regulatory element analysis using transcription initiation data
 
 `PRIME` gathers a suite of `R` functions for:
-* calling enhancers from CAGE data
+* calling enhancers from transcription start site (TSS) data, e.g. CAGE
 * analyzing divergent transcription
-* subsampling of CAGE data, e.g. for saturation analyses
-* decomposition of CAGE tag clusters for core promoter analysis
+* subsampling of transcription initiation data, e.g. for saturation analyses
+* decomposition of TSS clusters for core promoter analysis
 * calculation of genomic background (noise) expression
 * normalization across libraries versus GC content
 * calculation of bias in expression coverage and expression support versus batch
@@ -22,7 +22,7 @@ devtools::install_github("anderssonlab/PRIME")
 You may need to manually install dependencies (See `DESRIPTION`).
 
 ## Notes:
-* PRIME uses [CAGEfightR](https://github.com/MalteThodberg/CAGEfightR) as a base for CAGE data loading and handling
+* PRIME uses [CAGEfightR](https://github.com/MalteThodberg/CAGEfightR) as a base for data loading and handling
 * R package `bcp` is not vailable from CRAN for `R` >= 4.3. To install `bcp`, use `install_github("swang87/bcp")`
 
 ## Contributors
