@@ -77,7 +77,7 @@ heatmapData <- function(regions, data, column="score",
 splitPooledWeight <- function(object, weight="score"){
 
     ## Split by strand
-    o <- splitByStrand(object)
+    o <- CAGEfightR:::splitByStrand(object)
 
     ## Calculate coverage
     o <- lapply(o, coverage, weight=weight)
