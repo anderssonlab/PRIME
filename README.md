@@ -22,7 +22,7 @@ devtools::install_github("anderssonlab/PRIME")
 You may need to manually install dependencies (See `DESRIPTION`).
 
 ## Notes:
-* PRIME uses [CAGEfightR](https://github.com/MalteThodberg/CAGEfightR) as a base for data loading and handling
+* PRIME uses [`CAGEfightR`](https://github.com/MalteThodberg/CAGEfightR) as a base for data loading and handling
 * R package `bcp` is not vailable from CRAN for `R` >= 4.3. To install `bcp`, use `install_github("swang87/bcp")`
 
 ## Contributors
