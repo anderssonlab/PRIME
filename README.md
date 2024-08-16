@@ -1,11 +1,12 @@
 # PRIME '
 
-## `PRIME` - regulatory element analysis using transcription initiation data
+## `PRIME` - regulatory element analysis using transcription start site data
 
 `PRIME` gathers a suite of `R` functions for:
-* calling enhancers from transcription start site (TSS) data, e.g. CAGE
+* analyzing transcription start site (TSS) data, e.g. CAGE, or other RNA 5' end data like GRO/PRO-cap
 * analyzing divergent transcription
-* subsampling of transcription initiation data, e.g. for saturation analyses
+* calling enhancers from TSS data
+* subsampling of data, e.g. for saturation analyses
 * decomposition of TSS clusters for core promoter analysis
 * calculation of genomic background (noise) expression
 * normalization across libraries versus GC content
