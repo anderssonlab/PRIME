@@ -56,9 +56,14 @@ heatmapData <- function(regions, data, column="score",
       
       vlen <- sapply(vl,length)
       
-      m <- do.call("rbind",lapply(vl[vlen>0], function(v) {
-        t(viewApply(v,function(x) {
-          transform_fn(as.vector(x,mode="numeric"),...)}))}))
+      m <- do.call("rbind",
+                   lapply(vl[vlen>0], function(v) {
+                     vectorListToMatrix( 
+                       viewApply(v,function(x) {
+                         as(transform_fn(as.vector(x,mode="numeric"),...),"dsparseVector")
+                       })
+                     )}))
+      
       rownames(m) <- n
       m
     })
@@ -70,6 +75,19 @@ heatmapData <- function(regions, data, column="score",
   names(res) <- nr
   
   res
+}
+
+## Helper function, not exported. Converts a list of sparse vectors to a sparse matrix.
+vectorListToMatrix <- function(vl){  
+  sm_i<-NULL
+  sm_j<-NULL
+  sm_x<-NULL
+  for (k in 1:length(vl)) {
+    sm_i <- c(sm_i,rep(k,length(vl[[k]]@i)))
+    sm_j <- c(sm_j,vl[[k]]@i)
+    sm_x <- c(sm_x,vl[[k]]@x)
+  }
+  return (sparseMatrix(i=sm_i,j=sm_j,x=sm_x,dims=c(length(vl),vl[[1]]@length)))
 }
 
 ## Helper function, not exported, adds functionality to CAGEfightR:::splitPooled
