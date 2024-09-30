@@ -29,6 +29,8 @@ Imports:
     Hmisc,
     BiocParallel,
     IRanges,
-    GenomeInfoDb
+    GenomeInfoDb,
+    foreach,
+    magrittr
 
 
