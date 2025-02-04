@@ -10,7 +10,7 @@
 #' 
 #' @importFrom Matrix rowSums
 #' @importFrom assertthat assert_that
-#' @import SummarizedExperiments
+#' @import SummarizedExperiment
 #' 
 
 poolReplicates <- function(object, replicates, inputAssay="counts") {
