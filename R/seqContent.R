@@ -21,7 +21,7 @@ initiatorScore <- function(object, bsg) {
   }
   
   # Remove out-of-bound indices
-  idx <- GenomicRanges::get_out_of_bound_index(object)
+  idx <- GenomicRanges:::get_out_of_bound_index(object)
   if (length(idx) > 0) {
     object <- object[-idx]
   }
