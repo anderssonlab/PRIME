@@ -491,7 +491,7 @@ wrapup_make_profiles <- function(ctss_rse,
 
     if (file_type == "csv") {
       # Save as CSV without rownames
-      write.csv(as.data.frame(combined_count_metadata),
+      utils::write.csv(as.data.frame(combined_count_metadata),
                 file = file.path(output_dir,
                                  output_dir_name,
                                  "metadata",
@@ -518,7 +518,7 @@ wrapup_make_profiles <- function(ctss_rse,
 
       if (file_type == "csv") {
         # Save as CSV without rownames
-        write.csv(as.data.frame(combined_count_profiles),
+        utils::write.csv(as.data.frame(combined_count_profiles),
                   file = file.path(output_dir,
                                    output_dir_name,
                                    "profiles",
@@ -545,7 +545,7 @@ wrapup_make_profiles <- function(ctss_rse,
 
     if (file_type == "csv") {
       # Save as CSV without rownames
-      write.csv(as.data.frame(combined_subtnorm_profiles),
+      utils::write.csv(as.data.frame(combined_subtnorm_profiles),
                 file = file.path(output_dir,
                                  output_dir_name,
                                  "profiles_subtnorm",
@@ -1027,6 +1027,7 @@ get_highest_non_overlap <- function(gr,
 
   doParallel::registerDoParallel(cores = num_cores)
 
+  i <- NA ## avoid warning
   results <- foreach::foreach(i = seq_along(gr_list), .combine = c) %dopar% {
     get_highest_non_overlap_chr(gr_list[[i]])
   }
@@ -1098,7 +1099,7 @@ wrapup_filter_bed_to_reduce <- function(input_bed, output_dir = NULL) {
 #' @importFrom assertthat assert_that
 #' @export
 load_bed_file <- function(input_bed) {
-  bed_file <- read.table(input_bed, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+  bed_file <- utils::read.table(input_bed, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
   required_cols <- c("chrom", "chromStart", "chromEnd", "strand", "score")
   assertthat::assert_that(all(required_cols %in% colnames(bed_file)),
                           msg = "The BED file must contain 'chrom', 'chromStart', 'chromEnd', 'strand', and 'score' columns.")
