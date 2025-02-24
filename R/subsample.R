@@ -51,7 +51,7 @@ subsampleTarget <- function(object, inputAssay = "counts", target) {
 #' 
 #' @export
 #' 
-#' @importFrom DAPAR nonzero
+###' @importFrom DAPAR nonzero
 subsampleProportion <- function(object, inputAssay = "counts", proportion) {
   
   assert_that(is(object, "SummarizedExperiment"),
@@ -61,7 +61,8 @@ subsampleProportion <- function(object, inputAssay = "counts", proportion) {
   
   a <- assay(object,inputAssay)
   n <- ncol(a)
-  nz <- lapply(1:n, function(i) DAPAR::nonzero(a[,i,drop=FALSE])[,1])
+  ##nz <- lapply(1:n, function(i) DAPAR::nonzero(a[,i,drop=FALSE])[,1])
+  nz <- lapply(1:n, function(i) nonzero(a[,i,drop=FALSE])[,1])
   d <- unlist(lapply(1:n, function(i) {
     rbinom(length(nz[[i]]),a[nz[[i]],i], proportion)
   }))
@@ -74,4 +75,23 @@ subsampleProportion <- function(object, inputAssay = "counts", proportion) {
                                             colnames(a)[keep]))
   
   object
+}
+
+#' nonzero function from DAPAR package (https://github.com/edyp-lab/DAPAR)
+#' temporarily including a local version to avoid installation issues
+nonzero <- function(x) {
+    ## function to get a two-column matrix containing the indices of the
+    ### non-zero elements in a "dgCMatrix" class matrix
+
+    stopifnot(inherits(x, "dgCMatrix"))
+    if (all(x@p == 0)) {
+        return(matrix(0,
+            nrow = 0, ncol = 2,
+            dimnames = list(character(0), c("row", "col"))
+        ))
+    }
+    res <- cbind(x@i + 1, rep(seq(dim(x)[2]), diff(x@p)))
+    colnames(res) <- c("row", "col")
+    res <- res[x@x != 0, , drop = FALSE]
+    return(res)
 }
