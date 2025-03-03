@@ -265,16 +265,17 @@ convert_rowname_to_nostrand <- function(strand_str) {
 #' If the lists are not identical,
 #' a message is printed, and the row names are not modified.
 #'
-modify_profile_rownames <- function(profiles, count_profiles) {
-  plus_converted <- convert_rowname_to_nostrand(rownames(count_profiles$`*`$`+`)) # nolint: line_length_linter.
-  minus_converted <- convert_rowname_to_nostrand(rownames(count_profiles$`*`$`-`)) # nolint: line_length_linter.
-  if (identical(sort(plus_converted), sort(minus_converted))) {
-    message("Both lists are the same after strand conversion.")
-    rownames(profiles) <- plus_converted
-  } else {
-    message("The lists are not the same after strand conversion.")
-  }
-  return(profiles)
+combine_plus_minus_profiles <- function(count_profiles, len_vec) {
+  plus_matrix <- as.matrix(count_profiles$`*`$`+`)
+  minus_matrix <- as.matrix(count_profiles$`*`$`-`)
+  
+  combined_profiles <- cbind(data.frame(plus_matrix), data.frame(minus_matrix))
+  
+  colnames(combined_profiles) <- c(paste("Plus_", 1:len_vec, sep = ""),
+                                   paste("Minus_", 1:len_vec, sep = ""))
+  
+  combined_profiles <- modify_profile_rownames(combined_profiles, count_profiles)
+  return(combined_profiles)
 }
 
 
