@@ -285,10 +285,10 @@ tc_sliding_window_chr <- function(gr_per_chr,
                                   ext_dis = 200,
                                   log_file = log_file) {
 
-  chr <- as.character(GenomicRanges::seqnames(gr_per_chr)[1])
+  chr <- as.character(GenomicRanges::seqnames(gr_per_chr))[1]
   plc_log(sprintf("➡️ Starting sliding window for chromosome: %s",
                   chr),
-          log_file)
+          log_file, print_console = FALSE)
 
   # 1) Reduce overlaps within this chromosome
   collapsed_granges <- GenomicRanges::reduce(gr_per_chr)
@@ -334,7 +334,7 @@ tc_sliding_window_chr <- function(gr_per_chr,
 
   plc_log(sprintf("✅ Finished sliding window for chromosome: %s",
                   chr),
-          log_file)
+          log_file, print_console = FALSE)
 
   rm(sliding_granges_list, collapsed_granges)
   gc()
@@ -371,7 +371,6 @@ tc_sliding_window <- function(granges_obj,
 
   # 2) Split the GRanges object by chromosome (seqnames)
   gr_by_chr <- split(granges_obj, GenomicRanges::seqnames(granges_obj))
-  print(paste(gr_by_chr))
 
   # 3) Determine the number of cores to use and global variable memory limit
   if (is.null(num_cores)) {
@@ -385,7 +384,7 @@ tc_sliding_window <- function(granges_obj,
   result_list <- future.apply::future_lapply(
     gr_by_chr,
     FUN = function(gr) {
-      tc_sliding_window_chr(gr, 
+      tc_sliding_window_chr(gr,
                             sld_by = sld_by,
                             ext_dis = ext_dis,
                             log_file = log_file)
