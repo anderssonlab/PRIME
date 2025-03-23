@@ -8,14 +8,19 @@ PRIMEloci(
   ctss_rse,
   tc_object = NULL,
   outdir,
-  ext_dis = 200,
   save_tc = TRUE,
   tc_object_name = "tc_grl.rds",
   sld_window = TRUE,
-  sld_by = 20,
   sld_object_name = "sld_tc_grl.rds",
+  sld_by = 20,
+  profile_dir_name = "PRIMEloci_profiles",
+  file_type = "parquet",
+  addtn_to_filename = "",
+  save_count_profiles = FALSE,
+  python_path = "~/.virtualenvs/prime-env",
   keep_tmp = TRUE,
-  num_cores = NULL
+  num_cores = NULL,
+  ext_dis = 200
 )
 }
 \description{
