@@ -11,6 +11,8 @@ import pandas as pd
 import re
 import logging
 from scipy.sparse import load_npz
+import glob
+from collections import defaultdict
 
 
 def log_also_console(message, level="info"):
@@ -178,19 +180,19 @@ def move_metadata_columns_to_ranges(ranges_df, metadata_df, columns_to_keep):
 
 def load_profile_matrix(profile_path, ext, model):
     if ext == ".parquet":
-        logging.info(f"📥 Reading profile file: {profile_path} (format: {ext})")
+        logging.info(f"   Reading profile file: {profile_path} (format: {ext})")
         df = pd.read_parquet(profile_path)
         df = set_index_if_exists(df)
         return extract_profiles(df)
 
     elif ext == ".csv":
-        logging.info(f"📥 Reading profile file: {profile_path} (format: {ext})")
+        logging.info(f"   Reading profile file: {profile_path} (format: {ext})")
         df = pd.read_csv(profile_path, header=0, index_col=None)
         df = set_index_if_exists(df)
         return extract_profiles(df)
 
     elif ext == ".npz":
-        logging.info(f"📥 Reading profile file: {profile_path} (format: {ext})")
+        logging.info(f"   Reading profile file: {profile_path} (format: {ext})")
         sparse_mat = load_npz(profile_path)
         try:
             model.predict_proba(sparse_mat[0])
@@ -211,7 +213,7 @@ def prepare_ranges_df(metadata_df, profile_base_name, y_proba):
     ranges_df = metadata_df.copy()
 
     ranges_df.rename(columns={
-        'chr': 'chrom',
+        'seqnames': 'chrom',
         'start': 'chromStart',
         'end': 'chromEnd'
     }, inplace=True)
@@ -233,3 +235,55 @@ def prepare_ranges_df(metadata_df, profile_base_name, y_proba):
     ranges_df = adjust_genomic_positions_for_bed(ranges_df)
 
     return ranges_df
+
+
+def combine_bed_files(input_dir, output_dir):
+    log_also_console(f"🔍 Combining BED files from: {input_dir}")
+    os.makedirs(output_dir, exist_ok=True)
+
+    bed_files = glob.glob(os.path.join(input_dir, "*.bed"))
+    if not bed_files:
+        log_also_console("⚠️ No .bed files found to combine.")
+        return
+
+    prefix_groups = defaultdict(list)
+
+    # Group files by prefix (everything before _chr*)
+    for bed_file in bed_files:
+        filename = os.path.basename(bed_file)
+        match = re.match(r"(.+)(_chr[^_]+)_profiles_subtnorm\.bed", filename)
+
+        if match:
+            prefix = match.group(1)
+            prefix_groups[prefix].append(bed_file)
+        else:
+            log_also_console(
+                f"❗ Skipping file (unexpected format): {filename}")
+
+    if not prefix_groups:
+        log_also_console("⚠️ No groups matched the expected pattern (_chr*).")
+        return
+
+    for prefix, files in prefix_groups.items():
+        log_also_console(f"🔧 Combining files for prefix: {prefix}")
+        combined_path = os.path.join(output_dir, f"{prefix}_combined.bed")
+        combined_df = None
+
+        for i, file in enumerate(sorted(files)):
+            logging.info(f"   Reading {os.path.basename(file)}")
+            df = pd.read_csv(file, sep="\t", header=0)
+            if combined_df is None:
+                combined_df = df
+            else:
+                if df.columns.equals(combined_df.columns):
+                    combined_df = pd.concat([combined_df, df.iloc[1:]],
+                                            ignore_index=True)
+                else:
+                    log_also_console(
+                        f"⚠️ Column mismatch in {file}, including full file."
+                    )
+                    combined_df = pd.concat([combined_df, df],
+                                            ignore_index=True)
+
+        combined_df.to_csv(combined_path, sep="\t", header=True, index=False)
+        log_also_console(f"✅ Combined files into {combined_path}")
