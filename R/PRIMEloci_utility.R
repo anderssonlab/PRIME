@@ -326,11 +326,22 @@ tc_sliding_window_chr <- function(gr_per_chr,
                                              width = GenomicRanges::width(sliding_granges) + ext_dis, # nolint: line_length_linter.
                                              fix = "end")
 
-    return(sliding_granges)
+    sliding_granges
   })
 
   # 3) Combine the list of GRanges objects into a single GRanges object
   sliding_granges <- base::do.call(c, sliding_granges_list)
+
+  # 4) Remove out-of-bound sliding windows (start < 1)
+  before <- length(sliding_granges)
+  sliding_granges <- sliding_granges[start(sliding_granges) > 0]
+  after <- length(sliding_granges)
+
+  if (before > after) {
+    plc_log(sprintf("⚠️ Removed %d out-of-bound windows (start < 1) in %s",
+                    before - after, chr),
+            log_file, print_console = FALSE)
+  }
 
   plc_log(sprintf("✅ Finished sliding window for chromosome: %s",
                   chr),
@@ -630,7 +641,6 @@ strands_norm_subtraction_all <- function(windows,
   }
 
   colnames(norm_mat) <- paste0("Pos", seq_len(ncol(norm_mat)) - ext_dis - 1)
-  message("Returned class from strands_norm_subtraction: ", class(norm_mat))
 
   return(norm_mat)
 }
@@ -663,12 +673,14 @@ plc_save_to_file <- function(data,
       utils::write.csv(as.data.frame(data),
                        paste0(full_file_path, ".csv"),
                        row.names = FALSE)
-      plc_log(sprintf("💾 Saved file: %s.csv", full_file_path), log_file)
+      plc_log(sprintf("💾 Saved file: %s.csv", full_file_path),
+              log_file, print_console = FALSE)
 
     } else if (actual_file_type == "parquet") {
       arrow::write_parquet(as.data.frame(data),
                            paste0(full_file_path, ".parquet"))
-      plc_log(sprintf("💾 Saved file: %s.parquet", full_file_path), log_file)
+      plc_log(sprintf("💾 Saved file: %s.parquet", full_file_path),
+              log_file, print_console = FALSE)
 
     } else if (actual_file_type == "npz") {
       scipy <- reticulate::import("scipy.sparse", delay_load = TRUE)
@@ -683,7 +695,8 @@ plc_save_to_file <- function(data,
 
       npz_path <- paste0(full_file_path, ".npz")
       scipy$save_npz(npz_path, py_matrix)
-      plc_log(sprintf("💾 Saved file: %s", npz_path), log_file)
+      plc_log(sprintf("💾 Saved file: %s", npz_path),
+              log_file, print_console = FALSE)
 
     } else {
       stop("❌ Unsupported file_type. Use 'csv', 'parquet', or 'npz'.")
@@ -749,9 +762,11 @@ PRIMEloci_profile_chr <- function(current_region_gr,
   current_region_gr <- remove_metadata_and_duplicates(current_region_gr)
 
   # Generate sparse matrix profile
-  count_profiles <- PRIME::heatmapData(current_region_gr,
-                                       filtered_ctss_gr,
-                                       sparse = TRUE)
+  count_profiles <- suppressMessages(
+    heatmapData(current_region_gr,
+                filtered_ctss_gr,
+                sparse = TRUE)
+  )
 
   check_valid_profile_rownames(count_profiles$`*`$`+`, chr_name, log_file)
   check_valid_profile_rownames(count_profiles$`*`$`-`, chr_name, log_file)
