@@ -21,7 +21,6 @@ plc_log <- function(message,
   if (isTRUE(print_console)) base::message(line)
 }
 
-
 #' Capture and log messages, warnings, and errors from a code block
 #'
 #' @param expr Code to evaluate.
@@ -59,7 +58,6 @@ plc_trylog <- function(expr, log_file, print_console = TRUE) {
     }
   )
 }
-
 
 #' Get tag clusters and extend from thick positions
 #'
@@ -152,7 +150,6 @@ get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
 
   return(tc_grl)
 }
-
 
 #' Validate a TC object
 #'
@@ -247,7 +244,6 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
   message("✅ TC object validation passed successfully.")
   return(TRUE)
 }
-
 
 #' Generate Sliding Windows for a Single Chromosome
 #'
@@ -354,7 +350,6 @@ tc_sliding_window_chr <- function(gr_per_chr,
   return(sliding_granges)
 }
 
-
 #' Perform Parallel Sliding Window Expansion on GRanges Tag Clusters
 #'
 #' @import GenomicRanges
@@ -426,7 +421,6 @@ tc_sliding_window <- function(granges_obj,
   return(result_gr)
 }
 
-
 #' Prepare Directory Structure for Profile Output
 prep_profile_dir <- function(output_dir = ".",
                              profile_dir_name = "profile_output",
@@ -454,7 +448,6 @@ prep_profile_dir <- function(output_dir = ".",
   return(new_path)
 }
 
-
 #' Convert SummarizedExperiment to GRanges with Assay Data
 #'
 #' This function converts a `SummarizedExperiment` object to a `GRanges` object
@@ -479,7 +472,6 @@ cast_rse_to_granges <- function(rse,
   return(gr)
 }
 
-
 #' Convert Strand Information to No Strand for GRanges Object
 #'
 #' @importFrom GenomicRanges strand
@@ -487,7 +479,6 @@ convert_strand_to_nostrand_gr <- function(region_gr) {
   GenomicRanges::strand(region_gr) <- "*"
   region_gr
 }
-
 
 #' Remove Metadata and Duplicate Genomic Ranges
 #'
@@ -515,7 +506,6 @@ remove_metadata_and_duplicates <- function(gr) {
   unique_gr
 }
 
-
 # Check presence and format of rownames in a profile matrix
 check_valid_profile_rownames <- function(profile_matrix, chr_name, log_file) {
   rn <- rownames(profile_matrix)
@@ -537,7 +527,6 @@ check_valid_profile_rownames <- function(profile_matrix, chr_name, log_file) {
   }
 }
 
-
 # Extract chr, start, end, and strand from row names like "chr:start-end;strand"
 extract_rowname_components <- function(row_names) {
   str_parts <- strsplit(row_names, "[:]|-|;")
@@ -551,7 +540,6 @@ extract_rowname_components <- function(row_names) {
 
   components
 }
-
 
 # Create GRanges object from row names like "chr:start-end;strand"
 create_granges_from_rownames <- function(row_names_str) {
@@ -567,12 +555,10 @@ create_granges_from_rownames <- function(row_names_str) {
   )
 }
 
-
 # Convert strand suffix in row names to "*"
 convert_rowname_to_nostrand <- function(strand_str) {
   gsub("[+-]$", "*", strand_str)
 }
-
 
 # Modify row names to no-strand if both strands match
 modify_profile_rownames <- function(profiles, count_profiles) {
@@ -587,7 +573,6 @@ modify_profile_rownames <- function(profiles, count_profiles) {
 
   profiles
 }
-
 
 # Combine plus and minus strand profiles
 combine_plus_minus_profiles <- function(count_profiles, len_vec) {
@@ -605,7 +590,6 @@ combine_plus_minus_profiles <- function(count_profiles, len_vec) {
 
   combined
 }
-
 
 # Vectorized normalized strand subtraction on a matrix
 strands_norm_subtraction <- function(mat, len_vec) {
@@ -627,7 +611,6 @@ strands_norm_subtraction <- function(mat, len_vec) {
   norm_mat
 }
 
-
 # Apply normalized strand subtraction and assign position labels
 strands_norm_subtraction_all <- function(windows,
                                          ext_dis,
@@ -647,7 +630,6 @@ strands_norm_subtraction_all <- function(windows,
 
   return(norm_mat)
 }
-
 
 # Save profile or metadata to file
 # (csv, parquet, or npz with fallback and logging)
@@ -859,7 +841,6 @@ PRIMEloci_profile_chr <- function(current_region_gr,
   return(list(chr_name = chr_name, status = "Processed"))
 }
 
-
 #' Process profiles for each column in the CTSS dataset and save results
 #'
 #' This function processes the profiles for each column
@@ -1013,9 +994,6 @@ PRIMEloci_profile <- function(ctss_rse,
 
 }
 
-
-library(PRIME)
-
 #' Load a BED file and validate its columns
 #'
 #' This function reads a BED file into a `data.table`
@@ -1163,7 +1141,6 @@ write_granges_to_bed_coreovlwithd <- function(gr,
                                               output_dir,
                                               input_basename,
                                               output_basename) {
-
   output_bed <- file.path(output_dir, paste0(output_basename, ".bed"))
 
   bed_df <- as.data.frame(gr)
@@ -1195,7 +1172,6 @@ write_granges_to_bed_coreovlwithd <- function(gr,
                      col.names = FALSE)
   cat("Reduced GRanges object saved to", output_bed, "\n")
 }
-
 
 #' Collapse core regions from a BED file with score-based filtering
 #'
