@@ -19,7 +19,14 @@ PRIMEloci <- function(ctss_rse,
                       python_path = "~/.virtualenvs/prime-env",
                       keep_tmp = TRUE,
                       num_cores = NULL,
-                      ext_dis = 200) {
+                      ext_dis = 200,
+                      python_script_dir = "/Users/natsudanav/Desktop/PRIME/python", # nolint: line_length_linter.
+                      model_path = "/Users/natsudanav/Documents/data_PRIMEloci_dev/model_PRIMEloci/PRIMEloci_GM12878_model_1.0.sav", # nolint: line_length_linter.
+                      name_prefix = "PRIMEloci_",
+                      run_postprocess = TRUE,
+                      score_threshold = 0.75,
+                      score_diff = 0.1,
+                      core_width = 151) {
 
   # Ensure directories exist
   if (dir.exists(outdir)) {
@@ -188,6 +195,146 @@ PRIMEloci <- function(ctss_rse,
     log_4
   )
 
-  invisible(TRUE)
+
+  # _5_
+  log_5 <- file.path(log_dir, "PRIMEloci-5.log")
+  plc_log("\n\n\n 🚀 Running PRIMEloci -5 : Prediction using PRIMEloci model",
+          log_5)
+
+  profile_main_dir <- file.path(outdir,
+                                "PRIMEloci_tmp",
+                                profile_dir_name)
+
+  profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
+  profile_files <- list.files(profiles_subtnorm_dir,
+                              pattern = "\\.(npz|parquet|csv)$")
+  if (length(profile_files) == 0) {
+    msg <- paste("❌ No profile files found in:", profile_main_dir)
+    plc_log(msg, log_5, level = "❌ ERROR")
+    stop(msg)
+  }
+
+  predict_script_path <- file.path(python_script_dir, "main.py")
+  assertthat::assert_that(
+    file.exists(predict_script_path),
+    msg = paste("❌ Prediction script not found at:", predict_script_path)
+  )
+
+  assertthat::assert_that(
+    file.exists(model_path),
+    msg = paste("❌ Model file not found at:", model_path)
+  )
+
+  py_exec <- py_conf$python
+  assertthat::assert_that(file.exists(py_exec),
+                          msg = paste("❌ Python executable not found at:",
+                                      py_exec))
+
+
+  # Build Python command
+  prediction_cmd <- c(
+    py_exec, predict_script_path,
+    "--script_dir", python_script_dir,
+    "--profile_main_dir", profile_main_dir,
+    "--combined_outdir", outdir,
+    "--model_path", model_path,
+    "--log_file", log_5,
+    "--name_prefix", name_prefix
+  )
+
+  if (!is.null(num_cores)) {
+    prediction_cmd <- c(prediction_cmd, "--num_core", as.character(num_cores))
+  }
+
+  # ⬇️ 🔧 Log the full Python command for debug before running
+  plc_log(paste("🔧 Python command:",
+                paste(shQuote(prediction_cmd), collapse = " ")),
+          log_5, print_console = FALSE)
+
+
+  plc_log("🔹 Running Python prediction script...", log_5)
+  result <- tryCatch(
+    {
+      output <- system2(py_exec,
+                        args = prediction_cmd[-1],
+                        stdout = TRUE,
+                        stderr = TRUE)
+      attr(output, "status") <- 0
+      output
+    },
+    error = function(e) {
+      msg <- paste("❌ ERROR during prediction execution:", e$message)
+      plc_log(msg, log_5, level = "❌ ERROR")
+      attr(msg, "status") <- 1
+      msg
+    }
+  )
+  if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
+    msg <- "❌ Prediction script failed. Check PRIMEloci-5.log for details."
+    plc_log(msg, log_5, level = "❌ ERROR")
+    stop(msg)
+  }
+  lapply(result, function(line) plc_log(paste("🔹", line), log_5, print_console = FALSE)) # nolint: line_length_linter.
+  plc_log("✅ DONE :: Prediction step completed.", log_5)
+
+
+  # _6_
+  if (run_postprocess) {
+    log_6 <- file.path(log_dir, "PRIMEloci-6.log")
+    plc_log("\n\n\n 🚀 Running PRIMEloci -6 : Postprocessing prediction BEDs",
+            log_6)
+
+    # Step 1: Find BED files matching the given partial name
+    bed_files <- find_bed_files_by_partial_name(outdir,
+                                                partial_name = postprocess_partial_name, # nolint: line_length_linter.
+                                                log_file = log_6)
+
+    if (length(bed_files) == 0) {
+      msg <- paste("❌ No BED files found for postprocessing in", outdir)
+      plc_log(msg, log_6, level = "❌ ERROR")
+      stop(msg)
+    }
+
+    # Step 2: Use first matching BED file
+    plc_log(sprintf("📂 Found %d BED file(s) for processing.",
+                    length(bed_files)),
+            log_6)
+
+    result_list <- lapply(seq_along(bed_files), function(i) {
+
+      bed_file <- bed_files[i]
+
+      basename_raw <- tools::file_path_sans_ext(basename(bed_file))
+      pattern_match <- sub("^.*pred_all_(.*?)_combined.*$", "\\1", basename_raw)
+      sample_name <- if (identical(pattern_match, basename_raw)) {
+        basename_raw
+      } else {
+        pattern_match
+      }
+
+      plc_log(paste("🔹 Processing:", bed_file), log_6)
+      result_gr <- plc_trylog({
+        coreovl_with_d(
+          bed_file = bed_file,
+          score_threshold = score_threshold,
+          score_diff = score_diff,
+          core_width = core_width,
+          output_dir = outdir,
+          num_cores = num_cores,
+          log_file = log_6
+        )
+      }, log_file = log_6)
+      if (!is.null(result_gr)) {
+        names(result_gr) <- sample_name
+        return(result_gr)
+      } else {
+        plc_log(paste("⚠️ Skipped due to failure:", bed_file), log_6)
+        return(NULL)
+      }
+    })
+
+    plc_log("✅ DONE :: Postprocessing completed.", log_6)
+  }
+
 
 }
