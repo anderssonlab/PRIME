@@ -385,11 +385,14 @@ tc_sliding_window <- function(granges_obj,
 
   # 3) Determine the number of cores to use and global variable memory limit
   if (is.null(num_cores)) {
-    num_cores <- min(25, parallel::detectCores() %/% 2)
+    num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   future::plan(future::multisession, workers = num_cores)
   on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
+
+  plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
+          log_file, "INFO", print_console = FALSE)
 
   # 4) Run in parallel using future_lapply, passing required globals
   result_list <- future.apply::future_lapply(
@@ -915,12 +918,15 @@ PRIMEloci_profile <- function(ctss_rse,
   file_path <- prep_profile_dir(output_dir = output_dir,
                                 profile_dir_name = profile_dir_name)
   if (is.null(num_cores)) {
-    num_cores <- min(25, parallel::detectCores() %/% 2)
+    num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
 
   options(future.globals.maxSize = 4 * 1024^3)
   future::plan(future::multisession, workers = num_cores)
   on.exit(future::plan(future::sequential))
+
+  plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
+          log_file, "INFO", print_console = FALSE)
 
   log_dir <- file.path(output_dir, "PRIMEloci_log")
   dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
@@ -1005,4 +1011,436 @@ PRIMEloci_profile <- function(ctss_rse,
 
   invisible(TRUE)
 
+}
+
+
+library(PRIME)
+
+#' Load a BED file and validate its columns
+#'
+#' This function reads a BED file into a `data.table`
+#' and checks that it contains the required columns:
+#' 'chrom', 'chromStart', 'chromEnd', 'strand', and 'score'.
+#'
+#' @param input_bed Character. The path to the input BED file.
+#'
+#' @return A `data.table` containing the BED file data.
+#'
+#' @importFrom data.table fread
+#' @importFrom assertthat assert_that
+#' @export
+load_bed_file <- function(input_bed) {
+  bed_file <- read.table(input_bed,
+                         header = TRUE,
+                         sep = "\t",
+                         stringsAsFactors = FALSE)
+  required_cols <- c("chrom", "chromStart", "chromEnd", "strand", "score")
+  assertthat::assert_that(all(required_cols %in% colnames(bed_file)),
+                          msg = "The BED file must contain 'chrom', 'chromStart', 'chromEnd', 'strand', and 'score' columns.") # nolint: line_length_linter.
+  return(bed_file)
+}
+
+#' Create a GRanges object from a BED data.table
+#'
+#' This function converts a `data.table`
+#' containing BED file data into a `GRanges` object.
+#' The required columns are extracted and
+#' used to define the `GRanges` object, and the remaining
+#' columns are added as metadata.
+#'
+#' @param bed_file A `data.table` containing the BED file data.
+#'
+#' @return A `GRanges` object.
+#'
+#' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
+#' @importFrom S4Vectors mcols
+create_granges_from_bed <- function(bed_file) {
+  gr <- GenomicRanges::GRanges(seqnames = bed_file$chrom,
+                               ranges = IRanges::IRanges(start = bed_file$chromStart + 1,
+                                                         end = bed_file$chromEnd),
+                               strand = bed_file$strand)
+  S4Vectors::mcols(gr) <- bed_file[, !(names(bed_file) %in% c("chrom",
+                                                              "chromStart",
+                                                              "chromEnd",
+                                                              "strand"))]
+  return(gr)
+}
+
+#' Selectively merge overlapping cores based on score difference.
+#'
+#' This function takes a GRanges object of genomic cores, sorts them
+#' by descending score, and merges overlapping cores if their score
+#' difference is within a specified threshold.
+#'
+#' @param core_gr A GRanges object containing genomic core ranges.
+#' @param score_diff A numeric value specifying the maximum allowed
+#' score difference for merging overlapping cores.
+#' @return A GRanges object with merged core regions and added
+#' metadata, including the thick position and maximum score.
+#' @importFrom GenomicRanges GRanges reduce findOverlaps
+#' @importFrom IRanges IRanges subsetByOverlaps
+#' @importFrom S4Vectors mcols subjectHits
+selective_merge_cores <- function(core_gr, score_diff) {
+  # Sort cores by descending score
+  core_gr <- core_gr[order(-core_gr$score)]
+
+  # Initialize final GRanges and metadata containers
+  merged_cores <- GenomicRanges::GRanges()
+  thick_vals <- IRanges::IRanges()
+  max_scores <- numeric(0)
+
+  while (length(core_gr) > 0) {
+    # Take the highest-ranked core
+    x <- core_gr[1]
+    score_x <- x$score
+    thick_x <- x$thick
+
+    ## 1. Identify overlapping cores to the top core
+    overlaps <- GenomicRanges::findOverlaps(x, core_gr)
+    overlap_set <- core_gr[S4Vectors::subjectHits(overlaps)]
+
+    ## 2. Deviate at most "score_diff aka d" in score from the top core
+    merge_candidates <- overlap_set[overlap_set$score >= score_x - score_diff]
+
+    if (length(merge_candidates) > 1) {
+      # 3. Merge the merge_candidates
+      merged_region <- GenomicRanges::reduce(merge_candidates)
+      thick_vals <- c(thick_vals, thick_x)
+      max_scores <- c(max_scores, score_x)
+      merged_cores <- c(merged_cores, merged_region)
+
+      # 4. Remove from the set of cores,
+      # those that overlap with the merged cores
+      core_gr <- IRanges::subsetByOverlaps(core_gr, merged_cores, invert = TRUE)
+
+    } else {
+      # 5. If there is no merge, keep the top core
+      # and remove overlaps from the set
+      thick_vals <- c(thick_vals, thick_x)
+      max_scores <- c(max_scores, score_x)
+      merged_cores <- c(merged_cores, x)
+
+      core_gr <- core_gr[-S4Vectors::subjectHits(overlaps)]
+    }
+
+
+  }
+
+  # Attach metadata
+  mcols(merged_cores)$thick <- thick_vals
+  mcols(merged_cores)$max_score <- max_scores
+
+  return(merged_cores)
+}
+
+#' Extract sample label from input_basename (internal)
+#'
+#' Returns the substring between 'pred_all_' and '_combined' if both exist;
+#' otherwise returns 'PRIMEloci'.
+extract_sample_label <- function(input_basename) {
+  pattern <- "pred_all_(.*?)_combined"
+  matches <- stringr::str_match(input_basename, pattern)
+
+  if (!is.na(matches[2])) {
+    return(paste0("PRIMEloci_", matches[2]))
+  } else {
+    return("PRIMEloci")
+  }
+}
+
+#' Write a GRanges object to a BED file for coreovlwith-d.
+#'
+#' This function converts a GRanges object to a data frame
+#' and writes it to a BED file, including metadata such as
+#' thick position and maximum score.
+#'
+#' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
+#' @importFrom S4Vectors mcols
+#' @importFrom data.table fwrite
+write_granges_to_bed_coreovlwithd <- function(gr,
+                                              output_dir,
+                                              input_basename,
+                                              output_basename) {
+
+  output_bed <- file.path(output_dir, paste0(output_basename, ".bed"))
+
+  bed_df <- as.data.frame(gr)
+
+  if (!"thick" %in% colnames(mcols(gr)) || !"max_score" %in% colnames(mcols(gr))) { # nolint: line_length_linter.
+    stop("'thick' or 'max_score' column not found in the metadata.")
+  }
+
+  bed_df$thick <- as.numeric(start(gr$thick))
+  bed_df$start <- bed_df$start - 1  # Convert start to 0-based for BED format
+  bed_df <- within(bed_df, {
+    thickStart <- thick - 1
+    thickEnd <- thick
+    name <- paste0(input_basename, "-", seq_len(nrow(bed_df)))
+  })
+
+  # Reorder and rename columns
+  bed_df <- bed_df[, c("seqnames", "start", "end",
+                       "name", "max_score", "strand",
+                       "thickStart", "thickEnd")]
+  data.table::setnames(bed_df,
+                       c("seqnames", "start", "end", "strand"),
+                       c("chrom", "chromStart", "chromEnd", "strand"))
+  # Write to BED file
+  data.table::fwrite(bed_df,
+                     file = output_bed,
+                     sep = "\t",
+                     quote = FALSE,
+                     col.names = FALSE)
+  cat("Reduced GRanges object saved to", output_bed, "\n")
+}
+
+
+#' Collapse core regions from a BED file with score-based filtering
+#'
+#' This function reads a BED file, filters regions by score,
+#' resizes them to a fixed core width, and merges overlapping cores selectively
+#' based on score differences. It supports chromosome-wise parallel processing
+#' and optional output to a BED file with logging throughout.
+#'
+#' @param bed_file Path to the input BED file.
+#' @param score_threshold Numeric threshold for filtering regions
+#' by score from 0-1. Default is 0.75.
+#' @param score_diff Maximum allowed score difference
+#' between overlapping regions for merging. Default is 0.1.
+#' @param core_width Width to which each region should be resized (centered).
+#' Default is 151.
+#' @param return_gr Logical. If TRUE,
+#' returns the final collapsed GRanges object. Default is TRUE.
+#' @param output_dir Optional directory path to write BED output.
+#' If NULL or FALSE, no output is written.
+#' @param num_cores Number of CPU cores to use.
+#' If NULL, will use half of available cores (up to 25). Default is NULL.
+#' @param log_file Path to the log file. Default is "coreovl_with_d.log".
+#'
+#' @return If `return_gr = TRUE`, returns a `GRanges` object
+#' containing the collapsed regions. Otherwise, returns `NULL`.
+#'
+#' @details
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Loads and filters BED entries by score.
+#'   \item Resizes regions to a fixed core width centered on each region.
+#'   \item Merges overlapping cores selectively per chromosome
+#'         using a parallel backend.
+#'   \item Logs progress and optionally writes output to BED format.
+#' }
+#'
+#' If no regions pass the score filter, the function exits early with a warning.
+#'
+#' @import GenomicRanges
+#' @import S4Vectors
+#' @import IRanges
+#' @import assertthat
+#' @importFrom parallel detectCores
+#' @importFrom future plan multisession sequential
+#' @importFrom future.apply future_lapply
+#' @importFrom stringr str_replace_all
+#' @importFrom tools file_path_sans_ext
+#' @importFrom magrittr %>%
+coreovl_with_d <- function(bed_file,
+                           score_threshold = 0.75,
+                           score_diff = 0.1,
+                           core_width = 151,
+                           return_gr = TRUE,
+                           output_dir = NULL,
+                           num_cores = NULL,
+                           log_file = "coreovl_with_d.log") {
+
+  # Initialize logging
+  plc_log("Starting coreovl_with_d()", log_file)
+
+  assert_that(file.exists(bed_file),
+              msg = "❌ Input BED file not found.")
+
+  assert_that(is.number(score_threshold),
+              score_threshold >= 0,
+              score_threshold < 1,
+              msg = "❌ score_threshold must be a number between 0 and 1.")
+
+  assert_that(is.number(score_diff),
+              score_diff >= 0,
+              score_diff < score_threshold,
+              msg = "❌ score_diff must be non-negative and less than score_threshold.") # nolint: line_length_linter.
+
+  assert_that(is.count(core_width),
+              msg = "❌ core_width must be a positive integer.")
+
+  if (!is.null(output_dir)) {
+    assert_that(is.string(output_dir),
+                msg = "❌ output_dir must be a character string.")
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+      message(sprintf("✅ Created output directory: %s", output_dir))
+    }
+  }
+
+  if (!is.null(num_cores)) {
+    assert_that(is.count(num_cores),
+                msg = "❌ num_cores must be a positive integer.")
+  }
+
+  # Setup parallelism
+
+  if (is.null(num_cores)) {
+    num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
+  }
+
+  options(future.globals.maxSize = 4 * 1024^3)
+  future::plan(future::multisession, workers = num_cores)
+  on.exit(future::plan(future::sequential))
+
+  plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
+          log_file, "INFO", print_console = FALSE)
+
+  # Load and prepare data
+  plc_log("Loading BED file...", log_file)
+  bed <- load_bed_file(bed_file)
+  gr <- create_granges_from_bed(bed)
+
+  # Filter by score threshold
+  plc_log("Filtering GRanges by score threshold...", log_file)
+  filtered_gr <- gr[gr$score >= score_threshold]
+
+  if (length(filtered_gr) == 0) {
+    plc_log("No entries passed the score threshold. Exiting.",
+            log_file, level = "⚠️ WARN")
+    return(NULL)
+  }
+  plc_log("Processing core overlaping with d...", log_file)
+  chr_list <- unique(as.character(GenomicRanges::seqnames(filtered_gr)))
+
+  error_messages <- list()  # store errors per chromosome
+
+  collapsed_gr_list <- future.apply::future_lapply(chr_list, function(chr) {
+    tryCatch({
+
+      chr_vec <- as.character(GenomicRanges::seqnames(filtered_gr))
+      chr_gr <- filtered_gr[chr_vec == chr]
+
+      core_gr <- GenomicRanges::resize(chr_gr,
+                                       width = core_width,
+                                       fix = "center")
+      core_gr$thick <- GenomicRanges::start(core_gr) + floor(core_width / 2)
+      result <- selective_merge_cores(core_gr, score_diff)
+
+      plc_log(sprintf("✅ Finished processing chromosome %s", chr),
+              log_file, print_console = FALSE)
+
+      result
+    }, error = function(e) {
+      error_messages[[chr]] <<- conditionMessage(e)
+      plc_log(
+        sprintf("❌ Error processing chromosome %s: %s",
+                chr, conditionMessage(e)),
+        log_file, level = "❌ ERROR", print_console = FALSE
+      )
+      NULL
+    })
+  })
+
+  if (length(error_messages) > 0) {
+    failed_chr <- names(error_messages)
+    plc_log(
+      paste("⚠️ Skipped", length(failed_chr),
+            "chromosomes due to errors:",
+            paste(failed_chr, collapse = ", ")),
+      log_file,
+      level = "⚠️ WARN"
+    )
+  }
+
+  # Check again — do we have any GRanges?
+  if (length(collapsed_gr_list) == 0) {
+    plc_log("⚠️ No valid GRanges to collapse — all chromosomes failed or were empty.",
+            log_file, level = "⚠️ WARN", print_console = TRUE)
+    return(NULL)
+  }
+
+  # Collapse and validate type
+  collapsed_gr <- do.call(c, collapsed_gr_list)
+
+  if (!inherits(collapsed_gr, "GRanges")) {
+    plc_log("❌ Combined result is not a valid GRanges object. Skipping sort.",
+            log_file, level = "❌ ERROR", print_console = TRUE)
+    return(NULL)
+  }
+
+  mcols(collapsed_gr) <- mcols(collapsed_gr)[, c("thick", "max_score"), drop = FALSE] # nolint: line_length_linter.
+
+  collapsed_gr <- GenomeInfoDb::sortSeqlevels(collapsed_gr)
+  collapsed_gr <- GenomicRanges::sort(collapsed_gr)
+
+  # Output writing
+  plc_log("Processing the output...", log_file)
+  if (!is.null(output_dir)) {
+    input_basename <- tools::file_path_sans_ext(basename(bed_file)) %>%
+      stringr::str_replace_all("[^[:alnum:]]", "_")
+    sample_label <- extract_sample_label(input_basename)
+
+    # Append threshold and d to filename
+    output_basename <- sprintf("%s_thresh%s_d%s",
+                               input_basename,
+                               format(score_threshold,
+                                      digits = 2,
+                                      scientific = FALSE),
+                               format(score_diff,
+                                      digits = 2,
+                                      scientific = FALSE))
+
+    plc_log(sprintf("Writing BED output: %s.bed", output_basename), log_file)
+
+    write_granges_to_bed_coreovlwithd(
+      collapsed_gr,
+      output_dir,
+      sample_label,
+      output_basename
+    )
+
+    plc_log("✅ Done!", log_file)
+  } else {
+    plc_log("⚠️ Output directory is NULL — skipping file writing.",
+            log_file, level = "⚠️ WARN", print_console = TRUE)
+  }
+
+  if (return_gr) return(collapsed_gr)
+
+}
+
+#' Find .bed files matching a partial name in a directory and log if none found
+#'
+#' @param dir Path to the directory to search.
+#' @param partial_name Partial file name to match (not case-sensitive).
+#' @param log_file Path to the log file (optional).
+#' If provided, logs will be written.
+#'
+#' @return A character vector of matching .bed file paths (may be empty).
+#' @export
+find_bed_files_by_partial_name <- function(dir,
+                                           partial_name,
+                                           log_file = NULL) {
+  pattern <- paste0("(?i)", partial_name, ".*\\.bed$")
+  files <- list.files(
+    path = dir,
+    pattern = pattern,
+    full.names = TRUE
+  )
+
+  if (length(files) == 0) {
+    msg <- sprintf("⚠️ No .bed files found in '%s' matching '%s'",
+                   dir, partial_name)
+    if (!is.null(log_file)) {
+      plc_log(msg, log_file, level = "⚠️ WARN")
+    } else {
+      warning(msg)
+    }
+  }
+
+  return(files)
 }

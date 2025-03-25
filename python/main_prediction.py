@@ -179,6 +179,7 @@ def main():
             1,
             min(25, (cpu_count // 2) if cpu_count else 1)
         )
+        log_also_console(f"⚙️  Running with {num_workers} parallel workers.")
 
         parallel_prediction(task_args, num_workers)
 
