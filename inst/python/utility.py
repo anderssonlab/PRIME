@@ -31,6 +31,7 @@ def log_also_console(message, level="info"):
 
 def extract_filenames(dir_path, keep_word=None, drop_word=None):
 
+    dir_path = os.path.normpath(dir_path)
     filename_ls = os.listdir(dir_path)
 
     if keep_word:

@@ -199,7 +199,7 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
       message("  → tc_object seqlevels: ", paste(sl_tc, collapse = ", "))
       message("  → ctss_rse seqlevels:  ", paste(sl_ctss, collapse = ", "))
     } else {
-      message("✅ seqlevels match between tc_object and ctss_rse")
+      message("seqlevels match between tc_object and ctss_rse")
     }
 
   } else {
@@ -236,12 +236,12 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
                         names(tc_object)[i]))
         message("  → tc_object seqlevels: ", paste(tc_sl, collapse = ", "))
       } else {
-        message(sprintf("✅ seqlevels match for sample '%s'",
+        message(sprintf("seqlevels match for sample '%s'",
                         names(tc_object)[i]))
       }
     })
   }
-  message("✅ TC object validation passed successfully.")
+  message("TC object validation passed successfully.")
   return(TRUE)
 }
 
@@ -782,7 +782,7 @@ PRIMEloci_profile_chr <- function(current_region_gr,
     stop("❌ Length mismatch between matrix rows and generated GRanges.")
   }
   combined_count_metadata$sum_count <- Matrix::rowSums(combined_count_profiles)
-  metadata_file_type <- if (file_type == "npz") "parquet" else file_type
+  metadata_file_type <- if (file_type == "npz") "csv" else file_type
 
   # All saving
 
@@ -874,11 +874,11 @@ PRIMEloci_profile <- function(ctss_rse,
                               regions_gr,
                               output_dir,
                               profile_dir_name,
-                              file_type = "parquet",
+                              file_type = "npz",
                               addtn_to_filename = "",
                               save_count_profiles = FALSE,
                               num_cores = NULL,
-                              log_file_name = "PRIMEloci_log_profile",
+                              log_file = "./PRIMEloci_profile.log",
                               ext_dis) {
 
   # --- Assertions ---
@@ -909,9 +909,7 @@ PRIMEloci_profile <- function(ctss_rse,
   plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
           log_file, "INFO", print_console = FALSE)
 
-  log_dir <- file.path(output_dir, "PRIMEloci_log")
-  dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
-  log_file <- file.path(log_dir, log_file_name)
+
 
   # --- Sample Loop ---
   for (i in seq_along(SummarizedExperiment::colnames(ctss_rse))) {

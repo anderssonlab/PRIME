@@ -9,11 +9,11 @@ PRIMEloci_profile(
   regions_gr,
   output_dir,
   profile_dir_name,
-  file_type = "parquet",
+  file_type = "npz",
   addtn_to_filename = "",
   save_count_profiles = FALSE,
   num_cores = NULL,
-  log_file_name = "PRIMEloci_log_profile",
+  log_file = "./PRIMEloci_profile.log",
   ext_dis
 )
 }
@@ -36,11 +36,11 @@ whether count profiles should be saved.}
 
 \item{num_cores}{The number of cores to use for parallel processing.}
 
-\item{log_file_name}{The name of the log file
-(default: "PRIMEloci_log_profile").}
-
 \item{ext_dis}{Integer value for extending the distance
 used in profile computations.}
+
+\item{log_file_name}{The name of the log file
+(default: "PRIMEloci_log_profile").}
 }
 \description{
 This function processes the profiles for each column

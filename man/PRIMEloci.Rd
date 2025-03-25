@@ -6,21 +6,12 @@
 \usage{
 PRIMEloci(
   ctss_rse,
-  tc_object = NULL,
-  outdir,
-  save_tc = TRUE,
-  tc_object_name = "tc_grl.rds",
-  sld_window = TRUE,
-  sld_object_name = "sld_tc_grl.rds",
-  sld_by = 20,
-  profile_dir_name = "PRIMEloci_profiles",
-  file_type = "parquet",
-  addtn_to_filename = "",
-  save_count_profiles = FALSE,
+  outdir = "./PRIMEloci_output",
   python_path = "~/.virtualenvs/prime-env",
-  keep_tmp = TRUE,
+  score_threshold = 0.75,
+  score_diff = 0.1,
   num_cores = NULL,
-  ext_dis = 200
+  keep_tmp = FALSE
 )
 }
 \description{

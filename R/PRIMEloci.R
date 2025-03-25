@@ -4,29 +4,16 @@
 #'
 #' @import GenomicRanges
 #' @import assertthat
-PRIMEloci <- function(ctss_rse,
-                      tc_object = NULL,
-                      outdir,
-                      save_tc = TRUE,
-                      tc_object_name = "tc_grl.rds",
-                      sld_window = TRUE,
-                      sld_object_name = "sld_tc_grl.rds",
-                      sld_by = 20,
-                      profile_dir_name = "PRIMEloci_profiles",
-                      file_type = "parquet",
-                      addtn_to_filename = "",
-                      save_count_profiles = FALSE,
-                      python_path = "~/.virtualenvs/prime-env",
-                      keep_tmp = TRUE,
-                      num_cores = NULL,
-                      ext_dis = 200,
-                      python_script_dir = "/Users/natsudanav/Desktop/PRIME/python", # nolint: line_length_linter.
-                      model_path = "/Users/natsudanav/Documents/data_PRIMEloci_dev/model_PRIMEloci/PRIMEloci_GM12878_model_1.0.sav", # nolint: line_length_linter.
-                      name_prefix = "PRIMEloci_",
-                      run_postprocess = TRUE,
-                      score_threshold = 0.75,
-                      score_diff = 0.1,
-                      core_width = 151) {
+PRIMEloci <- function(
+    ctss_rse,
+    outdir = "./PRIMEloci_output",
+    python_path = "~/.virtualenvs/prime-env",
+    score_threshold = 0.75,
+    score_diff = 0.1,
+    num_cores = NULL,
+    keep_tmp = FALSE) {
+
+  outdir <- normalizePath(outdir, mustWork = FALSE)
 
   # Ensure directories exist
   if (dir.exists(outdir)) {
@@ -49,17 +36,11 @@ PRIMEloci <- function(ctss_rse,
     plc_log("🚀 Starting PRIMEloci pipeline", log_1)
 
     # Check numeric parameters
-    assertthat::assert_that(is.numeric(ext_dis),
-                            msg = "ext_dis must be numeric.")
-    assertthat::assert_that(ext_dis %% 1 == 0,
-                            msg = "ext_dis must be an integer.")
-    ext_dis <- as.integer(ext_dis)
-
-    assertthat::assert_that(is.numeric(sld_by),
-                            msg = "sld_by must be numeric.")
-    assertthat::assert_that(sld_by %% 1 == 0,
-                            msg = "sld_by must be an integer.")
-    sld_by <- as.integer(sld_by)
+    # assertthat::assert_that(is.numeric(sld_by),
+    #                         msg = "sld_by must be numeric.")
+    # assertthat::assert_that(sld_by %% 1 == 0,
+    #                         msg = "sld_by must be an integer.")
+    # sld_by <- as.integer(sld_by)
 
     # Set up Python environment
     reticulate::use_virtualenv(python_path, required = TRUE)
@@ -73,6 +54,23 @@ PRIMEloci <- function(ctss_rse,
     lapply(capture.output(py_conf), function(line) plc_log(paste("📦", line), log_1, print_console = FALSE)) # nolint: line_length_linter.
 
   }, log_file = log_1)
+
+  # setting
+  tc_object <- NULL
+  save_tc <- FALSE
+  tc_object_name <- "tc_grl.rds"
+  sld_by <- 20
+  sld_object_name <- "sld_tc_grl.rds"
+  save_sld_tc <- FALSE
+  profile_dir_name <- "PRIMEloci_profiles"
+  postprocess_partial_name <- "pred_all"
+  save_count_profiles <- FALSE
+  ext_dis <- 200
+  file_type <- "npz"
+  addtn_to_filename <- ""
+  name_prefix <- "PRIMEloci_"
+  model_name <- "PRIMEloci_GM12878_model_1.0.sav"
+  core_width <- 151
 
 
   # _2_
@@ -107,67 +105,66 @@ PRIMEloci <- function(ctss_rse,
 
 
   # _3_
-  if (sld_window) {
-    log_3 <- file.path(log_dir, "PRIMEloci-3.log")
-    plc_log("\n\n\n 🚀 Running PRIMEloci -3 : sliding windows covering reduced TC regions", log_3) # nolint: line_length_linter.
+  log_3 <- file.path(log_dir, "PRIMEloci-3.log")
+  plc_log("\n\n\n 🚀 Running PRIMEloci -3 : sliding windows covering reduced TC regions", log_3) # nolint: line_length_linter.
 
-    if (inherits(tc_grl, "GenomicRanges::GRanges")) {
+  if (inherits(tc_grl, "GenomicRanges::GRanges")) {
+    start_time <- Sys.time()
+    plc_log("Processing single GRanges object", log_3)
+    tc_sliding_window_grl <- plc_trylog({
+      tc_sliding_window(tc_grl,
+                        sld_by = sld_by,
+                        ext_dis = ext_dis,
+                        num_cores = num_cores)
+    }, log_file = log_3)
+    plc_log(sprintf("Time taken: %.2f minutes",
+                    as.numeric(difftime(Sys.time(),
+                                        start_time,
+                                        units = "mins"))),
+            log_3)
+  } else if (inherits(tc_grl, "GenomicRanges::GRangesList") ||
+               inherits(tc_grl, "CompressedGRangesList")) {
+    tc_sliding_window_grl <- lapply(seq_along(tc_grl), function(i) {
       start_time <- Sys.time()
-      plc_log("Processing single GRanges object", log_3)
-      tc_sliding_window_grl <- plc_trylog({
-        tc_sliding_window(tc_grl,
-                          sld_by = sld_by,
-                          ext_dis = ext_dis,
-                          num_cores = num_cores)
-      }, log_file = log_3)
+      gr_name <- if (!is.null(names(tc_grl))) names(tc_grl)[i] else paste0("Sample_", i) # nolint: line_length_linter.
+      plc_log(sprintf("Processing: %s", gr_name), log_3)
+      result <- tc_sliding_window(tc_grl[[i]],
+                                  sld_by = sld_by,
+                                  ext_dis = ext_dis,
+                                  log_file = log_3,
+                                  num_cores = num_cores)
       plc_log(sprintf("Time taken: %.2f minutes",
                       as.numeric(difftime(Sys.time(),
                                           start_time,
                                           units = "mins"))),
               log_3)
-    } else if (inherits(tc_grl, "GenomicRanges::GRangesList") ||
-                 inherits(tc_grl, "CompressedGRangesList")) {
-      tc_sliding_window_grl <- lapply(seq_along(tc_grl), function(i) {
-        start_time <- Sys.time()
-        gr_name <- if (!is.null(names(tc_grl))) names(tc_grl)[i] else paste0("Sample_", i) # nolint: line_length_linter.
-        plc_log(sprintf("Processing: %s", gr_name), log_3)
-        result <- tc_sliding_window(tc_grl[[i]],
-                                    sld_by = sld_by,
-                                    ext_dis = ext_dis,
-                                    log_file = log_3,
-                                    num_cores = num_cores)
-        plc_log(sprintf("Time taken: %.2f minutes",
-                        as.numeric(difftime(Sys.time(),
-                                            start_time,
-                                            units = "mins"))),
-                log_3)
-        result
-      })
-      if (!is.null(tc_sliding_window_grl) &&
-            length(tc_sliding_window_grl) > 0) {
-        tc_sliding_window_grl <- GenomicRanges::GRangesList(tc_sliding_window_grl) # nolint: line_length_linter.
-        names(tc_sliding_window_grl) <- names(tc_grl)
-      } else {
-        msg <- "Processed TC object list is empty. Ensure tc_grl contains valid data." # nolint: line_length_linter.
-        plc_log(msg, log_3, level = "❌ ERROR")
-        stop(msg)
-      }
+      result
+    })
 
+    if (!is.null(tc_sliding_window_grl) &&
+          length(tc_sliding_window_grl) > 0) {
+      tc_sliding_window_grl <- GenomicRanges::GRangesList(tc_sliding_window_grl) # nolint: line_length_linter.
+      names(tc_sliding_window_grl) <- names(tc_grl)
     } else {
-      msg <- "tc_grl must be either a GRanges, GRangesList, or CompressedGRangesList object." # nolint: line_length_linter.
+      msg <- "Processed TC object list is empty. Ensure tc_grl contains valid data." # nolint: line_length_linter.
       plc_log(msg, log_3, level = "❌ ERROR")
       stop(msg)
     }
+  } else {
+    msg <- "tc_grl must be either a GRanges, GRangesList, or CompressedGRangesList object." # nolint: line_length_linter.
+    plc_log(msg, log_3, level = "❌ ERROR")
+    stop(msg)
+  }
 
+  if (save_sld_tc) {
     plc_log(sprintf("Saving TC objects to PRIMEloci_tmp .."),
             log_3)
-    saveRDS(tc_sliding_window_grl, file.path(primeloci_tmp, sld_object_name))
-    plc_log("✅ DONE :: Sliding window TC object is saved to PRIMEloci_tmp.",
-            log_3)
-    tc_for_profile <- tc_sliding_window_grl
-  } else {
-    tc_for_profile <- tc_grl
+    saveRDS(tc_sliding_window_grl,
+            file.path(primeloci_tmp, sld_object_name))
   }
+  plc_log("✅ DONE :: Sliding window TC object is saved to PRIMEloci_tmp.",
+          log_3)
+  tc_for_profile <- tc_sliding_window_grl
 
   assertthat::assert_that(!is.null(tc_for_profile),
                           msg = "❌ tc_for_profile is NULL at return. Something failed.") # nolint: line_length_linter.
@@ -189,7 +186,7 @@ PRIMEloci <- function(ctss_rse,
       addtn_to_filename = addtn_to_filename,
       save_count_profiles = save_count_profiles,
       num_cores = num_cores,
-      log_file_name = log_file_name_4,
+      log_file = log_4,
       ext_dis
     ),
     log_4
@@ -201,8 +198,7 @@ PRIMEloci <- function(ctss_rse,
   plc_log("\n\n\n 🚀 Running PRIMEloci -5 : Prediction using PRIMEloci model",
           log_5)
 
-  profile_main_dir <- file.path(outdir,
-                                "PRIMEloci_tmp",
+  profile_main_dir <- file.path(primeloci_tmp,
                                 profile_dir_name)
 
   profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
@@ -214,6 +210,9 @@ PRIMEloci <- function(ctss_rse,
     stop(msg)
   }
 
+  model_path <- file.path(system.file("model", package = "PRIME"), model_name)
+
+  python_script_dir <- system.file("python", package = "PRIME")
   predict_script_path <- file.path(python_script_dir, "main.py")
   assertthat::assert_that(
     file.exists(predict_script_path),
@@ -236,7 +235,7 @@ PRIMEloci <- function(ctss_rse,
     py_exec, predict_script_path,
     "--script_dir", python_script_dir,
     "--profile_main_dir", profile_main_dir,
-    "--combined_outdir", outdir,
+    "--combined_outdir", primeloci_tmp,
     "--model_path", model_path,
     "--log_file", log_5,
     "--name_prefix", name_prefix
@@ -246,11 +245,10 @@ PRIMEloci <- function(ctss_rse,
     prediction_cmd <- c(prediction_cmd, "--num_core", as.character(num_cores))
   }
 
-  # ⬇️ 🔧 Log the full Python command for debug before running
+  # Log the full Python command for debug before running
   plc_log(paste("🔧 Python command:",
                 paste(shQuote(prediction_cmd), collapse = " ")),
           log_5, print_console = FALSE)
-
 
   plc_log("🔹 Running Python prediction script...", log_5)
   result <- tryCatch(
@@ -279,62 +277,85 @@ PRIMEloci <- function(ctss_rse,
 
 
   # _6_
-  if (run_postprocess) {
-    log_6 <- file.path(log_dir, "PRIMEloci-6.log")
-    plc_log("\n\n\n 🚀 Running PRIMEloci -6 : Postprocessing prediction BEDs",
-            log_6)
+  log_6 <- file.path(log_dir, "PRIMEloci-6.log")
+  plc_log("\n\n\n 🚀 Running PRIMEloci -6 : Postprocessing prediction BEDs",
+          log_6)
 
-    # Step 1: Find BED files matching the given partial name
-    bed_files <- find_bed_files_by_partial_name(outdir,
-                                                partial_name = postprocess_partial_name, # nolint: line_length_linter.
-                                                log_file = log_6)
-
-    if (length(bed_files) == 0) {
-      msg <- paste("❌ No BED files found for postprocessing in", outdir)
-      plc_log(msg, log_6, level = "❌ ERROR")
-      stop(msg)
-    }
-
-    # Step 2: Use first matching BED file
-    plc_log(sprintf("📂 Found %d BED file(s) for processing.",
-                    length(bed_files)),
-            log_6)
-
-    result_list <- lapply(seq_along(bed_files), function(i) {
-
-      bed_file <- bed_files[i]
-
-      basename_raw <- tools::file_path_sans_ext(basename(bed_file))
-      pattern_match <- sub("^.*pred_all_(.*?)_combined.*$", "\\1", basename_raw)
-      sample_name <- if (identical(pattern_match, basename_raw)) {
-        basename_raw
-      } else {
-        pattern_match
-      }
-
-      plc_log(paste("🔹 Processing:", bed_file), log_6)
-      result_gr <- plc_trylog({
-        coreovl_with_d(
-          bed_file = bed_file,
-          score_threshold = score_threshold,
-          score_diff = score_diff,
-          core_width = core_width,
-          output_dir = outdir,
-          num_cores = num_cores,
-          log_file = log_6
-        )
-      }, log_file = log_6)
-      if (!is.null(result_gr)) {
-        names(result_gr) <- sample_name
-        return(result_gr)
-      } else {
-        plc_log(paste("⚠️ Skipped due to failure:", bed_file), log_6)
-        return(NULL)
-      }
-    })
-
-    plc_log("✅ DONE :: Postprocessing completed.", log_6)
+  bed_files <- find_bed_files_by_partial_name(primeloci_tmp,
+                                              partial_name = postprocess_partial_name, # nolint: line_length_linter.
+                                              log_file = log_6)
+  if (length(bed_files) == 0) {
+    msg <- paste("❌ No BED files found for postprocessing in", primeloci_tmp)
+    plc_log(msg, log_6, level = "❌ ERROR")
+    stop(msg)
   }
 
+  plc_log(sprintf("📂 Found %d BED file(s) for processing.",
+                  length(bed_files)),
+          log_6)
+  result_named_list <- lapply(seq_along(bed_files), function(i) {
+    bed_file <- bed_files[i]
+    basename_raw <- tools::file_path_sans_ext(basename(bed_file))
+    pattern_match <- sub(paste0("^.*",
+                                postprocess_partial_name,
+                                "_(.*?)_combined.*$"),
+                         "\\1",
+                         basename_raw)
 
+    sample_name <- if (identical(pattern_match, basename_raw)) {
+      basename_raw
+    } else {
+      pattern_match
+    }
+
+    plc_log(paste("🔹 Processing:", bed_file), log_6)
+
+    result_gr <- plc_trylog({
+      coreovl_with_d(
+        bed_file = bed_file,
+        score_threshold = score_threshold,
+        score_diff = score_diff,
+        core_width = core_width,
+        output_dir = outdir,
+        num_cores = num_cores,
+        log_file = log_6
+      )
+    }, log_file = log_6)
+
+    if (!is.null(result_gr)) {
+      return(list(name = sample_name, gr = result_gr))
+    } else {
+      plc_log(paste("⚠️ Skipped due to failure:", bed_file), log_6)
+      return(NULL)
+    }
+  })
+
+
+  # Filter out failed/null entries
+  result_named_list <- Filter(Negate(is.null), result_named_list)
+
+  if (length(result_named_list) == 0) {
+    msg <- "❌ All postprocessing attempts failed or returned NULL."
+    plc_log(msg, log_6, level = "❌ ERROR")
+    stop(msg)
+  }
+  plc_log(sprintf("✅ DONE :: Postprocessed %d file(s) successfully.",
+                  length(result_named_list)), log_6)
+
+  # Final return object
+  if (length(result_named_list) == 1) {
+    result_gr_final <- result_named_list[[1]]$gr
+  } else {
+    result_gr_final <- GenomicRanges::GRangesList(
+      setNames(
+        lapply(result_named_list, `[[`, "gr"),
+        vapply(result_named_list, `[[`, character(1), "name")
+      )
+    )
+  }
+
+  plc_log("✅ DONE :: Postprocessing completed.", log_6)
+  message("✅✅✅ PRIMEloci pipeline completed successfully !!!!!")
+
+  return(result_gr_final)
 }
