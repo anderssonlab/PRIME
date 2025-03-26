@@ -6,22 +6,29 @@
 #' @import assertthat
 PRIMEloci <- function(
     ctss_rse,
-    outdir = "./PRIMEloci_output",
+    outdir,
     python_path = "~/.virtualenvs/prime-env",
     score_threshold = 0.75,
     score_diff = 0.1,
     num_cores = NULL,
     keep_tmp = FALSE) {
 
-  outdir <- normalizePath(outdir, mustWork = FALSE)
+  # Validate inputs
 
-  # Ensure directories exist
+  # Check ctss_rse
+  assertthat::assert_that(
+    methods::is(ctss_rse, "RangedSummarizedExperiment"),
+    msg = "`ctss_rse` must be a RangedSummarizedExperiment object."
+  )
+
+  # Normalize and verify output directory
+  outdir <- normalizePath(outdir, mustWork = FALSE)
   if (dir.exists(outdir)) {
-    warning("Warning: Output directory '", outdir,
-            "' already exists. !!! Files may be overwritten. !!!")
+    warning("⚠️ Output directory already exists: ", outdir)
   } else {
     dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
   }
+  outdir <- normalizePath(outdir, mustWork = TRUE)
 
   log_dir <- file.path(outdir, "PRIMEloci_log")
   dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
@@ -29,20 +36,38 @@ PRIMEloci <- function(
   primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
   dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
 
+  #Check numeric parameters
+  assertthat::assert_that(
+    is.numeric(score_threshold),
+    score_threshold > 0,
+    score_threshold < 1,
+    msg = "`score_threshold` must be a numeric value between 0 and 1."
+  )
+
+  assertthat::assert_that(
+    is.numeric(score_diff),
+    score_diff >= 0,
+    score_diff < score_threshold,
+    msg = "`score_diff` must be a non-negative numeric value and smaller than `score_threshold`." # nolint: line_length_linter.
+  )
+
+  if (!is.null(num_cores)) {
+    assertthat::assert_that(
+      is.numeric(num_cores),
+      num_cores %% 1 == 0,
+      num_cores > 0,
+      msg = "`num_cores` must be a positive integer or NULL."
+    )
+  }
+
   log_1 <- file.path(log_dir, "PRIMEloci-1.log")
 
   plc_trylog({
 
     plc_log("🚀 Starting PRIMEloci pipeline", log_1)
 
-    # Check numeric parameters
-    # assertthat::assert_that(is.numeric(sld_by),
-    #                         msg = "sld_by must be numeric.")
-    # assertthat::assert_that(sld_by %% 1 == 0,
-    #                         msg = "sld_by must be an integer.")
-    # sld_by <- as.integer(sld_by)
-
     # Set up Python environment
+    python_path <- path.expand(python_path)
     reticulate::use_virtualenv(python_path, required = TRUE)
     py_conf <- reticulate::py_config()
 
@@ -68,7 +93,7 @@ PRIMEloci <- function(
   ext_dis <- 200
   file_type <- "npz"
   addtn_to_filename <- ""
-  name_prefix <- "PRIMEloci_"
+  name_prefix <- "PRIMEloci"
   model_name <- "PRIMEloci_GM12878_model_1.0.sav"
   core_width <- 151
 
@@ -110,14 +135,14 @@ PRIMEloci <- function(
 
   if (inherits(tc_grl, "GenomicRanges::GRanges")) {
     start_time <- Sys.time()
-    plc_log("Processing single GRanges object", log_3)
+    plc_log("🔹 Processing single GRanges object", log_3)
     tc_sliding_window_grl <- plc_trylog({
       tc_sliding_window(tc_grl,
                         sld_by = sld_by,
                         ext_dis = ext_dis,
                         num_cores = num_cores)
     }, log_file = log_3)
-    plc_log(sprintf("Time taken: %.2f minutes",
+    plc_log(sprintf("⏱️ Time taken: %.2f minutes",
                     as.numeric(difftime(Sys.time(),
                                         start_time,
                                         units = "mins"))),
@@ -127,13 +152,13 @@ PRIMEloci <- function(
     tc_sliding_window_grl <- lapply(seq_along(tc_grl), function(i) {
       start_time <- Sys.time()
       gr_name <- if (!is.null(names(tc_grl))) names(tc_grl)[i] else paste0("Sample_", i) # nolint: line_length_linter.
-      plc_log(sprintf("Processing: %s", gr_name), log_3)
+      plc_log(sprintf("🔹 Processing: %s", gr_name), log_3)
       result <- tc_sliding_window(tc_grl[[i]],
                                   sld_by = sld_by,
                                   ext_dis = ext_dis,
                                   log_file = log_3,
                                   num_cores = num_cores)
-      plc_log(sprintf("Time taken: %.2f minutes",
+      plc_log(sprintf("⏱️ Time taken: %.2f minutes",
                       as.numeric(difftime(Sys.time(),
                                           start_time,
                                           units = "mins"))),
@@ -356,6 +381,16 @@ PRIMEloci <- function(
 
   plc_log("✅ DONE :: Postprocessing completed.", log_6)
   message("✅✅✅ PRIMEloci pipeline completed successfully !!!!!")
+
+  on.exit({
+    if (!keep_tmp) {
+      if (dir.exists(primeloci_tmp)) {
+        unlink(primeloci_tmp, recursive = TRUE, force = TRUE)
+        message(sprintf("Temporary directory '%s' has been cleaned up.",
+                        primeloci_tmp))
+      }
+    }
+  }, add = TRUE)
 
   return(result_gr_final)
 }
