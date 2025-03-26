@@ -6,7 +6,7 @@
 \usage{
 PRIMEloci(
   ctss_rse,
-  outdir = "./PRIMEloci_output",
+  outdir,
   python_path = "~/.virtualenvs/prime-env",
   score_threshold = 0.75,
   score_diff = 0.1,

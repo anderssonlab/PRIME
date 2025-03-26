@@ -21,3 +21,5 @@ run_PRIMEloci_example <- function(outdir,
 
   return(result)
 }
+
+outdir <- "./PRIMEloci_output"

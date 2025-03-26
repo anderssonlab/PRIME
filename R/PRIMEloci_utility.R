@@ -241,7 +241,7 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
       }
     })
   }
-  message("TC object validation passed successfully.")
+  message("Fnished validating tc_object.")
   return(TRUE)
 }
 
@@ -658,14 +658,10 @@ plc_save_to_file <- function(data,
       utils::write.csv(as.data.frame(data),
                        paste0(full_file_path, ".csv"),
                        row.names = FALSE)
-      plc_log(sprintf("💾 Saved file: %s.csv", full_file_path),
-              log_file, print_console = FALSE)
 
     } else if (actual_file_type == "parquet") {
       arrow::write_parquet(as.data.frame(data),
                            paste0(full_file_path, ".parquet"))
-      plc_log(sprintf("💾 Saved file: %s.parquet", full_file_path),
-              log_file, print_console = FALSE)
 
     } else if (actual_file_type == "npz") {
       scipy <- reticulate::import("scipy.sparse", delay_load = TRUE)
@@ -680,8 +676,6 @@ plc_save_to_file <- function(data,
 
       npz_path <- paste0(full_file_path, ".npz")
       scipy$save_npz(npz_path, py_matrix)
-      plc_log(sprintf("💾 Saved file: %s", npz_path),
-              log_file, print_console = FALSE)
 
     } else {
       stop("❌ Unsupported file_type. Use 'csv', 'parquet', or 'npz'.")
@@ -725,7 +719,7 @@ PRIMEloci_profile_chr <- function(current_region_gr,
                                   file_type = "parquet",
                                   log_file) {
 
-  plc_log(sprintf("🔹 Processing chromosome: %s", chr_name),
+  plc_log(sprintf("➡️ Processing chromosome: %s", chr_name),
           log_file, print_console = FALSE)
 
   if (length(filtered_ctss_gr) == 0) {
@@ -977,12 +971,12 @@ PRIMEloci_profile <- function(ctss_rse,
       plc_log("✅ All chromosomes processed successfully!", log_file)
     }
 
-    plc_log(sprintf("🔚 Finished processing sample: %s | Failed: %d/%d chromosomes", # nolint: line_length_linter.
+    plc_log(sprintf("✅ Finished processing sample: %s |  ✖️ Failed: %d/%d chromosomes", # nolint: line_length_linter.
                     sample_name, length(failed), length(regions_list)),
             log_file)
 
     runtime <- difftime(Sys.time(), start_time, units = "mins")
-    plc_log(sprintf("⏱️ Runtime for sample %s: %.2f minutes",
+    plc_log(sprintf("⏱️ Time taken for sample %s: %.2f minutes",
                     sample_name, as.numeric(runtime)),
             log_file)
 
@@ -1274,12 +1268,10 @@ coreovl_with_d <- function(bed_file,
           log_file, "INFO", print_console = FALSE)
 
   # Load and prepare data
-  plc_log("Loading BED file...", log_file)
   bed <- load_bed_file(bed_file)
   gr <- create_granges_from_bed(bed)
 
   # Filter by score threshold
-  plc_log("Filtering GRanges by score threshold...", log_file)
   filtered_gr <- gr[gr$score >= score_threshold]
 
   if (length(filtered_gr) == 0) {
@@ -1287,7 +1279,7 @@ coreovl_with_d <- function(bed_file,
             log_file, level = "⚠️ WARN")
     return(NULL)
   }
-  plc_log("Processing core overlaping with d...", log_file)
+
   chr_list <- unique(as.character(GenomicRanges::seqnames(filtered_gr)))
 
   error_messages <- list()  # store errors per chromosome
@@ -1332,7 +1324,7 @@ coreovl_with_d <- function(bed_file,
 
   # Check again — do we have any GRanges?
   if (length(collapsed_gr_list) == 0) {
-    plc_log("⚠️ No valid GRanges to collapse — all chromosomes failed or were empty.",
+    plc_log("⚠️ No valid GRanges to collapse — all chromosomes failed or were empty.", # nolint: line_length_linter.
             log_file, level = "⚠️ WARN", print_console = TRUE)
     return(NULL)
   }
