@@ -2,11 +2,11 @@
 % Please edit documentation in R/PRIMEloci.R
 \name{PRIMEloci}
 \alias{PRIMEloci}
-\title{PRIMEloci function}
+\title{Run the full PRIMEloci pipeline for regulatory element prediction}
 \usage{
 PRIMEloci(
   ctss_rse,
-  outdir,
+  outdir = "./PRIMEloci_output",
   python_path = "~/.virtualenvs/prime-env",
   score_threshold = 0.75,
   score_diff = 0.1,
@@ -14,6 +14,72 @@ PRIMEloci(
   keep_tmp = FALSE
 )
 }
+\arguments{
+\item{ctss_rse}{A `RangedSummarizedExperiment` object
+containing CTSS-level expression data.}
+
+\item{outdir}{Path to the output directory.
+Default is `"./PRIMEloci_output"`.}
+
+\item{python_path}{Path to the virtual environment with Python
+and required packages. Default is `"~/.virtualenvs/prime-env"`.}
+
+\item{score_threshold}{Minimum score threshold for core region predictions.
+Must be between 0 and 1. Default is `0.75`.}
+
+\item{score_diff}{Minimum score difference required between merged regions.
+Must be non-negative and less than `score_threshold`. Default is `0.1`.}
+
+\item{num_cores}{Number of cores to use for parallel processing.
+Must be a positive integer or `NULL` to auto-detect. Default is `NULL`.}
+
+\item{keep_tmp}{Logical. Whether to keep intermediate files
+(e.g., profiles and temp folders). Default is `FALSE`.}
+}
+\value{
+A `GRanges` or `GRangesList` object containing
+the final predicted loci after postprocessing.
+}
 \description{
-PRIMEloci function
+This function executes the complete PRIMEloci pipeline
+to predict regulatory elements (enhancers and promoters)
+from CTSS CAGE data. It integrates CAGE-derived tag clustering,
+feature preparation, prediction using a pre-trained LightGBM model,
+and post-processing to output high-confidence non-overlapping loci.
+}
+\details{
+The function is designed for users who
+prefer a single-command workflow from a `RangedSummarizedExperiment` input
+to the final genomic predictions.
+
+The pipeline was originally developed for human genome (hg38) CAGE data,
+but can be adapted for other genomes with similar CAGE annotations.
+
+
+The PRIMEloci pipeline includes the following steps:
+\enumerate{
+  \item \strong{Identifying Tag Clusters (TCs)}:
+Identify tag clusters (TCs)
+from the extracted CTSS data using the \pkg{CAGEfightR} package.
+  \item \strong{Sliding Through TCs}:
+Slide through the identified TCs (default window size = 20)
+to create tiled regions for downstream processing.
+  \item \strong{Creating Normalized Profiles}:
+Generate normalized transcriptional profiles
+suitable for input into the prediction model.
+  \item \strong{Predicting Profile Probabilities}:
+Use pre-trained PRIMEloci LightGBM models
+to assign probabilities to each region,
+indicating likelihood of being a regulatory element.
+  \item \strong{Post-Processing}:
+Refine and filter model predictions
+using score thresholds and additional criteria.
+Output non-overlapping core regulatory loci
+in `GRanges` or `GRangesList` object, and (optional) BED file format
+for further analysis.
+}
+
+Intermediate files are stored in subdirectories under `outdir`.
+If `keep_tmp = FALSE`, temporary files will be removed
+after the pipeline completes.
 }
