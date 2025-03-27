@@ -4,15 +4,12 @@
 \alias{run_PRIMEloci_example}
 \title{Run PRIMEloci on ctss_rse_chr15to17.rds from extdata}
 \usage{
-run_PRIMEloci_example(
-  outdir = "./PRIMEloci_output",
-  python_path = "~/.virtualenvs/prime-env"
-)
+run_PRIMEloci_example(python_path = "~/.virtualenvs/prime-env")
 }
 \arguments{
-\item{outdir}{Output directory for the pipeline}
-
 \item{python_path}{Path to Python virtual environment}
+
+\item{outdir}{Output directory for the pipeline}
 
 \item{num_cores}{Number of CPU cores to use}
 }

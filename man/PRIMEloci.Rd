@@ -6,23 +6,28 @@
 \usage{
 PRIMEloci(
   ctss_rse,
-  outdir = "./PRIMEloci_output",
   python_path = "~/.virtualenvs/prime-env",
   score_threshold = 0.75,
   score_diff = 0.1,
   num_cores = NULL,
-  keep_tmp = FALSE
+  keep_tmp = FALSE,
+  log_dir = NULL
 )
 }
 \arguments{
 \item{ctss_rse}{A `RangedSummarizedExperiment` object
 containing CTSS-level expression data.}
 
-\item{outdir}{Path to the output directory.
-Default is `"./PRIMEloci_output"`.}
-
-\item{python_path}{Path to the virtual environment with Python
-and required packages. Default is `"~/.virtualenvs/prime-env"`.}
+\item{python_path}{Path to the Python environment to use.
+This can be one of the following:
+\itemize{
+  \item A full path to a Python binary (e.g., `"/usr/bin/python3"`),
+  \item A path to a virtualenv directory (must contain `bin/`),
+  \item The name of a conda environment (e.g., `"prime-env"`),
+  \item A full path to a conda environment directory.
+}
+The specified path must exist and be valid.
+Default is `"~/.virtualenvs/prime-env"`.}
 
 \item{score_threshold}{Minimum score threshold for core region predictions.
 Must be between 0 and 1. Default is `0.75`.}
@@ -35,6 +40,11 @@ Must be a positive integer or `NULL` to auto-detect. Default is `NULL`.}
 
 \item{keep_tmp}{Logical. Whether to keep intermediate files
 (e.g., profiles and temp folders). Default is `FALSE`.}
+
+\item{log_dir}{Optional. Directory path
+where a log file named `"PRIMEloci.log"`
+will be written. If `NULL`, logs will be printed to the R console.
+Default is `NULL`.}
 }
 \value{
 A `GRanges` or `GRangesList` object containing
@@ -79,7 +89,6 @@ in `GRanges` or `GRangesList` object, and (optional) BED file format
 for further analysis.
 }
 
-Intermediate files are stored in subdirectories under `outdir`.
 If `keep_tmp = FALSE`, temporary files will be removed
 after the pipeline completes.
 }
