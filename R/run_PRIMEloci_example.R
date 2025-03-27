@@ -6,8 +6,7 @@
 #'
 #' @return GRanges or GRangesList
 #' @export
-run_PRIMEloci_example <- function(outdir = "./PRIMEloci_output",
-                                  python_path = "~/.virtualenvs/prime-env") {
+run_PRIMEloci_example <- function(python_path = "~/.virtualenvs/prime-env") {
   rds_path <- system.file("extdata",
                           "ctss_rse_chr15to17.rds",
                           package = "PRIME")
@@ -16,7 +15,6 @@ run_PRIMEloci_example <- function(outdir = "./PRIMEloci_output",
   ctss_rse <- readRDS(rds_path)
 
   result <- PRIMEloci(ctss_rse = ctss_rse,
-                      outdir = outdir,
                       python_path = python_path)
 
   return(result)

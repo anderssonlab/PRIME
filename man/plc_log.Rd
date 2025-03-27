@@ -4,7 +4,7 @@
 \alias{plc_log}
 \title{Log a timestamped message with level (and optional console output)}
 \usage{
-plc_log(message, log_file, level = "INFO", print_console = TRUE)
+plc_log(message, log_file, level = "INFO", print_console = FALSE)
 }
 \arguments{
 \item{message}{A character string to log.}

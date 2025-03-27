@@ -14,7 +14,7 @@
 plc_log <- function(message,
                     log_file,
                     level = "INFO",
-                    print_console = TRUE) {
+                    print_console = FALSE) {
   timestamp <- base::format(base::Sys.time(), "%Y-%m-%d %H:%M:%S")
   line <- base::sprintf("[%s] %s %s", level, timestamp, message)
   base::cat(line, "\n", file = log_file, append = TRUE)
@@ -903,12 +903,9 @@ PRIMEloci_profile <- function(ctss_rse,
   plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
           log_file, "INFO", print_console = FALSE)
 
-
-
   # --- Sample Loop ---
   for (i in seq_along(SummarizedExperiment::colnames(ctss_rse))) {
     sample_name <- SummarizedExperiment::colnames(ctss_rse)[i]
-    plc_log(sprintf("🔹 Processing sample: %s", sample_name), log_file)
     start_time <- Sys.time()
 
     # region_gr
@@ -1007,7 +1004,7 @@ load_bed_file <- function(input_bed) {
   required_cols <- c("chrom", "chromStart", "chromEnd", "strand", "score")
   assertthat::assert_that(all(required_cols %in% colnames(bed_file)),
                           msg = "The BED file must contain 'chrom', 'chromStart', 'chromEnd', 'strand', and 'score' columns.") # nolint: line_length_linter.
-  return(bed_file)
+  bed_file
 }
 
 #' Create a GRanges object from a BED data.table
@@ -1027,14 +1024,14 @@ load_bed_file <- function(input_bed) {
 #' @importFrom S4Vectors mcols
 create_granges_from_bed <- function(bed_file) {
   gr <- GenomicRanges::GRanges(seqnames = bed_file$chrom,
-                               ranges = IRanges::IRanges(start = bed_file$chromStart + 1,
-                                                         end = bed_file$chromEnd),
+                               ranges = IRanges::IRanges(start = bed_file$chromStart + 1, # nolint: line_length_linter.
+                                                         end = bed_file$chromEnd), # nolint: line_length_linter.
                                strand = bed_file$strand)
   S4Vectors::mcols(gr) <- bed_file[, !(names(bed_file) %in% c("chrom",
                                                               "chromStart",
                                                               "chromEnd",
                                                               "strand"))]
-  return(gr)
+  gr
 }
 
 #' Selectively merge overlapping cores based on score difference.
@@ -1101,7 +1098,7 @@ selective_merge_cores <- function(core_gr, score_diff) {
   mcols(merged_cores)$thick <- thick_vals
   mcols(merged_cores)$max_score <- max_scores
 
-  return(merged_cores)
+  merged_cores
 }
 
 #' Extract sample label from input_basename (internal)
@@ -1113,9 +1110,9 @@ extract_sample_label <- function(input_basename) {
   matches <- stringr::str_match(input_basename, pattern)
 
   if (!is.na(matches[2])) {
-    return(paste0("PRIMEloci_", matches[2]))
+    paste0("PRIMEloci_", matches[2])
   } else {
-    return("PRIMEloci")
+    "PRIMEloci"
   }
 }
 
@@ -1369,9 +1366,9 @@ coreovl_with_d <- function(bed_file,
       output_basename
     )
 
-    plc_log("✅ Done!", log_file)
+    plc_log("✅ coreovl_with_d() finished successfully.", log_file)
   } else {
-    plc_log("⚠️ Output directory is NULL — skipping file writing.",
+    plc_log("⚠️ skipping file writing at the end of coreovl_with_d step.",
             log_file, level = "⚠️ WARN", print_console = TRUE)
   }
 
