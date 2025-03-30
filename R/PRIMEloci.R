@@ -1,4 +1,4 @@
-#' Run the full PRIMEloci pipeline for regulatory element prediction
+#' Run the full plc pipeline for regulatory element prediction
 #'
 #' This function executes the complete PRIMEloci pipeline
 #' to predict regulatory elements (enhancers and promoters)
@@ -25,6 +25,16 @@
 #' }
 #' The specified path must exist and be valid.
 #' Default is `"~/.virtualenvs/prime-env"`.
+#'
+#' \strong{Important:} If Python is already initialized
+#' (e.g., in RStudio or a long-running session),
+#' changing the Python environment from within the function
+#' will not take effect. To guarantee that the correct Python is used 
+#' (especially when pointing to `"/usr/bin/python3"`),
+#' set the environment variable `RETICULATE_PYTHON`
+#' before starting R or RStudio.
+#' Alternatively, call [configure_plc_python()] early in the session.
+#'
 #' @param score_threshold Minimum score threshold for core region predictions.
 #' Must be between 0 and 1. Default is `0.75`.
 #' @param score_diff Minimum score difference required between merged regions.
@@ -64,6 +74,15 @@
 #' in `GRanges` or `GRangesList` object, and (optional) BED file format
 #' for further analysis.
 #' }
+#'
+#' @section Python Environment:
+#' This function attempts to configure Python using the `python_path` argument.
+#' However, due to reticulate's behavior, Python must be configured
+#' before initialization. If using a system Python path
+#' (e.g., `"/usr/bin/python3"`), set `RETICULATE_PYTHON` before launching R.
+#' For virtualenvs and conda environments,
+#' configuration within the session usually works unless Python has already
+#' been initialized.
 #'
 #' If `keep_tmp = FALSE`, temporary files will be removed
 #' after the pipeline completes.
@@ -142,31 +161,8 @@ PRIMEloci <- function(
     )
   }
 
-  # Set up Python environment
-  python_path <- path.expand(python_path)
-  if (!is.null(python_path) && file.exists(python_path)) {
-    if (grepl("bin/python", python_path) ||
-          grepl("python[0-9.]*$", python_path)) {
-      reticulate::use_python(python_path, required = TRUE)
-    } else if (dir.exists(file.path(python_path, "bin"))) {
-      reticulate::use_virtualenv(python_path, required = TRUE)
-    } else if (basename(python_path) %in% reticulate::conda_list()$name) {
-      reticulate::use_condaenv(python_path, required = TRUE)
-    } else if (dir.exists(python_path) && grepl("conda", python_path)) {
-      reticulate::use_condaenv(python_path, required = TRUE)
-    } else {
-      stop("Invalid python_path: Not recognized as a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
-    }
-  } else {
-    stop("python_path does not exist: Please provide a valid path to a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
-  }
-  py_conf <- reticulate::py_config()
-
-  # keep version info
-  plc_log(sprintf("🔧 R version: %s", R.version.string),
-          log_target)
-  plc_log(sprintf("📦 Loaded Python: %s", py_conf$python),
-          log_target)
+  py_conf <- configure_plc_python(python_path = python_path,
+                                        log_target = log_target)
 
   # setting
 
@@ -280,12 +276,13 @@ PRIMEloci <- function(
   plc_log("\n\n\n 🚀 Running PRIMEloci: compute count & normalized profiles for each sample", # nolint: line_length_linter.
           log_target)
 
-  PRIMEloci_profile(
+  plc_profile(
     ctss_rse,
     tc_for_profile,
     outdir,
     profile_dir_name,
     file_type = file_type,
+    python_path = py_conf$python,
     addtn_to_filename = addtn_to_filename,
     save_count_profiles = save_count_profiles,
     num_cores = num_cores,
@@ -371,9 +368,9 @@ PRIMEloci <- function(
     msg <- "❌ Prediction script failed. Check PRIMEloci.log for details."
     plc_log(msg, log_target, level = "❌ ERROR")
     stop(msg)
+  } else {
+    plc_log("✅ DONE :: Prediction script executed successfully.", log_target)
   }
-  lapply(result, function(line) plc_log(paste("🔹", line), log_target, print_console = FALSE)) # nolint: line_length_linter.
-  plc_log("✅ DONE :: Prediction step completed.", log_target)
 
 
   # _6_

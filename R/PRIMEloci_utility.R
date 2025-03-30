@@ -59,6 +59,145 @@ plc_trylog <- function(expr, log_file, print_console = TRUE) {
   )
 }
 
+#' Internal utility to check that all required Python packages are installed
+#' and meet the minimum version requirements. Raises an error if any package
+#' is missing or incompatible. Not exported.
+check_python_dependencies <- function(required_packages) {
+  message("🔍 Checking Python dependencies...\n")
+  for (pkg in names(required_packages)) {
+    min_version <- required_packages[[pkg]]
+    result <- tryCatch({
+      mod <- reticulate::import(pkg, delay_load = FALSE)
+      version <- as.character(mod$`__version__`)
+      version_msg <- paste0("found version ", version)
+      if (!is.null(min_version) &&
+            utils::compareVersion(version, min_version) < 0) {
+        stop(paste0("⚠️  Package '", pkg, "' ", version_msg,
+                    " < required ", min_version))
+      }
+      message(paste0("✅ ", pkg, ": ", version_msg))
+      TRUE
+    }, error = function(e) {
+      message(paste0("❌ ",
+                     pkg,
+                     ": not found or import failed (", e$message, ")"))
+      FALSE
+    })
+    if (!result) {
+      stop(paste0("🛑 Missing or incompatible Python package: '", pkg, "'"))
+    }
+  }
+  message("\n✅ All required Python packages are available.\n")
+}
+
+#' Internal test to confirm that scipy.sparse.save_npz() works via reticulate.
+#' This ensures compatibility between R, reticulate, scipy, and numpy.
+plc_test_scipy_save_npz <- function(log_target = NULL) {
+  tryCatch({
+    test_matrix <- Matrix::rsparsematrix(10, 10, density = 0.1)
+    scipy <- reticulate::import("scipy.sparse", delay_load = FALSE)
+
+    if (inherits(test_matrix, "dgCMatrix")) {
+      test_py <- scipy$csc_matrix(reticulate::tuple(test_matrix@x,
+                                                    test_matrix@i,
+                                                    test_matrix@p),
+                                  shape = reticulate::tuple(test_matrix@Dim[1],
+                                                            test_matrix@Dim[2]))
+    } else if (inherits(test_matrix, "dgRMatrix")) {
+      test_py <- scipy$csr_matrix(reticulate::tuple(test_matrix@x,
+                                                    test_matrix@j,
+                                                    test_matrix@p),
+                                  shape = reticulate::tuple(test_matrix@Dim[1],
+                                                            test_matrix@Dim[2]))
+    } else {
+      stop("Unsupported test matrix type for SciPy save check.")
+    }
+
+    tmpfile <- tempfile(fileext = ".npz")
+    scipy$save_npz(tmpfile, test_py)
+    unlink(tmpfile)
+    plc_log("✅ SciPy sparse matrix save test passed.", log_target)
+  }, error = function(e) {
+    msg <- paste("❌ Critical error: scipy.sparse.save_npz() failed — cannot proceed.\n", # nolint: line_length_linter.
+                 "➡️ Set RETICULATE_PYTHON before starting R if using system Python.\n", # nolint: line_length_linter.
+                 "Full error:\n", e$message)
+    plc_log(msg, log_target, level = "❌ ERROR")
+    stop(msg)
+  })
+}
+
+#' Configure Python environment for PRIMEloci
+#'
+#' Sets and verifies the Python environment
+#' to be used in the PRIMEloci pipeline.
+#' This includes specifying a path to a Python binary,
+#' virtual environment, or conda environment,
+#' checking for required Python packages and their versions,
+#' and ensuring runtime compatibility.
+#'
+#' @details
+#' In addition to package version checks,
+#' this function performs a runtime test to verify
+#' that `scipy.sparse.save_npz()` works correctly through `reticulate`.
+#' This prevents downstream failures during profile saving
+#' if Python is misconfigured, especially when
+#' using system Python without setting `RETICULATE_PYTHON` early in the session.
+#'
+#' @param python_path Path to Python binary, virtualenv, or conda environment.
+#' @param log_target Path to a log file for output (optional).
+#'
+#' @return Python configuration object from `reticulate::py_config()`
+#' @export
+configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
+                                       log_target = NULL) {
+  python_path <- path.expand(python_path)
+
+  if (reticulate::py_available(initialize = FALSE)) {
+    warning("Python has already been initialized — changes may not take effect. Set RETICULATE_PYTHON before starting R or call this early in the session.") # nolint: line_length_linter.
+  }
+
+  if (!is.null(python_path) && file.exists(python_path)) {
+    if (grepl("bin/python", python_path) ||
+          grepl("python[0-9.]*$", python_path)) {
+      reticulate::use_python(python_path, required = TRUE)
+    } else if (dir.exists(file.path(python_path, "bin"))) {
+      reticulate::use_virtualenv(python_path, required = TRUE)
+    } else if (basename(python_path) %in% reticulate::conda_list()$name) {
+      reticulate::use_condaenv(python_path, required = TRUE)
+    } else if (dir.exists(python_path) && grepl("conda", python_path)) {
+      reticulate::use_condaenv(python_path, required = TRUE)
+    } else {
+      stop("Invalid python_path: Not recognized as a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
+    }
+  } else {
+    stop("python_path does not exist: Please provide a valid path to a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
+  }
+
+  py_conf <- reticulate::py_config()
+
+  # Logging
+  if (!is.null(log_target)) {
+    plc_log(sprintf("🔧 R version: %s", R.version.string), log_target)
+    plc_log(sprintf("📦 Loaded Python: %s", py_conf$python), log_target)
+  }
+
+  # Required packages (match your validated env)
+  required_packages <- list(
+    numpy         = "2.0.2",
+    scipy         = "1.13.1",
+    pandas        = "2.2.3",
+    joblib        = "1.4.2",
+    sklearn       = "1.4.2",
+    lightgbm      = "4.6.0",
+    pyarrow       = "17.0.0",
+    fastparquet   = "2024.11.0"
+  )
+  check_python_dependencies(required_packages)
+  plc_test_scipy_save_npz(log_target)
+
+  return(py_conf)
+}
+
 #' Get tag clusters and extend from thick positions
 #'
 #' This function calculates tag clusters from
@@ -377,16 +516,18 @@ tc_sliding_window <- function(granges_obj,
 
   # 2) Split the GRanges object by chromosome (seqnames)
   gr_by_chr <- split(granges_obj, GenomicRanges::seqnames(granges_obj))
+  num_jobs <- length(gr_by_chr)
 
   # 3) Determine the number of cores to use and global variable memory limit
   if (is.null(num_cores)) {
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
+  num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  future::plan(future::multisession, workers = num_cores)
+  future::plan(future::multisession, workers = num_workers)
   on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
 
-  plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
+  plc_log(paste("Using", num_workers, "core(s) for parallel processing."),
           log_file, "INFO", print_console = FALSE)
 
   # 4) Run in parallel using future_lapply, passing required globals
@@ -709,7 +850,7 @@ plc_save_to_file <- function(data,
 #' @export
 #'
 #' @return A list with chromosome name and processing status.
-PRIMEloci_profile_chr <- function(current_region_gr,
+plc_profile_chr <- function(current_region_gr,
                                   filtered_ctss_gr,
                                   chr_name,
                                   file_path,
@@ -848,6 +989,8 @@ PRIMEloci_profile_chr <- function(current_region_gr,
 #' @param profile_dir_name The directory name for the output.
 #' @param ext_dis Integer value for extending the distance
 #' used in profile computations.
+#' @param python_path The path to the Python executable.
+#' If NULL, the default Python environment will be used.
 #' @param addtn_to_filename A string to add to the output filename.
 #' @param save_count_profiles Logical flag indicating
 #' whether count profiles should be saved.
@@ -855,7 +998,7 @@ PRIMEloci_profile_chr <- function(current_region_gr,
 #' One of: "parquet" (default), "csv", or "npz".
 #' @param num_cores The number of cores to use for parallel processing.
 #' @param log_file_name The name of the log file
-#' (default: "PRIMEloci_log_profile").
+#' (default: "plc_log_profile").
 #'
 #' @importFrom GenomicRanges GRanges seqnames
 #' @importFrom SummarizedExperiment colnames
@@ -863,12 +1006,15 @@ PRIMEloci_profile_chr <- function(current_region_gr,
 #' @importFrom parallel detectCores
 #' @importFrom future plan multisession
 #' @importFrom future.apply future_lapply
+#' @importFrom assertthat assert_that
+#' @importFrom reticulate use_python
 #' @export
-PRIMEloci_profile <- function(ctss_rse,
+plc_profile <- function(ctss_rse,
                               regions_gr,
                               output_dir,
                               profile_dir_name,
                               file_type = "npz",
+                              python_path = NULL,
                               addtn_to_filename = "",
                               save_count_profiles = FALSE,
                               num_cores = NULL,
@@ -892,15 +1038,17 @@ PRIMEloci_profile <- function(ctss_rse,
   # --- Setup ---
   file_path <- prep_profile_dir(output_dir = output_dir,
                                 profile_dir_name = profile_dir_name)
+
+  num_jobs <- length(GenomicRanges::seqnames(regions_gr))   
   if (is.null(num_cores)) {
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
+  num_workers <- min(num_cores, num_jobs)
+  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  future::plan(future::multisession, workers = num_workers)
+  on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
 
-  options(future.globals.maxSize = 4 * 1024^3)
-  future::plan(future::multisession, workers = num_cores)
-  on.exit(future::plan(future::sequential))
-
-  plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
+  plc_log(paste("Using", num_workers, "core(s) for parallel processing."),
           log_file, "INFO", print_console = FALSE)
 
   # --- Sample Loop ---
@@ -929,11 +1077,14 @@ PRIMEloci_profile <- function(ctss_rse,
                                            function(chr_name) {
       tryCatch({
 
+        # 🔧 Set Python path for this child process
+        reticulate::use_python(python_path, required = TRUE)
+
         # Filter ctss_gr for the current chromosome
         filtered_ctss_gr <- ctss_gr[as.character(GenomicRanges::seqnames(ctss_gr)) == chr_name] # nolint: line_length_linter.
 
         # Call the chromosome-specific function
-        PRIMEloci_profile_chr(
+        plc_profile_chr(
           regions_list[[chr_name]],
           filtered_ctss_gr,
           chr_name,
@@ -1251,19 +1402,6 @@ coreovl_with_d <- function(bed_file,
                 msg = "❌ num_cores must be a positive integer.")
   }
 
-  # Setup parallelism
-
-  if (is.null(num_cores)) {
-    num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
-  }
-
-  options(future.globals.maxSize = 4 * 1024^3)
-  future::plan(future::multisession, workers = num_cores)
-  on.exit(future::plan(future::sequential))
-
-  plc_log(paste("Using", num_cores, "core(s) for parallel processing."),
-          log_file, "INFO", print_console = FALSE)
-
   # Load and prepare data
   bed <- load_bed_file(bed_file)
   gr <- create_granges_from_bed(bed)
@@ -1278,8 +1416,23 @@ coreovl_with_d <- function(bed_file,
   }
 
   chr_list <- unique(as.character(GenomicRanges::seqnames(filtered_gr)))
-
+  num_jobs <- length(chr_list)
   error_messages <- list()  # store errors per chromosome
+
+  # Setup parallelism
+
+  if (is.null(num_cores)) {
+    num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
+  }
+  num_workers <- min(num_cores, num_jobs)
+  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  future::plan(future::multisession, workers = num_workers)
+  on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
+
+  plc_log(paste("Using", num_workers, "core(s) for parallel processing."),
+          log_file, "INFO", print_console = FALSE)
+
+  # Process each chromosome in parallel
 
   collapsed_gr_list <- future.apply::future_lapply(chr_list, function(chr) {
     tryCatch({
