@@ -13,26 +13,36 @@ import logging
 from scipy.sparse import load_npz
 import glob
 from collections import defaultdict
+import sys
 
 
-def log_also_console(message, level="info"):
-    print(message)  # Console
-    if level == "info":
-        logging.info(message)
-    elif level == "warning":
-        logging.warning(message)
-    elif level == "error":
-        logging.error(message)
-    elif level == "debug":
-        logging.debug(message)
-    else:
-        logging.info(message)
+def setup_logger(log_file=None):
+    log_level = logging.DEBUG
+    logger = logging.getLogger()
+    logger.setLevel(log_level)
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+    if log_file:
+        fh = logging.FileHandler(log_file)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+    # Always log to stderr
+    sh = logging.StreamHandler(sys.stderr)
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+
+    return logger
 
 
 def extract_filenames(dir_path, keep_word=None, drop_word=None):
 
+    allowed_extensions = (".npz", ".csv", ".parquet")
+
     dir_path = os.path.normpath(dir_path)
-    filename_ls = os.listdir(dir_path)
+    filename_ls = [f for f in os.listdir(dir_path)
+                   if f.endswith(allowed_extensions)]
 
     if keep_word:
         filename_ls = [name for name in filename_ls
@@ -88,95 +98,65 @@ def check_matching_filenames(profile_filelist, metadata_filelist,
     logging.info("✅ Profile and metadata filenames match.")
 
 
+def build_matched_file_dict(profile_dir, metadata_dir,
+                            profile_suffix="_profiles_subtnorm",
+                            metadata_suffix="_metadata"):
+
+    profile_files = extract_filenames(profile_dir)
+    metadata_files = extract_filenames(metadata_dir)
+
+    check_matching_filenames(profile_files, metadata_files,
+                             profile_suffix=profile_suffix,
+                             metadata_suffix=metadata_suffix)
+
+    matched = {}
+
+    for pf in profile_files:
+        base, ext = os.path.splitext(pf)
+        base = base.replace(profile_suffix, "")
+        matched.setdefault(base, {})["profile_path"] = os.path.join(profile_dir, pf)
+        matched[base]["profile_ext"] = ext
+
+    for mf in metadata_files:
+        base, ext = os.path.splitext(mf)
+        base = base.replace(metadata_suffix, "")
+        if base not in matched:
+            continue  # or log missing profile
+        matched[base]["metadata_path"] = os.path.join(metadata_dir, mf)
+        matched[base]["metadata_ext"] = ext
+
+    # Optionally validate
+    unmatched = [k for k, v in matched.items() if "profile_path" not in v or "metadata_path" not in v]
+    if unmatched:
+        raise ValueError(f"❌ Unmatched samples found: {unmatched}")
+
+    return matched
+
+
+def define_num_cores(requested_core, total_jobs):
+
+    cpu_count = os.cpu_count() or 1
+    auto_core = min(25, cpu_count // 2)
+    num_core = requested_core or max(1, auto_core)
+    num_core = min(num_core, total_jobs)
+
+    print(f"⚙️ Using {num_core} core{'s' if num_core > 1 else ''} for {total_jobs} job{'s' if total_jobs != 1 else ''}")
+    return num_core
+
+
+def extract_profiles(df):
+    # Convert DataFrame to NumPy array
+    numpy_array = df.values
+    # Convert NaN values to 0
+    numpy_array[np.isnan(numpy_array)] = 0
+    return numpy_array
+
+
 def set_index_if_exists(df, index_name='rownames'):
-    """
-    Sets a specified column as the index of the DataFrame if it exists,
-    and removes the index name to prevent it from appearing as an additional
-    column in the DataFrame.
-
-    Parameters:
-    df (pd.DataFrame): The DataFrame in which the index needs to be set.
-    index_name (str): The name of the column to set as the index.
-
-    Returns:
-    pd.DataFrame: The DataFrame with the specified column set as the index.
-    """
     if index_name in df.columns:
         df = df.set_index(index_name)
         df.index.name = None
     return df
-
-
-def load_metadata(metadata_path, ext):
-    if ext == ".parquet":
-        logging.info(
-            f"📥 Reading metadata file: {metadata_path} (format: {ext})")
-        df = pd.read_parquet(metadata_path)
-    elif ext == ".csv":
-        logging.info(
-            f"📥 Reading metadata file: {metadata_path} (format: {ext})")
-        df = pd.read_csv(metadata_path, header=0, index_col=None)
-    else:
-        raise ValueError(f"❌ Unsupported metadata file format: {ext}")
-
-    return set_index_if_exists(df)
-
-
-def extract_profiles(df):
-    """
-    Extract profile vectors from a DataFrame.
-
-    Parameters:
-    df (pandas.DataFrame): DataFrame containing profile data.
-
-    Returns:
-    numpy.ndarray: NumPy array representing profile vectors.
-    """
-    # Convert DataFrame to NumPy array
-    numpy_array = df.values
-
-    # Convert NaN values to 0
-    numpy_array[np.isnan(numpy_array)] = 0
-
-    return numpy_array
-
-
-def adjust_genomic_positions_for_bed(ranges_df):
-    """
-    Adjusts genomic positions for BED file format.
-
-    Parameters:
-    ranges_df (pd.DataFrame):
-    DataFrame with columns 'chrom', 'chromStart', 'chromEnd', 'strand'.
-
-    Returns:
-    pd.DataFrame: Adjusted DataFrame ready for BED file output.
-    """
-    ranges_df['chromStart'] = ranges_df['chromStart'] - 1
-    # Convert to 0-based start
-    return ranges_df
-
-
-def move_metadata_columns_to_ranges(ranges_df, metadata_df, columns_to_keep):
-    """
-    Moves columns from the metadata DataFrame to the ranges DataFrame,
-    excluding the columns specified in `columns_to_keep`.
-
-    Parameters:
-    ranges_df (pd.DataFrame): The DataFrame containing genomic ranges.
-    metadata_df (pd.DataFrame): The DataFrame containing additional metadata.
-    columns_to_keep (list): List of columns that should not be moved
-    from metadata_df.
-
-    Returns:
-    pd.DataFrame: The updated ranges DataFrame
-    with additional metadata columns.
-    """
-    columns_to_move = [col for col in metadata_df.columns
-                       if col not in columns_to_keep]
-    for col in columns_to_move:
-        ranges_df[col] = metadata_df[col]
-    return ranges_df
 
 
 def load_profile_matrix(profile_path, ext, model):
@@ -201,13 +181,34 @@ def load_profile_matrix(profile_path, ext, model):
             return sparse_mat
         except Exception as e:
             logging.warning(
-                "⚠️ Model does not support sparse input — converting to dense."
+                "⚠️ Model does not support sparse input — converting input profile to dense."
                 f"Reason: {e}"
             )
             return sparse_mat.toarray()
 
     else:
         raise ValueError(f"❌ Unsupported profile file format: {ext}")
+
+
+def load_metadata(metadata_path, ext):
+    if ext == ".parquet":
+        logging.info(
+            f"📥 Reading metadata file: {metadata_path} (format: {ext})")
+        df = pd.read_parquet(metadata_path)
+    elif ext == ".csv":
+        logging.info(
+            f"📥 Reading metadata file: {metadata_path} (format: {ext})")
+        df = pd.read_csv(metadata_path, header=0, index_col=None)
+    else:
+        raise ValueError(f"❌ Unsupported metadata file format: {ext}")
+
+    return set_index_if_exists(df)
+
+
+def adjust_genomic_positions_for_bed(ranges_df):
+    ranges_df['chromStart'] = ranges_df['chromStart'] - 1
+    # Convert to 0-based start
+    return ranges_df
 
 
 def prepare_ranges_df(metadata_df, profile_base_name, y_proba):
@@ -238,13 +239,21 @@ def prepare_ranges_df(metadata_df, profile_base_name, y_proba):
     return ranges_df
 
 
+def move_metadata_columns_to_ranges(ranges_df, metadata_df, columns_to_keep):
+    columns_to_move = [col for col in metadata_df.columns
+                       if col not in columns_to_keep]
+    for col in columns_to_move:
+        ranges_df[col] = metadata_df[col]
+    return ranges_df
+
+
 def combine_bed_files(input_dir, output_dir):
-    log_also_console(f"🔍 Combining BED files from: {input_dir}")
+    print(f"🔍 Combining BED files from: {input_dir}")
     os.makedirs(output_dir, exist_ok=True)
 
     bed_files = glob.glob(os.path.join(input_dir, "*.bed"))
     if not bed_files:
-        log_also_console("⚠️ No .bed files found to combine.")
+        print("⚠️ No .bed files found to combine.")
         return
 
     prefix_groups = defaultdict(list)
@@ -252,21 +261,21 @@ def combine_bed_files(input_dir, output_dir):
     # Group files by prefix (everything before _chr*)
     for bed_file in bed_files:
         filename = os.path.basename(bed_file)
-        match = re.match(r"(.+)(_chr[^_]+)_profiles_subtnorm\.bed", filename)
+        match = re.match(r"^(.*)chr[^_\.\-]+(?=[_\.\-]|\.bed$)", filename)
 
         if match:
             prefix = match.group(1)
             prefix_groups[prefix].append(bed_file)
         else:
-            log_also_console(
+            print(
                 f"❗ Skipping file (unexpected format): {filename}")
 
     if not prefix_groups:
-        log_also_console("⚠️ No groups matched the expected pattern (_chr*).")
+        print("⚠️ No groups matched the expected pattern (_chr*).")
         return
 
     for prefix, files in prefix_groups.items():
-        log_also_console(f"🔧 Combining files for prefix: {prefix}")
+        print(f"🔧 Combining files for prefix: {prefix}")
         combined_path = os.path.join(output_dir, f"{prefix}_combined.bed")
         combined_df = None
 
@@ -280,11 +289,11 @@ def combine_bed_files(input_dir, output_dir):
                     combined_df = pd.concat([combined_df, df.iloc[1:]],
                                             ignore_index=True)
                 else:
-                    log_also_console(
+                    print(
                         f"⚠️ Column mismatch in {file}, including full file."
                     )
                     combined_df = pd.concat([combined_df, df],
                                             ignore_index=True)
 
         combined_df.to_csv(combined_path, sep="\t", header=True, index=False)
-        log_also_console(f"✅ Combined files into {combined_path}")
+        print(f"✅ Combined files into {combined_path}")

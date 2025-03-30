@@ -2,7 +2,7 @@
 % Please edit documentation in R/PRIMEloci.R
 \name{PRIMEloci}
 \alias{PRIMEloci}
-\title{Run the full PRIMEloci pipeline for regulatory element prediction}
+\title{Run the full plc pipeline for regulatory element prediction}
 \usage{
 PRIMEloci(
   ctss_rse,
@@ -27,7 +27,16 @@ This can be one of the following:
   \item A full path to a conda environment directory.
 }
 The specified path must exist and be valid.
-Default is `"~/.virtualenvs/prime-env"`.}
+Default is `"~/.virtualenvs/prime-env"`.
+
+\strong{Important:} If Python is already initialized
+(e.g., in RStudio or a long-running session),
+changing the Python environment from within the function
+will not take effect. To guarantee that the correct Python is used 
+(especially when pointing to `"/usr/bin/python3"`),
+set the environment variable `RETICULATE_PYTHON`
+before starting R or RStudio.
+Alternatively, call [configure_plc_python()] early in the session.}
 
 \item{score_threshold}{Minimum score threshold for core region predictions.
 Must be between 0 and 1. Default is `0.75`.}
@@ -88,7 +97,18 @@ Output non-overlapping core regulatory loci
 in `GRanges` or `GRangesList` object, and (optional) BED file format
 for further analysis.
 }
+}
+\section{Python Environment}{
+
+This function attempts to configure Python using the `python_path` argument.
+However, due to reticulate's behavior, Python must be configured
+before initialization. If using a system Python path
+(e.g., `"/usr/bin/python3"`), set `RETICULATE_PYTHON` before launching R.
+For virtualenvs and conda environments,
+configuration within the session usually works unless Python has already
+been initialized.
 
 If `keep_tmp = FALSE`, temporary files will be removed
 after the pipeline completes.
 }
+

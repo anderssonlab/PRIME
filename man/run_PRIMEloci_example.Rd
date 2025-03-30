@@ -4,7 +4,11 @@
 \alias{run_PRIMEloci_example}
 \title{Run PRIMEloci on ctss_rse_chr15to17.rds from extdata}
 \usage{
-run_PRIMEloci_example(python_path = "~/.virtualenvs/prime-env")
+run_PRIMEloci_example(
+  python_path = "~/.virtualenvs/prime-env",
+  log_dir = NULL,
+  keep_tmp = FALSE
+)
 }
 \arguments{
 \item{python_path}{Path to Python virtual environment}
