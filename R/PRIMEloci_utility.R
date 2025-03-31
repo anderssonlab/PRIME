@@ -59,6 +59,21 @@ plc_trylog <- function(expr, log_file, print_console = TRUE) {
   )
 }
 
+# Dynamically choose required packages based on numpy version
+choose_required_packages <- function(required_numpy1, required_numpy2) {
+  if (!reticulate::py_available(initialize = TRUE)) {
+    stop("Python not initialized.")
+  }
+  numpy_version <- as.character(reticulate::import("numpy")$`__version__`)
+  if (utils::compareVersion(numpy_version, "2.0.0") >= 0) {
+    message("🧪 Detected NumPy >= 2.0 — using modern package requirements.\n")
+    required_numpy2
+  } else {
+    message("🧪 Detected NumPy < 2.0 — using legacy package requirements.\n")
+    required_numpy1
+  }
+}
+
 #' Internal utility to check that all required Python packages are installed
 #' and meet the minimum version requirements. Raises an error if any package
 #' is missing or incompatible. Not exported.
@@ -149,7 +164,7 @@ plc_test_scipy_save_npz <- function(log_target = NULL) {
 #' @return Python configuration object from `reticulate::py_config()`
 #' @export
 configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
-                                       log_target = NULL) {
+                                 log_target = NULL) {
   python_path <- path.expand(python_path)
 
   if (reticulate::py_available(initialize = FALSE)) {
@@ -181,17 +196,31 @@ configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
     plc_log(sprintf("📦 Loaded Python: %s", py_conf$python), log_target)
   }
 
-  # Required packages (match your validated env)
-  required_packages <- list(
-    numpy         = "2.0.2",
-    scipy         = "1.13.1",
-    pandas        = "2.2.3",
-    joblib        = "1.4.2",
-    sklearn       = "1.4.2",
+  required_packages_numpy1 <- list(
+    numpy         = "1.26.0",
+    scipy         = "1.11.0",
+    pandas        = "2.1.0",
+    joblib        = "1.3.0",
+    sklearn       = "1.3.0",
+    lightgbm      = "4.1.0",
+    pyarrow       = "14.0.0",
+    fastparquet   = "2023.8.0"
+  )
+
+  required_packages_numpy2 <- list(
+    numpy         = "2.0.0",
+    scipy         = "1.13.0",
+    pandas        = "2.2.0",
+    joblib        = "1.4.0",
+    sklearn       = "1.6.0",
     lightgbm      = "4.6.0",
-    pyarrow       = "17.0.0",
+    pyarrow       = "19.0.0",
     fastparquet   = "2024.11.0"
   )
+
+  required_packages <- choose_required_packages(required_packages_numpy1,
+                                                required_packages_numpy2)
+
   check_python_dependencies(required_packages)
   plc_test_scipy_save_npz(log_target)
 
@@ -288,6 +317,31 @@ get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
   }
 
   return(tc_grl)
+}
+
+extend_fromthick <- function(tc_gr, ext_dis = 200) {
+
+  assertthat::assert_that(
+    inherits(tc_gr, "GRanges"),
+    msg = "\n❌ tc_object must be a GRanges object"
+  )
+
+  # Create new ranges around thick positions
+  new_ranges <- IRanges::IRanges(start = start(tc_gr$thick) - ext_dis,
+                                 end = end(tc_gr$thick) + ext_dis)
+
+  # Assign new ranges to object
+  new_object <- tc_gr
+  IRanges::ranges(new_object) <- new_ranges
+  # Trim new object
+  writeLines("Trimming out-of-bound ranges...")
+  new_object <- GenomicRanges::trim(new_object)
+  writeLines("Keep only prefered width...\n")
+  len_vec <- ext_dis * 2 + 1
+  new_object_widths <- GenomicRanges::width(new_object)
+  new_object <- new_object[new_object_widths == len_vec]
+
+  return(new_object)
 }
 
 #' Validate a TC object
@@ -1559,4 +1613,29 @@ find_bed_files_by_partial_name <- function(dir,
   }
 
   return(files)
+}
+
+#' Disambiguate duplicate sample names from a named result list
+#'
+#' This internal function extracts sample names from a list of result objects,
+#' checks for duplicates, and appends numeric suffixes (e.g., "_1", "_2") to
+#' ensure uniqueness. It logs any name changes using `plc_log()`.
+disambiguate_sample_names <- function(named_list, log_target) {
+  sample_names <- vapply(named_list, `[[`, character(1), "name")
+  if (any(duplicated(sample_names))) { # nolint: line_length_linter.
+    plc_log("⚠️ Duplicate sample names found. Appending numeric suffixes to ensure uniqueness.", log_target) # nolint: line_length_linter.
+    sample_names_old <- sample_names
+    sample_names <- make.unique(sample_names, sep = "_")
+    changed <- sample_names_old != sample_names
+    if (any(changed)) {
+      plc_log("🔍 Sample name resolution:", log_target)
+      for (i in which(changed)) {
+        plc_log(sprintf(" • %s ➜ %s",
+                        sample_names_old[i],
+                        sample_names[i]),
+                log_target)
+      }
+    }
+  }
+  sample_names
 }

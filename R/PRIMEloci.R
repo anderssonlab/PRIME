@@ -162,7 +162,7 @@ PRIMEloci <- function(
   }
 
   py_conf <- configure_plc_python(python_path = python_path,
-                                        log_target = log_target)
+                                  log_target = log_target)
 
   # setting
 
@@ -432,6 +432,7 @@ PRIMEloci <- function(
   plc_log(sprintf("✅ DONE :: Postprocessed %d file(s) successfully.",
                   length(result_named_list)), log_target)
 
+  sample_names <- disambiguate_sample_names(result_named_list, log_target)
 
   # Final return object
   if (length(result_named_list) == 1) {
@@ -440,7 +441,7 @@ PRIMEloci <- function(
     result_gr_final <- GenomicRanges::GRangesList(
       setNames(
         lapply(result_named_list, `[[`, "gr"),
-        vapply(result_named_list, `[[`, character(1), "name")
+        sample_names
       )
     )
   }

@@ -8,7 +8,7 @@
 #' @export
 run_PRIMEloci_example <- function(python_path = "~/.virtualenvs/prime-env",
                                   log_dir = NULL,
-                                  keep_tmp = FALSE) { # nolint: line_length_linter.
+                                  keep_tmp = FALSE) {
   rds_path <- system.file("extdata",
                           "ctss_rse_chr16to17.rds",
                           package = "PRIME")

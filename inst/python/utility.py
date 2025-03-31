@@ -261,7 +261,7 @@ def combine_bed_files(input_dir, output_dir):
     # Group files by prefix (everything before _chr*)
     for bed_file in bed_files:
         filename = os.path.basename(bed_file)
-        match = re.match(r"^(.*)chr[^_\.\-]+(?=[_\.\-]|\.bed$)", filename)
+        match = re.match(r"^(.*)_chr[^_\.\-]+(?=[_\.\-]|\.bed$)", filename)
 
         if match:
             prefix = match.group(1)
