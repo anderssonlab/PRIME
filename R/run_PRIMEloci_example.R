@@ -23,3 +23,5 @@ run_PRIMEloci_example <- function(python_path = "~/.virtualenvs/prime-env",
 
   return(result)
 }
+
+# load(ctss_rse)
