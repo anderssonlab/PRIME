@@ -1226,8 +1226,6 @@ plc_profile <- function(ctss_rse,
                                 profile_dir_name = profile_dir_name)
 
   num_jobs <- length(GenomeInfoDb::seqlevels(regions_gr))
-  plc_log(paste("TEST ", num_jobs, " to check"),
-          log_file, "INFO", print_console = FALSE)
   if (is.null(num_cores)) {
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
