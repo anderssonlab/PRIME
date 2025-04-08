@@ -37,4 +37,8 @@ Imports:
     reticulate,
     rtracklayer,
     yaml,
-    arrow
+    arrow,
+    future,
+    future.apply,
+    tools,
+    sparseMatrixStats

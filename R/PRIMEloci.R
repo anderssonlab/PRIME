@@ -445,11 +445,7 @@ PRIMEloci <- function(
       )
     )
   }
-
-  plc_log("✅ DONE :: Postprocessing completed.", log_target)
-  message("✅✅✅ PRIMEloci pipeline completed successfully !!!!!")
-  plc_log(sprintf("🏁 Pipeline completed at: %s", Sys.time()), log_target)
-
+  
   on.exit({
     if (!keep_tmp) {
       if (dir.exists(outdir)) {
@@ -459,6 +455,10 @@ PRIMEloci <- function(
       }
     }
   }, add = TRUE)
+
+  plc_log("✅ DONE :: Postprocessing completed.", log_target)
+  message("✅✅✅ PRIMEloci pipeline completed successfully !!!!!")
+  plc_log(sprintf("🏁 Pipeline completed at: %s", Sys.time()), log_target)
 
   return(result_gr_final)
 }
