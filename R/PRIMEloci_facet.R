@@ -302,10 +302,6 @@ PRIMEloci_facet <- function(
     )
   }
 
-
-  message("✅✅✅ PRIMEloci facet pipeline completed successfully !!!!!")
-  plc_log(sprintf("🏁 Pipeline completed at: %s", Sys.time()), log_target)
-
   on.exit({
     if (!keep_tmp) {
       if (dir.exists(outdir)) {
@@ -316,6 +312,9 @@ PRIMEloci_facet <- function(
       }
     }
   }, add = TRUE)
+  
+  message("✅✅✅ PRIMEloci facet pipeline completed successfully !!!!!")
+  plc_log(sprintf("🏁 Pipeline completed at: %s", Sys.time()), log_target)
 
   return(result_gr_final)
 }

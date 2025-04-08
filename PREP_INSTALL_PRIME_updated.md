@@ -35,7 +35,9 @@ install.packages(c(
   "argparse",
   "doParallel",
   "reticulate",
-  "arrow"
+  "arrow",
+  "Matrix",
+  "tools"
 ))
 
 # 3. Install BiocManager (if not already installed)
@@ -53,6 +55,7 @@ BiocManager::install(c(
   "GenomeInfoDb",
   "BSgenome",
   "rtracklayer",
+  "sparseMatrixStats",
   "DAPAR",
   "DAPARdata"
 ))
@@ -83,11 +86,13 @@ You can prepare the Python environment in **two ways**:
 #### How to create the environment:
 
 ```bash
+cd PRIME
+
 # For NumPy 1.x
-conda env create -f inst/environment_np1.yml
+conda env create -f inst/conda_env/environment_np1.yml
 
 # OR for NumPy 2.x
-conda env create -f inst/environment_np2.yml
+conda env create -f inst/conda_env/environment_np2.yml
 
 # Activate the environment
 conda activate prime-env-numpy1  # or prime-env-numpy2
