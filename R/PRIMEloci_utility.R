@@ -1225,7 +1225,9 @@ plc_profile <- function(ctss_rse,
   file_path <- prep_profile_dir(output_dir = output_dir,
                                 profile_dir_name = profile_dir_name)
 
-  num_jobs <- length(GenomicRanges::seqnames(regions_gr))   
+  num_jobs <- length(GenomicRanges::seqnames(regions_gr))  
+  plc_log(paste("TEST ", num_jobs, " to check"),
+          log_file, "INFO", print_console = FALSE)
   if (is.null(num_cores)) {
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
