@@ -5,7 +5,7 @@
 #' It loads pre-packaged test data, runs the pipeline, and returns the result.
 #'
 #' @param python_path Character path to the Python binary
-#'   in the desired environment. Default is `"~/.virtualenvs/prime-env"`.
+#'   in the desired environment. Default is NULL.
 #' @param log_dir Optional character path to save the log file.
 #'   Default is `"/Users/natsudanav/Desktop/PRIMEloci_facet.log"`.
 #' @param keep_tmp Logical. If `TRUE`, temporary files and folders are retained.

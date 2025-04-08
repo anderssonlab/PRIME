@@ -1,4 +1,4 @@
-#' Run PRIMEloci on ctss_rse_chr15to17.rds from extdata
+#' Run PRIMEloci on ctss_rse_chr16to17.rds from extdata
 #'
 #' @param outdir Output directory for the pipeline
 #' @param python_path Path to Python virtual environment
