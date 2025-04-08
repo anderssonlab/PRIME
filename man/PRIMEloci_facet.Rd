@@ -7,7 +7,7 @@
 PRIMEloci_facet(
   ctss_rse,
   tc_gr,
-  python_path = "~/.virtualenvs/prime-env",
+  python_path = NULL,
   num_cores = NULL,
   keep_tmp = FALSE,
   log_dir = NULL
@@ -20,7 +20,7 @@ PRIMEloci_facet(
 Regions will be extended to 401 bp width if needed.}
 
 \item{python_path}{Character path to the Python binary
-in the desired environment. Default is `"~/.virtualenvs/prime-env"`.}
+in the desired environment. Default is NULL.}
 
 \item{num_cores}{Optional integer specifying the number of CPU cores
 to use for parallel steps.}
