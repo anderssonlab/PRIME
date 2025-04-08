@@ -5,14 +5,14 @@
 \title{Run an Example of the PRIMEloci Facet Pipeline}
 \usage{
 run_PRIMEloci_facet_example(
-  python_path = "~/.virtualenvs/prime-env",
+  python_path = NULL,
   log_dir = NULL,
   keep_tmp = FALSE
 )
 }
 \arguments{
 \item{python_path}{Character path to the Python binary
-in the desired environment. Default is `"~/.virtualenvs/prime-env"`.}
+in the desired environment. Default is NULL.}
 
 \item{log_dir}{Optional character path to save the log file.
 Default is `"/Users/natsudanav/Desktop/PRIMEloci_facet.log"`.}
