@@ -15,7 +15,7 @@
 #'   depending on the number of samples in the example dataset.
 
 #' @export
-run_PRIMEloci_facet_example <- function(python_path = "~/.virtualenvs/prime-env",
+run_PRIMEloci_facet_example <- function(python_path = NULL,
                                         log_dir = NULL,
                                         keep_tmp = FALSE) {
 
