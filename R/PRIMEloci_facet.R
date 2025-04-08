@@ -9,7 +9,7 @@
 #' @param tc_gr A `GRanges` object representing identified regions.
 #'   Regions will be extended to 401 bp width if needed.
 #' @param python_path Character path to the Python binary
-#'   in the desired environment. Default is `"~/.virtualenvs/prime-env"`.
+#'   in the desired environment. Default is NULL.
 #' @param num_cores Optional integer specifying the number of CPU cores
 #'   to use for parallel steps.
 #' @param keep_tmp Logical. If `TRUE`, temporary files and folders
@@ -37,7 +37,7 @@
 PRIMEloci_facet <- function(
     ctss_rse,
     tc_gr,
-    python_path = "~/.virtualenvs/prime-env",
+    python_path = NULL,
     num_cores = NULL,
     keep_tmp = FALSE,
     log_dir = NULL) {
@@ -88,6 +88,10 @@ PRIMEloci_facet <- function(
     )
   }
 
+  if (is.null(python_path)) {
+    py <- reticulate::import("sys")
+    python_path <- py$executable
+  }
   py_conf <- configure_plc_python(python_path = python_path,
                                   log_target = log_target)
 

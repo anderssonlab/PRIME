@@ -23,13 +23,14 @@
 #'   \item The name of a conda environment (e.g., `"prime-env"`),
 #'   \item A full path to a conda environment directory.
 #' }
-#' The specified path must exist and be valid.
-#' Default is `"~/.virtualenvs/prime-env"`.
+#' The specified path must exist and be valid. If it is NULL,
+#' it will try to find the path with reticulate::py_config()
+#' Default is NULL.
 #'
 #' \strong{Important:} If Python is already initialized
 #' (e.g., in RStudio or a long-running session),
 #' changing the Python environment from within the function
-#' will not take effect. To guarantee that the correct Python is used 
+#' will not take effect. To guarantee that the correct Python is used
 #' (especially when pointing to `"/usr/bin/python3"`),
 #' set the environment variable `RETICULATE_PYTHON`
 #' before starting R or RStudio.
@@ -93,7 +94,7 @@
 #' @import assertthat
 PRIMEloci <- function(
     ctss_rse,
-    python_path = "~/.virtualenvs/prime-env",
+    python_path = NULL,
     score_threshold = 0.75,
     score_diff = 0.1,
     num_cores = NULL,
@@ -161,6 +162,10 @@ PRIMEloci <- function(
     )
   }
 
+  if (is.null(python_path)) {
+    py <- reticulate::import("sys")
+    python_path <- py$executable
+  }
   py_conf <- configure_plc_python(python_path = python_path,
                                   log_target = log_target)
 

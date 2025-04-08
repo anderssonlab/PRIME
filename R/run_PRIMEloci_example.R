@@ -6,7 +6,7 @@
 #'
 #' @return GRanges or GRangesList
 #' @export
-run_PRIMEloci_example <- function(python_path = "~/.virtualenvs/prime-env",
+run_PRIMEloci_example <- function(python_path = NULL,
                                   log_dir = NULL,
                                   keep_tmp = FALSE) {
   rds_path <- system.file("extdata",
@@ -23,5 +23,3 @@ run_PRIMEloci_example <- function(python_path = "~/.virtualenvs/prime-env",
 
   return(result)
 }
-
-# load(ctss_rse)
