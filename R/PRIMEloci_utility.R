@@ -332,22 +332,22 @@ configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
     numpy         = "1.26.0",
     scipy         = "1.11.0",
     pandas        = "2.1.0",
-    joblib        = "1.3.0",
+    joblib        = "1.2.0",
     sklearn       = "1.3.0",
     lightgbm      = "4.1.0",
     pyarrow       = "14.0.0",
-    fastparquet   = "2023.8.0"
+    fastparquet   = "2023.4.0"
   )
 
   required_packages_numpy2 <- list(
     numpy         = "2.0.0",
     scipy         = "1.13.0",
-    pandas        = "2.2.0",
-    joblib        = "1.4.0",
-    sklearn       = "1.6.0",
+    pandas        = "2.1.0",
+    joblib        = "1.2.0",
+    sklearn       = "1.4.0",
     lightgbm      = "4.6.0",
-    pyarrow       = "19.0.0",
-    fastparquet   = "2024.11.0"
+    pyarrow       = "14.0.0",
+    fastparquet   = "2023.4.0"
   )
 
   required_packages <- choose_required_packages(required_packages_numpy1,
