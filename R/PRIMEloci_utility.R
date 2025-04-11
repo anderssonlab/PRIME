@@ -245,15 +245,15 @@ plc_test_scipy_save_npz <- function(log_target = NULL) {
     scipy <- reticulate::import("scipy.sparse", delay_load = FALSE)
 
     if (inherits(test_matrix, "dgCMatrix")) {
-      test_py <- scipy$csc_matrix(reticulate::tuple(test_matrix@x,
-                                                    test_matrix@i,
-                                                    test_matrix@p),
+      test_py <- scipy$csc_array(reticulate::tuple(test_matrix@x,
+                                                   test_matrix@i,
+                                                   test_matrix@p),
                                   shape = reticulate::tuple(test_matrix@Dim[1],
                                                             test_matrix@Dim[2]))
     } else if (inherits(test_matrix, "dgRMatrix")) {
-      test_py <- scipy$csr_matrix(reticulate::tuple(test_matrix@x,
-                                                    test_matrix@j,
-                                                    test_matrix@p),
+      test_py <- scipy$csr_array(reticulate::tuple(test_matrix@x,
+                                                   test_matrix@j,
+                                                   test_matrix@p),
                                   shape = reticulate::tuple(test_matrix@Dim[1],
                                                             test_matrix@Dim[2]))
     } else {
@@ -994,11 +994,11 @@ plc_save_to_file <- function(data,
       scipy <- reticulate::import("scipy.sparse", delay_load = TRUE)
 
       py_matrix <- if (inherits(data, "dgCMatrix")) {
-        scipy$csc_matrix(reticulate::tuple(data@x, data@i, data@p),
-                         shape = reticulate::tuple(data@Dim[1], data@Dim[2]))
+        scipy$csc_array(reticulate::tuple(data@x, data@i, data@p),
+                        shape = reticulate::tuple(data@Dim[1], data@Dim[2]))
       } else {
-        scipy$csr_matrix(reticulate::tuple(data@x, data@j, data@p),
-                         shape = reticulate::tuple(data@Dim[1], data@Dim[2]))
+        scipy$csr_array(reticulate::tuple(data@x, data@j, data@p),
+                        shape = reticulate::tuple(data@Dim[1], data@Dim[2]))
       }
 
       npz_path <- paste0(full_file_path, ".npz")
