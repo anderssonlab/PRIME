@@ -40,7 +40,7 @@ install.packages(c(
   "reticulate",
   "arrow",
   "Matrix",
-  "tools"
+  "caTools"
 ))
 
 # 3. Install BiocManager (if not already installed)
@@ -58,17 +58,17 @@ BiocManager::install(c(
   "GenomeInfoDb",
   "BSgenome",
   "rtracklayer",
-  "sparseMatrixStats",
-  "DAPAR",
-  "DAPARdata"
-))
+  "sparseMatrixStats"
+), lib = "/path/to/R_packakges/")
 
 # 5. Install devtools if needed
 if (!requireNamespace("devtools", quietly = TRUE))
-  install.packages("devtools")
+  install.packages("devtools", lib = "/path/to/R_packakges/"")
 
 # 6. Install bcp from GitHub (custom version)
 devtools::install_github("swang87/bcp")
+
+# ****** remotes instead of devtools if not successfully install devtools
 ```
 
 ---
