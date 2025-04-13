@@ -42,58 +42,6 @@ PRIMEloci_facet <- function(
     keep_tmp = FALSE,
     log_dir = NULL) {
 
-  # Validate inputs
-
-  # Check ctss_rse
-  assertthat::assert_that(
-    methods::is(ctss_rse, "RangedSummarizedExperiment"),
-    msg = "`ctss_rse` must be a RangedSummarizedExperiment object."
-  )
-
-  # Set internal temporary output directory
-  outdir <- file.path(tempdir(), "PRIMEloci_output")
-  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
-  message(sprintf("📁 Temporary output directory: %s", outdir))
-
-  # Temporary working directories
-  primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
-  dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
-
-  # Set up logging
-  if (is.null(log_dir)) {
-    log_target <- stdout()  # Log to R console
-  } else {
-    log_dir <- normalizePath(path.expand(log_dir), mustWork = FALSE)
-
-    assertthat::assert_that(
-      is.character(log_dir),
-      length(log_dir) == 1,
-      msg = "`log_dir` must be a single character path or NULL."
-    )
-
-    if (!dir.exists(log_dir)) {
-      dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
-    }
-
-    log_target <- file.path(log_dir, "PRIMEloci.log")
-    message(sprintf("📝 Log file will be saved to: %s", log_target))
-  }
-
-  if (!is.null(num_cores)) {
-    assertthat::assert_that(
-      is.numeric(num_cores),
-      num_cores %% 1 == 0,
-      num_cores > 0,
-      msg = "`num_cores` must be a positive integer or NULL."
-    )
-  }
-
-  if (is.null(python_path)) {
-    py <- reticulate::import("sys")
-    python_path <- py$executable
-  }
-  py_conf <- configure_plc_python(python_path = python_path,
-                                  log_target = log_target)
 
   # setting
   profile_dir_name <- "PRIMEloci_profiles"
@@ -105,45 +53,114 @@ PRIMEloci_facet <- function(
   name_prefix <- "PRIMEloci"
   model_name <- "PRIMEloci_GM12878_model_1.0.sav"
 
-  plc_log("🚀 Starting PRIMEloci facet pipeline", log_target)
+
+  # Validate inputs
+
+  # Check ctss_rse
+  assertthat::assert_that(
+    methods::is(ctss_rse, "RangedSummarizedExperiment"),
+    msg = "❌ `ctss_rse` must be a RangedSummarizedExperiment object."
+  )
+
+  # Set internal temporary output directory
+  outdir <- file.path(tempdir(), "PRIMEloci_output")
+  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+  plc_message(sprintf("📁 Temporary output directory: %s", outdir))
+
+  # Temporary working directories
+  primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
+  dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
+
+  # Logging setup
+  if (is.null(log_dir)) {
+    log_target <- stdout()  # Console-only
+  } else {
+    log_dir <- normalizePath(path.expand(log_dir), mustWork = FALSE)
+
+    assertthat::assert_that(
+      is.character(log_dir),
+      length(log_dir) == 1,
+      msg = "❌ `log_dir` must be a single character path or NULL."
+    )
+
+    if (!dir.exists(log_dir)) {
+      dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+
+    log_target <- file.path(log_dir, "PRIMEloci.log")
+    plc_message(sprintf("📝 Log file will be saved to: %s", log_target))
+
+    # This captures stdout (e.g., cat, print, plc_log) to both console + file
+    sink(log_target, append = TRUE, split = TRUE)
+
+    on.exit({
+      sink(NULL)  # close stdout sink
+    }, add = TRUE)
+  }
+
+  if (!is.null(num_cores)) {
+    assertthat::assert_that(
+      is.numeric(num_cores),
+      num_cores %% 1 == 0,
+      num_cores > 0,
+      msg = "❌ `num_cores` must be a positive integer or NULL."
+    )
+  }
+
+  plc_message("\n")
+  plc_message("🚀 Setting up Python environment")
+  if (is.null(python_path)) {
+    py <- reticulate::import("sys")
+    python_path <- py$executable
+  }
+  py_conf <- plc_configure_python(python_path = python_path)
+  check_npz <- plc_test_scipy_save_npz()
+  if (!check_npz) {
+    plc_message("⚠️ Falling back to .parquet format")
+    file_type <- "parquet"
+  } else {
+    plc_message("✅ Using .npz format")
+    file_type <- "npz"
+  }
+
+  plc_message("\n")
+  plc_message("🚀 Starting PRIMEloci facet pipeline")
 
   # _2_
-  plc_log("\n\n\n 🚀 Validating the tc granges object provided",
-          log_target)
+  plc_message("\n")
+  plc_message("🚀 Validating the tc granges object provided")
 
   len_vec <- ext_dis * 2 + 1
 
   # Check if tc_object is a GRanges
   assertthat::assert_that(
     inherits(tc_gr, "GRanges"),
-    msg = "\n❌ the object must be a GRanges object"
+    msg = "❌ The object must be a GRanges object."
   )
 
   # Ensure all regions have the correct width
   if (all(GenomicRanges::width(tc_gr) != len_vec)) {
-    msg <- paste("\n⚠️ All regions in the object (GRanges) must have width",
+    msg <- paste("⚠️ All regions in the object (GRanges) must have width",
                  len_vec,
                  " : extend 401 bp from thick if existed")
     tc_gr <- extend_fromthick(tc_gr = tc_gr,
                               ext_dis = ext_dis)
   } else {
-    msg <- paste("\n✅ All regions in the object (GRanges) have width", len_vec) # nolint: line_length_linter.
+    msg <- paste("✅ All regions in the object (GRanges) have width", len_vec) # nolint: line_length_linter.
   }
-  plc_log(msg, log_target)
+  plc_message(msg)
 
-  validate_tc <- validate_tc_object(tc_gr, ctss_rse, ext_dis = ext_dis)
+  validate_tc <- plc_validate_tc_object(tc_gr, ctss_rse, ext_dis = ext_dis)
 
   if (!validate_tc) {
-    msg <- "\nTC object validation failed. Ensure the TC object is valid."
-    plc_log(msg, log_target, level = "❌ ERROR")
-    stop(msg)
+    plc_error("❌ TC object validation failed. Ensure the TC object is valid.")
   }
-  plc_log("✅ DONE :: TC object is validated and ready to use.", log_target)
+  plc_message("✅ DONE :: TC object is validated and ready to use.")
 
 
   # _4_
-  plc_log("\n\n\n 🚀 Computing count & normalized profiles for each sample", # nolint: line_length_linter.
-          log_target)
+  plc_message("\n")
+  plc_message("🚀 Computing count & normalized profiles for each sample")
 
   plc_profile(
     ctss_rse,
@@ -155,14 +172,13 @@ PRIMEloci_facet <- function(
     addtn_to_filename = addtn_to_filename,
     save_count_profiles = save_count_profiles,
     num_cores = num_cores,
-    log_file = log_target,
     ext_dis
   )
 
 
   # _5_
-  plc_log("\n\n\n 🚀 Predicting probability using PRIMEloci model",
-          log_target)
+  plc_message("\n")
+  plc_message("🚀 Predicting probability using PRIMEloci model")
 
   profile_main_dir <- file.path(primeloci_tmp,
                                 profile_dir_name)
@@ -171,9 +187,7 @@ PRIMEloci_facet <- function(
   profile_files <- list.files(profiles_subtnorm_dir,
                               pattern = "\\.(npz|parquet|csv)$")
   if (length(profile_files) == 0) {
-    msg <- paste("❌ No profile files found in:", profile_main_dir)
-    plc_log(msg, log_target, level = "❌ ERROR")
-    stop(msg)
+    plc_error(paste("❌ No profile files found in:", profile_main_dir))
   }
 
   model_path <- file.path(system.file("model", package = "PRIME"), model_name)
@@ -211,11 +225,10 @@ PRIMEloci_facet <- function(
   }
 
   # Log the full Python command for debug before running
-  plc_log(paste("🔧 Python command:",
-                paste(shQuote(prediction_cmd), collapse = " ")),
-          log_target, print_console = FALSE)
+  plc_message(paste("🔧 Python command:",
+                    paste(shQuote(prediction_cmd), collapse = " ")))
 
-  plc_log("🔹 Running Python prediction script...", log_target)
+  plc_message("🔹 Running Python prediction script...")
   result <- tryCatch(
     {
       output <- system2(py_exec,
@@ -226,35 +239,30 @@ PRIMEloci_facet <- function(
       output
     },
     error = function(e) {
-      msg <- paste("❌ ERROR during prediction execution:", e$message)
-      plc_log(msg, log_target, level = "❌ ERROR")
+      msg <- paste("❌ ERROR during prediction execution: ", e$message)
+      plc_message(msg)
       attr(msg, "status") <- 1
-      msg
+      return(msg)
     }
   )
   if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
-    msg <- "❌ Prediction script failed. Check PRIMEloci.log for details."
-    plc_log(msg, log_target, level = "❌ ERROR")
-    stop(msg)
+    plc_error("❌ Prediction script failed. Check PRIMEloci.log for details.")
   } else {
-    plc_log("✅ DONE :: Prediction script executed successfully.", log_target)
+    plc_message("✅ DONE :: Prediction script executed successfully.")
   }
 
-  plc_log("\n\n\n 🚀 Importing prediction BEDs",
-          log_target)
+  plc_message("\n")
+  plc_message("🚀 Importing prediction BEDs")
 
-  bed_files <- find_bed_files_by_partial_name(primeloci_tmp,
-                                              partial_name = postprocess_partial_name, # nolint: line_length_linter.
-                                              log_file = log_target)
+  bed_files <- plc_find_bed_files_by_partial_name(primeloci_tmp,
+                                                  partial_name = postprocess_partial_name) # nolint: line_length_linter.
   if (length(bed_files) == 0) {
-    msg <- paste("❌ No BED files found for postprocessing in", primeloci_tmp)
-    plc_log(msg, log_target, level = "❌ ERROR")
-    stop(msg)
+    plc_error(paste("❌ No BED files found for postprocessing in",
+                    primeloci_tmp))
   }
 
-  plc_log(sprintf("📂 Found %d BED file(s) for processing.",
-                  length(bed_files)),
-          log_target)
+  plc_message(sprintf("📂 Found %d BED file(s) for processing.",
+                      length(bed_files)))
   result_named_list <- lapply(seq_along(bed_files), function(i) {
     bed_file <- bed_files[i]
     basename_raw <- tools::file_path_sans_ext(basename(bed_file))
@@ -264,7 +272,7 @@ PRIMEloci_facet <- function(
                          "\\1",
                          basename_raw)
     # Load and prepare data
-    bed <- load_bed_file(bed_file)
+    bed <- plc_load_bed_file(bed_file)
     gr <- create_granges_from_bed(bed)
 
     sample_name <- if (identical(pattern_match, basename_raw)) {
@@ -276,7 +284,7 @@ PRIMEloci_facet <- function(
     if (!is.null(gr)) {
       list(name = sample_name, gr = gr)
     } else {
-      plc_log(paste("⚠️ Skipped due to failure:", bed_file), log_target)
+      plc_message(paste("⚠️ Skipped due to failure:", bed_file))
       NULL
     }
   })
@@ -285,14 +293,12 @@ PRIMEloci_facet <- function(
   result_named_list <- Filter(Negate(is.null), result_named_list)
 
   if (length(result_named_list) == 0) {
-    msg <- "❌ All attempts failed or returned NULL."
-    plc_log(msg, log_target, level = "❌ ERROR")
-    stop(msg)
+    plc_error("❌ All attempts failed or returned NULL.")
   }
-  plc_log(sprintf("✅ DONE :: importing %d file(s) successfully.",
-                  length(result_named_list)), log_target)
+  plc_message(sprintf("✅ DONE :: importing %d file(s) successfully.",
+                      length(result_named_list)))
 
-  sample_names <- disambiguate_sample_names(result_named_list, log_target)
+  sample_names <- disambiguate_sample_names(result_named_list)
 
   # Final return object
   if (length(result_named_list) == 1) {
@@ -310,15 +316,16 @@ PRIMEloci_facet <- function(
     if (!keep_tmp) {
       if (dir.exists(outdir)) {
         unlink(outdir, recursive = TRUE, force = TRUE)
-        plc_log(sprintf("🧹 Temporary directory '%s' has been cleaned up.",
-                        outdir),
-                log_target)
+        plc_message((sprintf("🧹 Temporary directory '%s' has been cleaned up.",
+                             outdir)))
       }
     }
   }, add = TRUE)
-  
-  message("✅✅✅ PRIMEloci facet pipeline completed successfully !!!!!")
-  plc_log(sprintf("🏁 Pipeline completed at: %s", Sys.time()), log_target)
+
+  plc_message("\n")
+  plc_message("✅✅✅ PRIMEloci facet pipeline completed successfully !!!!!")
+  plc_message(sprintf("🏁 Pipeline completed at: %s", Sys.time()))
+  plc_message("\n")
 
   return(result_gr_final)
 }

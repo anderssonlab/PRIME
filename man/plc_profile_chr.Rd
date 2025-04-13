@@ -13,8 +13,7 @@ plc_profile_chr(
   output_file_prefix,
   ext_dis,
   save_count_profiles = FALSE,
-  file_type = "parquet",
-  log_file
+  file_type = "parquet"
 )
 }
 \arguments{
@@ -33,8 +32,6 @@ plc_profile_chr(
 \item{save_count_profiles}{Logical. Save raw count profiles as well?}
 
 \item{file_type}{Output format: "csv", "parquet", or "npz".}
-
-\item{log_file}{Log file path.}
 }
 \value{
 A list with chromosome name and processing status.

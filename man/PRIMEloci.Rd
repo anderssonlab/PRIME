@@ -37,7 +37,7 @@ will not take effect. To guarantee that the correct Python is used
 (especially when pointing to `"/usr/bin/python3"`),
 set the environment variable `RETICULATE_PYTHON`
 before starting R or RStudio.
-Alternatively, call [configure_plc_python()] early in the session.}
+Alternatively, call [plc_configure_python()] early in the session.}
 
 \item{score_threshold}{Minimum score threshold for core region predictions.
 Must be between 0 and 1. Default is `0.75`.}

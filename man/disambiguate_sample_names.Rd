@@ -4,7 +4,7 @@
 \alias{disambiguate_sample_names}
 \title{Disambiguate duplicate sample names from a named result list}
 \usage{
-disambiguate_sample_names(named_list, log_target)
+disambiguate_sample_names(named_list)
 }
 \description{
 This internal function extracts sample names from a list of result objects,

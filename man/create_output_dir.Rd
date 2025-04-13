@@ -6,10 +6,6 @@
 \usage{
 create_output_dir(output_dir)
 }
-\arguments{
-\item{output_dir}{A character string specifying the path
-to the output directory.}
-}
 \description{
 Create the output directory if it doesn't exist
 }

@@ -1,41 +1,38 @@
-##' Create the output directory if it doesn't exist
-#'
-#' @param output_dir A character string specifying the path
-#' to the output directory.
-#'
+#' Logging Functions for PRIMEloci
 #' @export
+plc_log <- function(message,
+                    level = "INFO") {
+  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  cat(sprintf("[%s] %s %s\n", level, timestamp, message))
+}
+
+#' Log a message with INFO level
+#' @export
+plc_message <- function(msg) {
+  plc_log(msg, level = "INFO")
+}
+
+#' Log a message with WARN level
+#' @export
+plc_warn <- function(msg) {
+  plc_log(msg, level = "WARN")
+  warning(msg, call. = FALSE)
+}
+
+#' Log a message with ERROR level
+#' @export
+plc_error <- function(msg) {
+  plc_log(msg, level = "ERROR")
+  stop(msg, call. = FALSE)
+}
+
+#' Create the output directory if it doesn't exist
 create_output_dir <- function(output_dir) {
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    message(sprintf("📁 Output directory created: %s", output_dir))
+    plc_message(sprintf("📁 Output directory created: %s", output_dir))
   } else {
-    message(sprintf("📁 Output directory already exists: %s", output_dir))
-  }
-}
-
-#' Set up logging to console or file
-#'
-#' @param log Logical or NULL. If NULL, log to console; otherwise,
-#' log to file.
-#' @param outdir Character. Path to the output directory
-#' where logs will be stored.
-#'
-#' @return A connection or file path to be used as the logging target.
-#' @export
-setup_log_target <- function(log, outdir) {
-  if (is.null(log)) {
-    stdout()
-  } else {
-    log_dir <- file.path(outdir, "PRIMEloci_log")
-    if (!dir.exists(log_dir)) {
-      dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
-      message(sprintf("📁 Log directory created: %s", log_dir))
-    } else {
-      message(sprintf("📁 Log directory already exists: %s", log_dir))
-    }
-    log_file <- file.path(log_dir, "PRIMEloci.log")
-    message(sprintf("📝 Log file will be saved to: %s", log_file))
-    log_file
+    plc_message(sprintf("📁 Output directory already exists: %s", output_dir))
   }
 }
 
@@ -49,15 +46,41 @@ setup_log_target <- function(log, outdir) {
 #'
 #' @return A character string with the full path to the temporary directory.
 #' @export
-setup_tmp_dir <- function(output_dir) {
+plc_setup_tmp_dir <- function(output_dir) {
   tmp_dir <- file.path(output_dir, "PRIMEloci_tmp")
   if (!dir.exists(tmp_dir)) {
     dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
-    message(sprintf("📁 Temporary directory created: %s", tmp_dir))
+    plc_message(sprintf("📁 Temporary directory created: %s", tmp_dir))
   } else {
-    message(sprintf("📁 Temporary directory already exists: %s", tmp_dir))
+    plc_message(sprintf("📁 Temporary directory already exists: %s", tmp_dir))
   }
   tmp_dir
+}
+
+#' Set up logging to console or file
+#'
+#' @param log Logical or NULL. If NULL, log to console; otherwise,
+#' log to file.
+#' @param outdir Character. Path to the output directory
+#' where logs will be stored.
+#'
+#' @return A connection or file path to be used as the logging target.
+#' @export
+plc_setup_log_target <- function(log, outdir) {
+  if (is.null(log)) {
+    stdout()
+  } else {
+    log_dir <- file.path(outdir, "PRIMEloci_log")
+    if (!dir.exists(log_dir)) {
+      dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
+      plc_message(sprintf("📁 Log directory created: %s", log_dir))
+    } else {
+      plc_message(sprintf("📁 Log directory already exists: %s", log_dir))
+    }
+    log_file <- file.path(log_dir, "PRIMEloci.log")
+    plc_message(sprintf("📝 Log file will be saved to: %s", log_file))
+    log_file
+  }
 }
 
 #' Extract CAGE Transcription Start Sites (CTSSs) from BigWig Files
@@ -83,20 +106,20 @@ setup_tmp_dir <- function(output_dir) {
 #'   counts of transcription start sites, including pooled counts.
 #' @examples
 #' \dontrun{
-#' ctss_result <- get_ctss_from_bw("path/to/bigwig/files",
-#'                                 design_matrix,
-#'                                 genome_info,
-#'                                 drop_chr = c("chrM"))
+#' ctss_result <- plc_get_ctss_from_bw("path/to/bigwig/files",
+#'                                     design_matrix,
+#'                                     genome_info,
+#'                                     drop_chr = c("chrM"))
 #' }
 #' @import rtracklayer
 #' @import GenomicRanges
 #' @import CAGEfightR
 #' @export
-get_ctss_from_bw <- function(dir_cage_bw,
-                             design_matrix,
-                             genome_info = NULL,
-                             drop_chr = NULL,
-                             keep_chr = NULL) {
+plc_get_ctss_from_bw <- function(dir_cage_bw,
+                                 design_matrix,
+                                 genome_info = NULL,
+                                 drop_chr = NULL,
+                                 keep_chr = NULL) {
 
   # Create BigWigFileList objects for plus and minus strands
   bwplus <- rtracklayer::BigWigFileList(file.path(dir_cage_bw,
@@ -115,7 +138,7 @@ get_ctss_from_bw <- function(dir_cage_bw,
       gn <- GenomeInfoDb::keepSeqlevels(gn, keep_chr)
     }
   } else if (!is.null(drop_chr) || !is.null(keep_chr)) {
-    stop("genome_info must be provided when using drop_chr or keep_chr.")
+    plc_error("❌ genome_info must be provided when using drop_chr or keep_chr.")
   }
 
   # Quantify CTSSs and calculate pooled counts
@@ -128,69 +151,6 @@ get_ctss_from_bw <- function(dir_cage_bw,
   return(orig_ctss)
 }
 
-#' Log a timestamped message with level (and optional console output)
-#'
-#' Writes a log entry to a file with a timestamp and log level.
-#' Optionally prints the same message to the R console.
-#'
-#' @param message A character string to log.
-#' @param log_file Path to the log file.
-#' @param level Log level string (e.g., "INFO", "WARN", "ERROR").
-#' Default is "INFO".
-#' @param print_console Logical. If TRUE, also prints to console
-#' (default: TRUE).
-#'
-#' @return None. Writes to the specified log file.
-#' 
-#' @export
-plc_log <- function(message,
-                    log_file,
-                    level = "INFO",
-                    print_console = FALSE) {
-  timestamp <- base::format(base::Sys.time(), "%Y-%m-%d %H:%M:%S")
-  line <- base::sprintf("[%s] %s %s", level, timestamp, message)
-  base::cat(line, "\n", file = log_file, append = TRUE)
-  if (isTRUE(print_console)) base::message(line)
-}
-
-#' Capture and log messages, warnings, and errors from a code block
-#'
-#' @param expr Code to evaluate.
-#' @param log_file Path to the log file.
-#' @param print_console Logical. Whether to also print output to console.
-#'
-#' @return The result of the evaluated expression, or NULL on error.
-plc_trylog <- function(expr, log_file, print_console = TRUE) {
-  withCallingHandlers(
-    tryCatch(
-      {
-        eval(expr)
-      },
-      error = function(e) {
-        plc_log(conditionMessage(e),
-                log_file,
-                level = "❌ ERROR",
-                print_console = print_console)
-        NULL  # return NULL on error
-      }
-    ),
-    warning = function(w) {
-      plc_log(conditionMessage(w),
-              log_file,
-              level = "⚠️ WARN",
-              print_console = print_console)
-      invokeRestart("muffleWarning")
-    },
-    message = function(m) {
-      plc_log(conditionMessage(m),
-              log_file,
-              level = "INFO",
-              print_console = print_console)
-      invokeRestart("muffleMessage")
-    }
-  )
-}
-
 # Dynamically choose required packages based on numpy version
 choose_required_packages <- function(required_numpy1, required_numpy2) {
   if (!reticulate::py_available(initialize = TRUE)) {
@@ -198,80 +158,153 @@ choose_required_packages <- function(required_numpy1, required_numpy2) {
   }
   numpy_version <- as.character(reticulate::import("numpy")$`__version__`)
   if (utils::compareVersion(numpy_version, "2.0.0") >= 0) {
-    message("🧪 Detected NumPy >= 2.0 — using modern package requirements.\n")
+    plc_message("🔍︎ Detected NumPy >= 2.0 — using modern package requirements.") # nolint: line_length_linter.
     required_numpy2
   } else {
-    message("🧪 Detected NumPy < 2.0 — using legacy package requirements.\n")
+    plc_message("🔍︎ Detected NumPy < 2.0 — using legacy package requirements.") # nolint: line_length_linter.
     required_numpy1
   }
 }
 
-#' Internal utility to check that all required Python packages are installed
-#' and meet the minimum version requirements. Raises an error if any package
-#' is missing or incompatible. Not exported.
-check_python_dependencies <- function(required_packages) {
-  message("🔍 Checking Python dependencies...\n")
+#' Check Required Python Dependencies
+#'
+#' Checks that all required Python packages are installed and meet
+#' the specified minimum version requirements. Raises an error
+#' if any package is missing or incompatible.
+#'
+#' @param required_packages Named list of required packages
+#' with minimum versions.
+#'
+#' @export
+plc_check_python_dependencies <- function(required_packages) {
+  plc_message("🔍 Checking Python dependencies...")
+  failed <- setNames(logical(length(required_packages)),
+                     names(required_packages))
+
   for (pkg in names(required_packages)) {
+
     min_version <- required_packages[[pkg]]
+
     result <- tryCatch({
       mod <- reticulate::import(pkg, delay_load = FALSE)
       version <- as.character(mod$`__version__`)
       version_msg <- paste0("found version ", version)
+
       if (!is.null(min_version) &&
             utils::compareVersion(version, min_version) < 0) {
-        stop(paste0("⚠️  Package '", pkg, "' ", version_msg,
-                    " < required ", min_version))
+        plc_log(paste0("    ❌ Package '", pkg,
+                       "' ", version_msg,
+                       " < required ", min_version),
+                level = "ERROR")
+        FALSE
+      } else {
+        plc_message(paste0("    ✅ ", pkg, ": ", version_msg))
+        TRUE
       }
-      message(paste0("✅ ", pkg, ": ", version_msg))
-      TRUE
+
     }, error = function(e) {
-      message(paste0("❌ ",
-                     pkg,
-                     ": not found or import failed (", e$message, ")"))
+      plc_log(paste0("    ❌ ", pkg, ": ", e$message), level = "ERROR")
       FALSE
     })
-    if (!result) {
-      stop(paste0("🛑 Missing or incompatible Python package: '", pkg, "'"))
-    }
+
+    failed[pkg] <- !result  # mark as failed if result is FALSE
   }
-  message("\n✅ All required Python packages are available.\n")
+
+  if (any(failed)) {
+    msg <- paste0("🛑 Python dependency check failed for: ",
+                  paste(names(failed)[failed], collapse = ", "))
+    plc_error(msg)
+  } else {
+    plc_message("✅ All required Python packages are available.")
+  }
 }
 
-#' Internal test to confirm that scipy.sparse.save_npz() works via reticulate.
-#' This ensures compatibility between R, reticulate, scipy, and numpy.
-plc_test_scipy_save_npz <- function(log_target = NULL) {
+#' Convert R sparse matrix to compatible SciPy sparse object
+#'
+#' Converts a dgCMatrix or dgRMatrix into a scipy.sparse matrix,
+#' using csc_array/csr_array if available, else csc_matrix/csr_matrix.
+#'
+#' @param mat A dgCMatrix or dgRMatrix.
+#' @param scipy The scipy.sparse Python module (already imported).
+#'
+#' @return A reticulate Python object representing the sparse matrix.
+convert_to_scipy_sparse <- function(mat, scipy) {
+  if (!inherits(mat, c("dgCMatrix", "dgRMatrix"))) {
+    plc_message("⚠️ The matrix from vectorListToMatrix() is neither dgCMatrix or dgRMatrix") # nolint: line_length_linter.
+    return(NULL)
+  }
+
+  has_csc_array <- "csc_array" %in% names(scipy)
+  has_csr_array <- "csr_array" %in% names(scipy)
+
+  if (inherits(mat, "dgCMatrix")) {
+    if (has_csc_array) {
+      return(scipy$csc_array(
+        reticulate::tuple(mat@x, mat@i, mat@p),
+        shape = reticulate::tuple(mat@Dim[1], mat@Dim[2])
+      ))
+    } else {
+      return(scipy$csc_matrix(
+        reticulate::tuple(mat@x, mat@i, mat@p),
+        shape = reticulate::tuple(mat@Dim[1], mat@Dim[2])
+      ))
+    }
+  }
+
+  if (inherits(mat, "dgRMatrix")) {
+    if (has_csr_array) {
+      return(scipy$csr_array(
+        reticulate::tuple(mat@x, mat@j, mat@p),
+        shape = reticulate::tuple(mat@Dim[1], mat@Dim[2])
+      ))
+    } else {
+      return(scipy$csr_matrix(
+        reticulate::tuple(mat@x, mat@j, mat@p),
+        shape = reticulate::tuple(mat@Dim[1], mat@Dim[2])
+      ))
+    }
+  }
+}
+
+#' Test Python SciPy Sparse Matrix Export
+#'
+#' Tests whether `scipy.sparse.save_npz()` can successfully save
+#' a sparse matrix. Used to determine compatibility with `.npz` export.
+#'
+#' @return Logical value indicating success (`TRUE`) or failure (`FALSE`).
+#' @export
+plc_test_scipy_save_npz <- function() {
   tryCatch({
-    test_matrix <- Matrix::rsparsematrix(10, 10, density = 0.1)
+    # Mimic heatmapData(..., sparse = TRUE) structure
+    sparse_vectors <- lapply(1:10, function(i) {
+      vec <- Matrix::sparseVector(i = sample(1:20, 3),
+                                  x = runif(3),
+                                  length = 20)
+      as(vec, "dsparseVector")
+    })
+    test_matrix <- vectorListToMatrix(sparse_vectors)  # dgCMatrix
+
     scipy <- reticulate::import("scipy.sparse", delay_load = FALSE)
 
-    if (inherits(test_matrix, "dgCMatrix")) {
-      test_py <- scipy$csc_array(reticulate::tuple(test_matrix@x,
-                                                   test_matrix@i,
-                                                   test_matrix@p),
-                                  shape = reticulate::tuple(test_matrix@Dim[1],
-                                                            test_matrix@Dim[2]))
-    } else if (inherits(test_matrix, "dgRMatrix")) {
-      test_py <- scipy$csr_array(reticulate::tuple(test_matrix@x,
-                                                   test_matrix@j,
-                                                   test_matrix@p),
-                                  shape = reticulate::tuple(test_matrix@Dim[1],
-                                                            test_matrix@Dim[2]))
-    } else {
-      stop("Unsupported test matrix type for SciPy save check.")
+    test_py <- convert_to_scipy_sparse(test_matrix, scipy)
+    if (is.null(test_py)) {
+      plc_message("⚠️ Unsupported sparse matrix for SciPy check.")
+      return(FALSE)
     }
 
     tmpfile <- tempfile(fileext = ".npz")
     scipy$save_npz(tmpfile, test_py)
     unlink(tmpfile)
-    plc_log("✅ SciPy sparse matrix save test passed.", log_target)
+
+    plc_message("✅ SciPy sparse matrix save test passed.")
+    return(TRUE)
+
   }, error = function(e) {
-    msg <- paste("❌ Critical error: scipy.sparse.save_npz() failed — cannot proceed.\n", # nolint: line_length_linter.
-                 "➡️ Set RETICULATE_PYTHON before starting R if using system Python.\n", # nolint: line_length_linter.
-                 "Full error:\n", e$message)
-    plc_log(msg, log_target, level = "❌ ERROR")
-    stop(msg)
+    plc_message(paste("⚠️ scipy.sparse.save_npz() failed.", e$message))
+    return(FALSE)
   })
 }
+
 
 #' Configure Python environment for PRIMEloci
 #'
@@ -291,16 +324,14 @@ plc_test_scipy_save_npz <- function(log_target = NULL) {
 #' using system Python without setting `RETICULATE_PYTHON` early in the session.
 #'
 #' @param python_path Path to Python binary, virtualenv, or conda environment.
-#' @param log_target Path to a log file for output (optional).
 #'
 #' @return Python configuration object from `reticulate::py_config()`
 #' @export
-configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
-                                 log_target = NULL) {
+plc_configure_python <- function(python_path = NULL) {
   python_path <- path.expand(python_path)
 
   if (reticulate::py_available(initialize = FALSE)) {
-    warning("Python has already been initialized — changes may not take effect. Set RETICULATE_PYTHON before starting R or call this early in the session.") # nolint: line_length_linter.
+    plc_warn("⚠️ Python has already been initialized — changes may not take effect. Set RETICULATE_PYTHON before starting R or call this early in the session.") # nolint: line_length_linter.
   }
 
   if (!is.null(python_path) && file.exists(python_path)) {
@@ -314,19 +345,17 @@ configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
     } else if (dir.exists(python_path) && grepl("conda", python_path)) {
       reticulate::use_condaenv(python_path, required = TRUE)
     } else {
-      stop("Invalid python_path: Not recognized as a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
+      plc_error("❌ Invalid python_path: Not recognized as a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
     }
   } else {
-    stop("python_path does not exist: Please provide a valid path to a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
+    plc_error("❌ python_path does not exist: Please provide a valid path to a Python binary, virtualenv, or conda environment.") # nolint: line_length_linter.
   }
 
   py_conf <- reticulate::py_config()
 
   # Logging
-  if (!is.null(log_target)) {
-    plc_log(sprintf("🔧 R version: %s", R.version.string), log_target)
-    plc_log(sprintf("📦 Loaded Python: %s", py_conf$python), log_target)
-  }
+  plc_message(sprintf("🔧 R version: %s", R.version.string))
+  plc_message(sprintf("📦 Loaded Python: %s", py_conf$python))
 
   required_packages_numpy1 <- list(
     numpy         = "1.26.0",
@@ -353,8 +382,7 @@ configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
   required_packages <- choose_required_packages(required_packages_numpy1,
                                                 required_packages_numpy2)
 
-  check_python_dependencies(required_packages)
-  plc_test_scipy_save_npz(log_target)
+  plc_check_python_dependencies(required_packages)
 
   return(py_conf)
 }
@@ -395,12 +423,12 @@ configure_plc_python <- function(python_path = "~/.virtualenvs/prime-env",
 #' @import assertthat
 #'
 #' @export
-get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
+plc_get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
 
   # Assert that ctss_rse is a RangedSummarizedExperiment object
   assertthat::assert_that(
     inherits(ctss_rse, "RangedSummarizedExperiment"),
-    msg = "ctss_rse must be a RangedSummarizedExperiment object."
+    msg = "❌ ctss_rse must be a RangedSummarizedExperiment object."
   )
 
   # Get column names
@@ -412,7 +440,7 @@ get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
   # Loop over column names
   for (i in col_ctss_rse) {
 
-    writeLines(paste("Processing: ", i))
+    plc_message(paste("Processing: ", i))
 
     # Extract data for current column
     ctss <- ctss_rse[, i]
@@ -435,10 +463,10 @@ get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
     IRanges::ranges(new_object) <- new_ranges
 
     # Trim new object
-    writeLines("Trimming out-of-bound ranges...")
+    plc_message("🔹 Trimming out-of-bound ranges...")
     new_object <- GenomicRanges::trim(new_object)
 
-    writeLines("Keep only prefered width...\n")
+    plc_message("🔹 Keep only prefered width...")
     len_vec <- ext_dis * 2 + 1
 
     new_object_widths <- GenomicRanges::width(new_object)
@@ -455,7 +483,7 @@ extend_fromthick <- function(tc_gr, ext_dis = 200) {
 
   assertthat::assert_that(
     inherits(tc_gr, "GRanges"),
-    msg = "\n❌ tc_object must be a GRanges object"
+    msg = "❌ tc_object must be a GRanges object"
   )
 
   # Create new ranges around thick positions
@@ -465,10 +493,12 @@ extend_fromthick <- function(tc_gr, ext_dis = 200) {
   # Assign new ranges to object
   new_object <- tc_gr
   IRanges::ranges(new_object) <- new_ranges
+
   # Trim new object
-  writeLines("Trimming out-of-bound ranges...")
+  plc_message("Trimming out-of-bound ranges...")
   new_object <- GenomicRanges::trim(new_object)
-  writeLines("Keep only prefered width...\n")
+
+  plc_message("Keep only prefered width...")
   len_vec <- ext_dis * 2 + 1
   new_object_widths <- GenomicRanges::width(new_object)
   new_object <- new_object[new_object_widths == len_vec]
@@ -490,13 +520,13 @@ extend_fromthick <- function(tc_gr, ext_dis = 200) {
 #'
 #' #' @examples
 #' # Validate an existing TC object:
-#' validate_tc_object(tc_object, ctss_rse)
+#' plc_validate_tc_object(tc_object, ctss_rse)
 #'
 #' @import GenomicRanges
 #' @import assertthat
 #'
 #' @export
-validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
+plc_validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
 
   len_vec <- ext_dis * 2 + 1
 
@@ -505,7 +535,7 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
     inherits(tc_object, "GRanges") ||
       inherits(tc_object, "GRangesList") ||
       inherits(tc_object, "CompressedGRangesList"),
-    msg = "\n❌ tc_object must be a GRanges, GRangesList, or CompressedGRangesList object" # nolint: line_length_linter.
+    msg = "❌ tc_object must be a GRanges, GRangesList, or CompressedGRangesList object" # nolint: line_length_linter.
   )
 
   if (inherits(tc_object, "GRanges")) {
@@ -513,18 +543,20 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
     # Ensure all regions have the correct width
     assertthat::assert_that(
       all(GenomicRanges::width(tc_object) == len_vec),
-      msg = paste("\n❌ All regions in tc_object (GRanges) must have width", len_vec) # nolint: line_length_linter.
+      msg = paste("❌ All regions in tc_object (GRanges) must have width", len_vec) # nolint: line_length_linter.
     )
 
     # Check seqlevels without modifying
     sl_tc <- GenomeInfoDb::seqlevels(tc_object)
     sl_ctss <- GenomeInfoDb::seqlevels(ctss_rse)
     if (!setequal(sl_tc, sl_ctss)) {
-      warning("⚠️ seqlevels differ between tc_object (GRanges) and ctss_rse — pruning is NOT applied during validation.") # nolint: line_length_linter.
-      message("  → tc_object seqlevels: ", paste(sl_tc, collapse = ", "))
-      message("  → ctss_rse seqlevels:  ", paste(sl_ctss, collapse = ", "))
+      plc_message("⚠️ seqlevels differ between tc_object (GRanges) and ctss_rse — pruning is NOT applied during validation.") # nolint: line_length_linter.
+      plc_message(paste0("   → tc_object seqlevels: ",
+                         paste(sl_tc, collapse = ", ")))
+      plc_message(paste0("   → ctss_rse seqlevels:  ",
+                         paste(sl_ctss, collapse = ", ")))
     } else {
-      message("seqlevels match between tc_object and ctss_rse")
+      plc_message("✅ seqlevels match between tc_object and ctss_rse")
     }
 
   } else {
@@ -533,40 +565,42 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
     assertthat::assert_that(
       all(sapply(tc_object,
                  function(gr) all(GenomicRanges::width(gr) == len_vec))),
-      msg = paste("\n❌ All regions in each GRanges of tc_object (GRangesList) must have width", len_vec) # nolint: line_length_linter.
+      msg = paste("❌ All regions in each GRanges of tc_object (GRangesList) must have width", len_vec) # nolint: line_length_linter.
     )
 
     # Ensure the length of tc_object matches ctss_rse
     assertthat::assert_that(
       length(tc_object) == ncol(ctss_rse),
-      msg = "\n❌ tc_object (GRangesList) must have the same length as ctss_rse" # nolint: line_length_linter.
+      msg = "❌ tc_object (GRangesList) must have the same length as ctss_rse" # nolint: line_length_linter.
     )
 
     # Ensure names match
     assertthat::assert_that(
       identical(names(tc_object), colnames(ctss_rse)),
-      msg = "\n❌ tc_object (GRangesList) must have the same names as ctss_rse" # nolint: line_length_linter.
+      msg = "❌ tc_object (GRangesList) must have the same names as ctss_rse" # nolint: line_length_linter.
     )
 
     # Warn if any seqlevels differ
     ctss_sl <- GenomeInfoDb::seqlevels(ctss_rse)
-    message("ctss_rse seqlevels: ", paste(ctss_sl, collapse = ", "))
+    plc_message(paste0("ctss_rse seqlevels: ",
+                       paste(ctss_sl, collapse = ", ")))
 
     lapply(seq_along(tc_object), function(i) {
       tc_gr <- tc_object[[i]]
       tc_sl <- GenomeInfoDb::seqlevels(tc_gr)
 
       if (!setequal(tc_sl, ctss_sl)) {
-        warning(sprintf("⚠️ seqlevels differ between sample '%s' and ctss_rse — pruning is NOT applied during validation.", # nolint: line_length_linter.
-                        names(tc_object)[i]))
-        message("  → tc_object seqlevels: ", paste(tc_sl, collapse = ", "))
+        plc_message(sprintf("⚠️ seqlevels differ between sample '%s' and ctss_rse — pruning is NOT applied during validation.", # nolint: line_length_linter.
+                            names(tc_object)[i]))
+        plc_message(paste0("   → tc_object seqlevels: ",
+                           paste(tc_sl, collapse = ", ")))
       } else {
-        message(sprintf("seqlevels match for sample '%s'",
-                        names(tc_object)[i]))
+        plc_message(sprintf("seqlevels match for sample '%s'",
+                            names(tc_object)[i]))
       }
     })
   }
-  message("Fnished validating tc_object.")
+  plc_message("✅ Finished validating tc_object.")
   return(TRUE)
 }
 
@@ -578,7 +612,7 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
 #' and then expanded on both ends by a specified distance.
 #'
 #' It is designed to be called internally for each chromosome by
-#' `tc_sliding_window()` and should not require strand specificity.
+#' `plc_tc_sliding_window()` and should not require strand specificity.
 #'
 #' @param gr_per_chr A `GRanges` object containing ranges
 #' for a single chromosome,
@@ -603,13 +637,11 @@ validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
 #' @keywords internal
 tc_sliding_window_chr <- function(gr_per_chr,
                                   sld_by = 20,
-                                  ext_dis = 200,
-                                  log_file = log_file) {
+                                  ext_dis = 200) {
 
   chr <- as.character(GenomicRanges::seqnames(gr_per_chr))[1]
-  plc_log(sprintf("➡️ Starting sliding window for chromosome: %s",
-                  chr),
-          log_file, print_console = FALSE)
+  plc_message(sprintf("➡️ Starting sliding window for chromosome: %s",
+                      chr))
 
   # 1) Reduce overlaps within this chromosome
   collapsed_granges <- GenomicRanges::reduce(gr_per_chr)
@@ -659,14 +691,12 @@ tc_sliding_window_chr <- function(gr_per_chr,
   after <- length(sliding_granges)
 
   if (before > after) {
-    plc_log(sprintf("⚠️ Removed %d out-of-bound windows (start < 1) in %s",
-                    before - after, chr),
-            log_file, print_console = FALSE)
+    plc_message(sprintf("⚠️ Removed %d out-of-bound windows (start < 1) in %s",
+                        before - after, chr))
   }
 
-  plc_log(sprintf("✅ Finished sliding window for chromosome: %s",
-                  chr),
-          log_file, print_console = FALSE)
+  plc_message(sprintf("✅ Finished sliding window for chromosome: %s",
+                      chr))
 
   rm(sliding_granges_list, collapsed_granges)
   gc()
@@ -685,16 +715,15 @@ tc_sliding_window_chr <- function(gr_per_chr,
 #' @importFrom parallel detectCores
 #'
 #' @export
-tc_sliding_window <- function(granges_obj,
-                              sld_by = 20,
-                              ext_dis = 200,
-                              log_file = log_file,
-                              num_cores = NULL) {
+plc_tc_sliding_window <- function(granges_obj,
+                                  sld_by = 20,
+                                  ext_dis = 200,
+                                  num_cores = NULL) {
 
   assertthat::assert_that(
     !is.null(granges_obj),
     length(granges_obj) > 0,
-    msg = "\n❌ Error: Input granges_obj for tc_sliding_window() is NULL or empty. Cannot perform sliding window operation." # nolint: line_length_linter.
+    msg = "❌ Input granges_obj for plc_tc_sliding_window() is NULL or empty. Cannot perform sliding window operation." # nolint: line_length_linter.
   )
 
   # 1) Ignore strand by setting all strands to "*"
@@ -713,8 +742,7 @@ tc_sliding_window <- function(granges_obj,
   future::plan(future::multisession, workers = num_workers)
   on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
 
-  plc_log(paste("Using", num_workers, "core(s) for parallel processing."),
-          log_file, "INFO", print_console = FALSE)
+  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
 
   # 4) Run in parallel using future_lapply, passing required globals
   result_list <- future.apply::future_lapply(
@@ -722,15 +750,13 @@ tc_sliding_window <- function(granges_obj,
     FUN = function(gr) {
       tc_sliding_window_chr(gr,
                             sld_by = sld_by,
-                            ext_dis = ext_dis,
-                            log_file = log_file)
+                            ext_dis = ext_dis)
     },
     future.seed = TRUE,
     future.globals = list(
       tc_sliding_window_chr = tc_sliding_window_chr,
       sld_by = sld_by,
-      ext_dis = ext_dis,
-      log_file = log_file
+      ext_dis = ext_dis
     )
   )
 
@@ -742,7 +768,7 @@ tc_sliding_window <- function(granges_obj,
   assertthat::assert_that(
     !is.null(result_gr),
     length(result_gr) > 0, # nolint: line_length_linter.
-    msg = "\n❌ Error: tc_sliding_window() returned NULL or an empty GRanges object." # nolint: line_length_linter.
+    msg = "❌ Error: plc_tc_sliding_window() returned NULL or an empty GRanges object." # nolint: line_length_linter.
   )
 
   return(result_gr)
@@ -768,9 +794,9 @@ prep_profile_dir <- function(output_dir = ".",
       dir.create(main_path)
     })
 
-    message(paste0("New folder created:", new_path, "\n"))
+    plc_message(paste0("New folder created:", new_path))
   } else {
-    message(paste0("Folder already exists:", new_path, "\n"))
+    plc_message(paste0("Folder already exists:", new_path))
   }
   return(new_path)
 }
@@ -834,23 +860,19 @@ remove_metadata_and_duplicates <- function(gr) {
 }
 
 # Check presence and format of rownames in a profile matrix
-check_valid_profile_rownames <- function(profile_matrix, chr_name, log_file) {
+check_valid_profile_rownames <- function(profile_matrix, chr_name) {
   rn <- rownames(profile_matrix)
 
   if (is.null(rn)) {
-    msg <- sprintf("❌ No rownames found in heatmapData output for chromosome %s.", # nolint: line_length_linter.
-                   chr_name)
-    plc_log(msg, log_file, level = "❌ ERROR")
-    stop(msg)
+    plc_error(sprintf("❌ No rownames found in heatmapData output for chromosome %s.", # nolint: line_length_linter.
+                      chr_name))
   }
 
   bad_rn <- rn[!grepl("^[^:]+:\\d+-\\d+;.$", rn)]
 
   if (length(bad_rn) > 0) {
-    msg <- sprintf("❌ %d rownames have invalid format in heatmapData output for chromosome %s. Example: %s", # nolint: line_length_linter.
-                   length(bad_rn), chr_name, bad_rn[1])
-    plc_log(msg, log_file, level = "❌ ERROR")
-    stop(msg)
+    plc_error(sprintf("❌ %d rownames have invalid format in heatmapData output for chromosome %s. Example: %s", # nolint: line_length_linter.
+                      length(bad_rn), chr_name, bad_rn[1]))
   }
 }
 
@@ -862,7 +884,7 @@ extract_rowname_components <- function(row_names) {
   components <- do.call(rbind, str_parts)
 
   if (ncol(components) != 4) {
-    stop("❌ Invalid row name format. Expected 'chr:start-end;strand'")
+    plc_error("❌ Invalid row name format. Expected 'chr:start-end;strand'")
   }
 
   components
@@ -895,7 +917,7 @@ modify_profile_rownames <- function(profiles, count_profiles) {
   if (identical(sort(plus_names), sort(minus_names))) {
     rownames(profiles) <- plus_names
   } else {
-    warning("⚠️ Row names from + and - strands are not aligned after strand conversion.") # nolint: line_length_linter.
+    plc_error("❌ Row names from + and - strands are not aligned after strand conversion from modify_profile_rownames().") # nolint: line_length_linter.
   }
 
   profiles
@@ -921,11 +943,11 @@ combine_plus_minus_profiles <- function(count_profiles, len_vec) {
 # Vectorized normalized strand subtraction on a matrix
 strands_norm_subtraction <- function(mat, len_vec) {
   if (!inherits(mat, "matrix") && !inherits(mat, "Matrix")) {
-    stop("❌ Input must be a dense matrix or sparse Matrix object.")
+    plc_error("❌ Input must be a dense matrix or sparse Matrix object.")
   }
 
   if (nrow(mat) == 0 || ncol(mat) < 2 * len_vec) {
-    stop("❌ Matrix has insufficient dimensions for strand subtraction.")
+    plc_error("❌ Matrix has insufficient dimensions for strand subtraction.")
   }
 
   # Extract plus and minus halves
@@ -944,7 +966,7 @@ strands_norm_subtraction_all <- function(windows,
                                          len_vec,
                                          output_sparse = TRUE) {
   if (is.null(dim(windows))) {
-    stop("❌ `windows` must be a dense matrix or sparse matrix object.")
+    plc_error("❌ `windows` must be a dense matrix or sparse matrix object.")
   }
 
   norm_mat <- strands_norm_subtraction(windows, len_vec)
@@ -964,17 +986,14 @@ plc_save_to_file <- function(data,
                              suffix,
                              file_type,
                              chr_name,
-                             file_path,
-                             log_file) {
+                             file_path) {
   full_file_path <- paste0(file_path, "_", chr_name, suffix)
 
   is_sparse <- inherits(data, "dgCMatrix") || inherits(data, "dgRMatrix")
   actual_file_type <- file_type
 
   if (file_type == "npz" && !is_sparse) {
-    msg <- sprintf("⚠️ Requested npz output for %s, but data is not sparse. Saving as Parquet instead.", suffix) # nolint: line_length_linter.
-    message(msg)
-    plc_log(msg, log_file, level = "⚠️ WARN")
+    plc_message(sprintf("⚠️ Requested npz output for %s, but data is not sparse. Saving as Parquet instead.", suffix)) # nolint: line_length_linter.
     actual_file_type <- "parquet"
   }
 
@@ -1005,14 +1024,12 @@ plc_save_to_file <- function(data,
       scipy$save_npz(npz_path, py_matrix)
 
     } else {
-      stop("❌ Unsupported file_type. Use 'csv', 'parquet', or 'npz'.")
+      plc_error("❌ Unsupported file_type. Use 'csv', 'parquet', or 'npz'.")
     }
 
   }, error = function(e) {
-    msg <- sprintf("❌ Failed to save %s for chromosome %s: %s",
-                   suffix, chr_name, e$message)
-    plc_log(msg, log_file, level = "❌ ERROR")
-    stop(msg)
+    plc_error(sprintf("❌ Failed to save %s for chromosome %s: %s",
+                      suffix, chr_name, e$message))
   })
 }
 
@@ -1031,35 +1048,30 @@ plc_save_to_file <- function(data,
 #' @param ext_dis Extension distance used (to recover window length).
 #' @param save_count_profiles Logical. Save raw count profiles as well?
 #' @param file_type Output format: "csv", "parquet", or "npz".
-#' @param log_file Log file path.
 #'
 #' @export
 #'
 #' @return A list with chromosome name and processing status.
 plc_profile_chr <- function(current_region_gr,
-                                  filtered_ctss_gr,
-                                  chr_name,
-                                  file_path,
-                                  output_file_prefix,
-                                  ext_dis,
-                                  save_count_profiles = FALSE,
-                                  file_type = "parquet",
-                                  log_file) {
+                            filtered_ctss_gr,
+                            chr_name,
+                            file_path,
+                            output_file_prefix,
+                            ext_dis,
+                            save_count_profiles = FALSE,
+                            file_type = "parquet") {
 
-  plc_log(sprintf("➡️ Processing chromosome: %s", chr_name),
-          log_file, print_console = FALSE)
+  plc_message(sprintf("➡️ Processing chromosome: %s", chr_name))
 
   if (length(filtered_ctss_gr) == 0) {
-    msg <- sprintf("⚠️ Skipping chromosome %s: No CTSS data found.",
-                   chr_name)
-    plc_log(msg, log_file)
+    plc_message(sprintf("⚠️ Skipping chromosome %s: No CTSS data found.",
+                        chr_name))
     return(list(chr_name = chr_name, status = "Skipped: No CTSS"))
   }
 
   if (is.null(current_region_gr) || length(current_region_gr) == 0) {
-    msg <- sprintf("⚠️ Skipping chromosome %s: No valid genomic regions found.",
-                   chr_name)
-    plc_log(msg, log_file)
+    plc_message(sprintf("⚠️ Skipping chromosome %s: No valid genomic regions found.", # nolint: line_length_linter.
+                        chr_name))
     return(list(chr_name = chr_name, status = "Skipped: No regions"))
   }
 
@@ -1074,8 +1086,8 @@ plc_profile_chr <- function(current_region_gr,
                 sparse = TRUE)
   )
 
-  check_valid_profile_rownames(count_profiles$`*`$`+`, chr_name, log_file)
-  check_valid_profile_rownames(count_profiles$`*`$`-`, chr_name, log_file)
+  check_valid_profile_rownames(count_profiles$`*`$`+`, chr_name)
+  check_valid_profile_rownames(count_profiles$`*`$`-`, chr_name)
 
   len_vec <- ext_dis * 2 + 1
 
@@ -1093,17 +1105,17 @@ plc_profile_chr <- function(current_region_gr,
   # check to confirm order of rownames
   if (!identical(rownames(combined_count_profiles),
                  rownames(combined_subtnorm_profiles))) {
-    stop("❌ Rownames mismatch between count and subtnorm profiles.")
+    plc_error("❌ Rownames mismatch between count and subtnorm profiles.")
   }
 
   # Create metadata
-  check_valid_profile_rownames(combined_count_profiles, chr_name, log_file)
+  check_valid_profile_rownames(combined_count_profiles, chr_name)
   combined_count_metadata <- create_granges_from_rownames(rownames(combined_count_profiles)) # nolint: line_length_linter.
   if (length(combined_count_metadata) != nrow(combined_count_profiles)) {
-    stop("❌ Length mismatch between matrix rows and generated GRanges.")
+    plc_error("❌ Length mismatch between matrix rows and generated GRanges.")
   }
   combined_count_metadata$sum_count <- Matrix::rowSums(combined_count_profiles)
-  metadata_file_type <- if (file_type == "npz") "csv" else file_type
+  metadata_file_type <- "csv"
 
   # All saving
 
@@ -1114,8 +1126,7 @@ plc_profile_chr <- function(current_region_gr,
                    chr_name,
                    file.path(file_path,
                              "profiles_subtnorm",
-                             output_file_prefix),
-                   log_file)
+                             output_file_prefix))
   rm(combined_subtnorm_profiles)
 
   if (save_count_profiles) {
@@ -1126,8 +1137,7 @@ plc_profile_chr <- function(current_region_gr,
                        chr_name,
                        file.path(file_path,
                                  "profiles",
-                                 output_file_prefix),
-                       log_file)
+                                 output_file_prefix))
     } else {
       plc_save_to_file(as.matrix(combined_count_profiles),
                        "_profiles",
@@ -1135,8 +1145,7 @@ plc_profile_chr <- function(current_region_gr,
                        chr_name,
                        file.path(file_path,
                                  "profiles",
-                                 output_file_prefix),
-                       log_file)
+                                 output_file_prefix))
     }
   }
 
@@ -1147,17 +1156,15 @@ plc_profile_chr <- function(current_region_gr,
                    chr_name,
                    file.path(file_path,
                              "metadata",
-                             output_file_prefix),
-                   log_file)
+                             output_file_prefix))
 
   # Cleanup
   rm(combined_count_metadata)
   rm(combined_count_profiles)
   gc()
 
-  plc_log(sprintf("✅ Successfully processed chromosome: %s",
-                  chr_name),
-          log_file, print_console = FALSE)
+  plc_message(sprintf("✅ Successfully processed chromosome: %s",
+                      chr_name))
 
   return(list(chr_name = chr_name, status = "Processed"))
 }
@@ -1183,7 +1190,6 @@ plc_profile_chr <- function(current_region_gr,
 #' @param file_type The output file format.
 #' One of: "parquet" (default), "csv", or "npz".
 #' @param num_cores The number of cores to use for parallel processing.
-#' @param log_file_name The name of the log file
 #' (default: "plc_log_profile").
 #'
 #' @importFrom GenomicRanges GRanges seqnames
@@ -1196,16 +1202,15 @@ plc_profile_chr <- function(current_region_gr,
 #' @importFrom reticulate use_python
 #' @export
 plc_profile <- function(ctss_rse,
-                              regions_gr,
-                              output_dir,
-                              profile_dir_name,
-                              file_type = "npz",
-                              python_path = NULL,
-                              addtn_to_filename = "",
-                              save_count_profiles = FALSE,
-                              num_cores = NULL,
-                              log_file = "./PRIMEloci_profile.log",
-                              ext_dis) {
+                        regions_gr,
+                        output_dir,
+                        profile_dir_name,
+                        file_type = "npz",
+                        python_path = NULL,
+                        addtn_to_filename = "",
+                        save_count_profiles = FALSE,
+                        num_cores = NULL,
+                        ext_dis) {
 
   # --- Assertions ---
   assertthat::assert_that(inherits(ctss_rse, "RangedSummarizedExperiment"),
@@ -1221,7 +1226,7 @@ plc_profile <- function(ctss_rse,
   assertthat::assert_that(file_type %in% c("parquet", "csv", "npz"),
                           msg = "❌ file_type must be 'parquet', 'csv', or 'npz'.") # nolint: line_length_linter.
 
-  # --- Setup ---
+  # Setup
   file_path <- prep_profile_dir(output_dir = output_dir,
                                 profile_dir_name = profile_dir_name)
 
@@ -1234,10 +1239,9 @@ plc_profile <- function(ctss_rse,
   future::plan(future::multisession, workers = num_workers)
   on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
 
-  plc_log(paste("Using", num_workers, "core(s) for parallel processing."),
-          log_file, "INFO", print_console = FALSE)
+  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
 
-  # --- Sample Loop ---
+  # Sample Loop
   for (i in seq_along(SummarizedExperiment::colnames(ctss_rse))) {
     sample_name <- SummarizedExperiment::colnames(ctss_rse)[i]
     start_time <- Sys.time()
@@ -1263,7 +1267,7 @@ plc_profile <- function(ctss_rse,
                                            function(chr_name) {
       tryCatch({
 
-        # 🔧 Set Python path for this child process
+        # Set Python path for this child process
         reticulate::use_python(python_path, required = TRUE)
 
         # Filter ctss_gr for the current chromosome
@@ -1278,42 +1282,36 @@ plc_profile <- function(ctss_rse,
           output_file_prefix,
           ext_dis,
           save_count_profiles = save_count_profiles,
-          file_type = file_type,
-          log_file = log_file
+          file_type = file_type
         )
         list(chr_name = chr_name, status = "Processed")
       }, error = function(e) {
-        plc_log(sprintf("Error processing chromosome %s for sample %s: %s",
+        plc_log(sprintf("❌ Error processing chromosome %s for sample %s: %s",
                         chr_name, sample_name, e$message),
-                log_file, level = "❌ ERROR")
+                level = "ERROR")
         list(chr_name = chr_name, status = "Failed", error = e$message)
       })
     }, future.seed = TRUE)
 
     failed <- results[sapply(results, function(x) x$status == "Failed")]
     if (length(failed) > 0) {
-      plc_log("The following chromosomes encountered errors:",
-              log_file,
-              level = "❌ ERROR")
+      plc_log("❌ The following chromosomes encountered errors:",
+              level = "ERROR")
       for (fail in failed) {
-        plc_log(sprintf("Chromosome: %s | Error: %s",
+        plc_log(sprintf("❌ Chromosome: %s | Error: %s",
                         fail$chr_name, fail$error),
-                log_file,
-                level = "❌ ERROR")
+                level = "ERROR")
       }
     } else {
-      plc_log("✅ All chromosomes processed successfully!", log_file)
+      plc_message("✅ All chromosomes processed successfully!")
     }
 
-    plc_log(sprintf("✅ Finished processing sample: %s |  ✖️ Failed: %d/%d chromosomes", # nolint: line_length_linter.
-                    sample_name, length(failed), length(regions_list)),
-            log_file)
+    plc_message(sprintf("✅ Finished processing sample: %s |  ✖️ Failed: %d/%d chromosomes", # nolint: line_length_linter.
+                        sample_name, length(failed), length(regions_list)))
 
     runtime <- difftime(Sys.time(), start_time, units = "mins")
-    plc_log(sprintf("⏱️ Time taken for sample %s: %.2f minutes",
-                    sample_name, as.numeric(runtime)),
-            log_file)
-
+    plc_message(sprintf("⏱️ Time taken for sample %s: %.2f minutes",
+                        sample_name, as.numeric(runtime)))
   }
 
   invisible(TRUE)
@@ -1333,7 +1331,7 @@ plc_profile <- function(ctss_rse,
 #' @importFrom data.table fread
 #' @importFrom assertthat assert_that
 #' @export
-load_bed_file <- function(input_bed) {
+plc_load_bed_file <- function(input_bed) {
   bed_file <- read.table(input_bed,
                          header = TRUE,
                          sep = "\t",
@@ -1496,7 +1494,7 @@ write_granges_to_bed_coreovlwithd <- function(gr,
                      sep = "\t",
                      quote = FALSE,
                      col.names = FALSE)
-  cat("Reduced GRanges object saved to", output_bed, "\n")
+  plc_message(paste0("Reduced GRanges object saved to", output_bed))
 }
 
 #' Collapse core regions from a BED file with score-based filtering
@@ -1519,7 +1517,6 @@ write_granges_to_bed_coreovlwithd <- function(gr,
 #' If NULL or FALSE, no output is written.
 #' @param num_cores Number of CPU cores to use.
 #' If NULL, will use half of available cores (up to 25). Default is NULL.
-#' @param log_file Path to the log file. Default is "coreovl_with_d.log".
 #'
 #' @return If `return_gr = TRUE`, returns a `GRanges` object
 #' containing the collapsed regions. Otherwise, returns `NULL`.
@@ -1552,11 +1549,10 @@ coreovl_with_d <- function(bed_file,
                            core_width = 151,
                            return_gr = TRUE,
                            output_dir = NULL,
-                           num_cores = NULL,
-                           log_file = "coreovl_with_d.log") {
+                           num_cores = NULL) {
 
   # Initialize logging
-  plc_log("Starting coreovl_with_d()", log_file)
+  plc_log("Starting coreovl_with_d()")
 
   assert_that(file.exists(bed_file),
               msg = "❌ Input BED file not found.")
@@ -1579,7 +1575,7 @@ coreovl_with_d <- function(bed_file,
                 msg = "❌ output_dir must be a character string.")
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
-      message(sprintf("✅ Created output directory: %s", output_dir))
+      plc_message(sprintf("📁 Created output directory: %s", output_dir))
     }
   }
 
@@ -1589,15 +1585,14 @@ coreovl_with_d <- function(bed_file,
   }
 
   # Load and prepare data
-  bed <- load_bed_file(bed_file)
+  bed <- plc_load_bed_file(bed_file)
   gr <- create_granges_from_bed(bed)
 
   # Filter by score threshold
   filtered_gr <- gr[gr$score >= score_threshold]
 
   if (length(filtered_gr) == 0) {
-    plc_log("No entries passed the score threshold. Exiting.",
-            log_file, level = "⚠️ WARN")
+    plc_warn("No entries passed the score threshold. Exiting.")
     return(NULL)
   }
 
@@ -1615,8 +1610,7 @@ coreovl_with_d <- function(bed_file,
   future::plan(future::multisession, workers = num_workers)
   on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
 
-  plc_log(paste("Using", num_workers, "core(s) for parallel processing."),
-          log_file, "INFO", print_console = FALSE)
+  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
 
   # Process each chromosome in parallel
 
@@ -1632,8 +1626,7 @@ coreovl_with_d <- function(bed_file,
       core_gr$thick <- GenomicRanges::start(core_gr) + floor(core_width / 2)
       result <- selective_merge_cores(core_gr, score_diff)
 
-      plc_log(sprintf("✅ Finished processing chromosome %s", chr),
-              log_file, print_console = FALSE)
+      plc_message(sprintf("✅ Finished processing chromosome %s", chr))
 
       result
     }, error = function(e) {
@@ -1641,7 +1634,7 @@ coreovl_with_d <- function(bed_file,
       plc_log(
         sprintf("❌ Error processing chromosome %s: %s",
                 chr, conditionMessage(e)),
-        log_file, level = "❌ ERROR", print_console = FALSE
+        level = "ERROR"
       )
       NULL
     })
@@ -1649,28 +1642,23 @@ coreovl_with_d <- function(bed_file,
 
   if (length(error_messages) > 0) {
     failed_chr <- names(error_messages)
-    plc_log(
+    plc_message(
       paste("⚠️ Skipped", length(failed_chr),
             "chromosomes due to errors:",
-            paste(failed_chr, collapse = ", ")),
-      log_file,
-      level = "⚠️ WARN"
+            paste(failed_chr, collapse = ", "))
     )
   }
 
   # Check again — do we have any GRanges?
   if (length(collapsed_gr_list) == 0) {
-    plc_log("⚠️ No valid GRanges to collapse — all chromosomes failed or were empty.", # nolint: line_length_linter.
-            log_file, level = "⚠️ WARN", print_console = TRUE)
-    return(NULL)
+    plc_warn("⚠️ No valid GRanges to collapse — all chromosomes failed or were empty.") # nolint: line_length_linter.    return(NULL)
   }
 
   # Collapse and validate type
   collapsed_gr <- do.call(c, collapsed_gr_list)
 
   if (!inherits(collapsed_gr, "GRanges")) {
-    plc_log("❌ Combined result is not a valid GRanges object. Skipping sort.",
-            log_file, level = "❌ ERROR", print_console = TRUE)
+    plc_message("❌ Combined result is not a valid GRanges object. Skipping sort.") # nolint: line_length_linter.
     return(NULL)
   }
 
@@ -1680,7 +1668,7 @@ coreovl_with_d <- function(bed_file,
   collapsed_gr <- GenomicRanges::sort(collapsed_gr)
 
   # Output writing
-  plc_log("Processing the output...", log_file)
+  plc_message("Processing the output...")
   if (!is.null(output_dir)) {
     input_basename <- tools::file_path_sans_ext(basename(bed_file)) %>%
       stringr::str_replace_all("[^[:alnum:]]", "_")
@@ -1696,7 +1684,7 @@ coreovl_with_d <- function(bed_file,
                                       digits = 2,
                                       scientific = FALSE))
 
-    plc_log(sprintf("Writing BED output: %s.bed", output_basename), log_file)
+    plc_message(sprintf("Writing BED output: %s.bed", output_basename))
 
     write_granges_to_bed_coreovlwithd(
       collapsed_gr,
@@ -1705,10 +1693,7 @@ coreovl_with_d <- function(bed_file,
       output_basename
     )
 
-    plc_log("✅ coreovl_with_d() finished successfully.", log_file)
-  } else {
-    plc_log("⚠️ skipping file writing at the end of coreovl_with_d step.",
-            log_file, level = "⚠️ WARN", print_console = TRUE)
+    plc_message("✅ coreovl_with_d() method finished successfully.")
   }
 
   if (return_gr) return(collapsed_gr)
@@ -1719,14 +1704,12 @@ coreovl_with_d <- function(bed_file,
 #'
 #' @param dir Path to the directory to search.
 #' @param partial_name Partial file name to match (not case-sensitive).
-#' @param log_file Path to the log file (optional).
 #' If provided, logs will be written.
 #'
 #' @return A character vector of matching .bed file paths (may be empty).
 #' @export
-find_bed_files_by_partial_name <- function(dir,
-                                           partial_name,
-                                           log_file = NULL) {
+plc_find_bed_files_by_partial_name <- function(dir,
+                                               partial_name) {
   pattern <- paste0("(?i)", partial_name, ".*\\.bed$")
   files <- list.files(
     path = dir,
@@ -1735,16 +1718,11 @@ find_bed_files_by_partial_name <- function(dir,
   )
 
   if (length(files) == 0) {
-    msg <- sprintf("⚠️ No .bed files found in '%s' matching '%s'",
-                   dir, partial_name)
-    if (!is.null(log_file)) {
-      plc_log(msg, log_file, level = "⚠️ WARN")
-    } else {
-      warning(msg)
-    }
+    plc_warn(sprintf("⚠️ No .bed files found in '%s' matching '%s'",
+                     dir, partial_name))
   }
 
-  return(files)
+  files
 }
 
 #' Disambiguate duplicate sample names from a named result list
@@ -1752,20 +1730,19 @@ find_bed_files_by_partial_name <- function(dir,
 #' This internal function extracts sample names from a list of result objects,
 #' checks for duplicates, and appends numeric suffixes (e.g., "_1", "_2") to
 #' ensure uniqueness. It logs any name changes using `plc_log()`.
-disambiguate_sample_names <- function(named_list, log_target) {
+disambiguate_sample_names <- function(named_list) {
   sample_names <- vapply(named_list, `[[`, character(1), "name")
   if (any(duplicated(sample_names))) { # nolint: line_length_linter.
-    plc_log("⚠️ Duplicate sample names found. Appending numeric suffixes to ensure uniqueness.", log_target) # nolint: line_length_linter.
+    plc_warn("⚠️ Duplicate sample names found. Appending numeric suffixes to ensure uniqueness.") # nolint: line_length_linter.
     sample_names_old <- sample_names
     sample_names <- make.unique(sample_names, sep = "_")
     changed <- sample_names_old != sample_names
     if (any(changed)) {
-      plc_log("🔍 Sample name resolution:", log_target)
+      plc_message("🔍 Sample name resolution:")
       for (i in which(changed)) {
-        plc_log(sprintf(" • %s ➜ %s",
-                        sample_names_old[i],
-                        sample_names[i]),
-                log_target)
+        plc_message(sprintf(" • %s ➜ %s",
+                            sample_names_old[i],
+                            sample_names[i]))
       }
     }
   }

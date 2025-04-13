@@ -2,25 +2,10 @@
 % Please edit documentation in R/PRIMEloci_utility.R
 \name{plc_log}
 \alias{plc_log}
-\title{Log a timestamped message with level (and optional console output)}
+\title{Logging Functions for PRIMEloci}
 \usage{
-plc_log(message, log_file, level = "INFO", print_console = FALSE)
-}
-\arguments{
-\item{message}{A character string to log.}
-
-\item{log_file}{Path to the log file.}
-
-\item{level}{Log level string (e.g., "INFO", "WARN", "ERROR").
-Default is "INFO".}
-
-\item{print_console}{Logical. If TRUE, also prints to console
-(default: TRUE).}
-}
-\value{
-None. Writes to the specified log file.
+plc_log(message, level = "INFO")
 }
 \description{
-Writes a log entry to a file with a timestamp and log level.
-Optionally prints the same message to the R console.
+Logging Functions for PRIMEloci
 }

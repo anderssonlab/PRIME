@@ -11,8 +11,7 @@ coreovl_with_d(
   core_width = 151,
   return_gr = TRUE,
   output_dir = NULL,
-  num_cores = NULL,
-  log_file = "coreovl_with_d.log"
+  num_cores = NULL
 )
 }
 \arguments{
@@ -35,8 +34,6 @@ If NULL or FALSE, no output is written.}
 
 \item{num_cores}{Number of CPU cores to use.
 If NULL, will use half of available cores (up to 25). Default is NULL.}
-
-\item{log_file}{Path to the log file. Default is "coreovl_with_d.log".}
 }
 \value{
 If `return_gr = TRUE`, returns a `GRanges` object

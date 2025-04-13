@@ -6,7 +6,7 @@
 #' @param data \code{GRanges} with value to consider
 #' in specified column (score).
 #' @param column column in \code{mcols(data)} to consider.
-#' @param transform_fn function applied on data for each region 
+#' @param transform_fn function applied on data for each region
 #' (e.g. to reduce dimension, defaults to identity).
 #' @param sparse Logical indicating whether the output should be
 #' in sparse matrix format. Default is FALSE.
@@ -32,12 +32,12 @@ heatmapData <- function(regions,
   assert_that(length(unique(width(regions))) == 1,
               column %in% colnames(mcols(data)))
 
-  sl <- intersect(seqlevels(regions),seqlevels(data))
+  sl <- intersect(seqlevels(regions), seqlevels(data))
   if (!all(seqlevels(regions) %in% sl) || !all(seqlevels(data) %in% sl)) {
     warning(paste0("seqlevels differ between regions and data GRanges",
                    "objects, subsetting to intersection"))
-    GenomeInfoDb::seqlevels(regions, pruning.mode="coarse") <- sl
-    GenomeInfoDb::seqlevels(data, pruning.mode="coarse") <- sl
+    GenomeInfoDb::seqlevels(regions, pruning.mode = "coarse") <- sl
+    GenomeInfoDb::seqlevels(data, pruning.mode = "coarse") <- sl
   }
 
   regionsByStrand <- CAGEfightR:::splitByStrand(regions)
@@ -46,20 +46,21 @@ heatmapData <- function(regions,
   nr <- names(regionsByStrand)[sapply(regionsByStrand,
                                       function(x) length(x) > 0)]
   nd <- names(dataByStrand)[sapply(dataByStrand, function(x) {
-    any(sapply(x,function(y) any(y!=0)))})]
+    any(sapply(x, function(y) any(y != 0)))})]
 
   res <- lapply(nr, function(r) {
     message("extracting data for strand: ", r)
 
     dat <- lapply(nd, function(d) {
-      message("   ",d)
+      message("   ", d)
       vl <- Views(dataByStrand[[d]], regionsByStrand[[r]])
       n <- paste0(unlist(lapply(names(vl), function(nv) {
         rep(nv, length(vl[[nv]]))})), ":",
         unlist(lapply(vl, start)), "-",
-        unlist(lapply(vl, end)), ";", d)
+        unlist(lapply(vl, end)), ";",
+        d)
 
-      vlen <- sapply(vl,length)
+      vlen <- sapply(vl, length)
 
       if (sparse) {
         m <- do.call("rbind",
@@ -93,7 +94,7 @@ heatmapData <- function(regions,
 
 ## Helper function, not exported.
 # Converts a list of sparse vectors to a sparse matrix.
-vectorListToMatrix <- function(vl){
+vectorListToMatrix <- function(vl) {
   sm_i <- NULL
   sm_j <- NULL
   sm_x <- NULL
@@ -102,16 +103,16 @@ vectorListToMatrix <- function(vl){
     sm_j <- c(sm_j, vl[[k]]@i)
     sm_x <- c(sm_x, vl[[k]]@x)
   }
-  return (sparseMatrix(i = sm_i,
-                       j = sm_j,
-                       x = sm_x,
-                       dims = c(length(vl),
-                       vl[[1]]@length)))
+  return(sparseMatrix(i = sm_i,
+                      j = sm_j,
+                      x = sm_x,
+                      dims = c(length(vl),
+                      vl[[1]]@length)))
 }
 
 ## Helper function, not exported, adds functionality to CAGEfightR:::splitPooled
 ## by allowing to focus on another column than "score"
-splitPooledWeight <- function(object, weight = "score"){
+splitPooledWeight <- function(object, weight = "score") {
 
   ## Split by strand
   o <- CAGEfightR:::splitByStrand(object)
