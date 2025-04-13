@@ -4,12 +4,7 @@
 \alias{tc_sliding_window_chr}
 \title{Generate Sliding Windows for a Single Chromosome}
 \usage{
-tc_sliding_window_chr(
-  gr_per_chr,
-  sld_by = 20,
-  ext_dis = 200,
-  log_file = log_file
-)
+tc_sliding_window_chr(gr_per_chr, sld_by = 20, ext_dis = 200)
 }
 \arguments{
 \item{gr_per_chr}{A `GRanges` object containing ranges
@@ -33,7 +28,7 @@ and then expanded on both ends by a specified distance.
 }
 \details{
 It is designed to be called internally for each chromosome by
-`tc_sliding_window()` and should not require strand specificity.
+`plc_tc_sliding_window()` and should not require strand specificity.
 }
 \examples{
 gr_chr <- GenomicRanges::GRanges(

@@ -14,7 +14,6 @@ plc_profile(
   addtn_to_filename = "",
   save_count_profiles = FALSE,
   num_cores = NULL,
-  log_file = "./PRIMEloci_profile.log",
   ext_dis
 )
 }
@@ -38,13 +37,11 @@ If NULL, the default Python environment will be used.}
 \item{save_count_profiles}{Logical flag indicating
 whether count profiles should be saved.}
 
-\item{num_cores}{The number of cores to use for parallel processing.}
+\item{num_cores}{The number of cores to use for parallel processing.
+(default: "plc_log_profile").}
 
 \item{ext_dis}{Integer value for extending the distance
 used in profile computations.}
-
-\item{log_file_name}{The name of the log file
-(default: "plc_log_profile").}
 }
 \description{
 This function processes the profiles for each column

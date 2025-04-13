@@ -2,12 +2,14 @@
 % Please edit documentation in R/PRIMEloci_utility.R
 \name{plc_test_scipy_save_npz}
 \alias{plc_test_scipy_save_npz}
-\title{Internal test to confirm that scipy.sparse.save_npz() works via reticulate.
-This ensures compatibility between R, reticulate, scipy, and numpy.}
+\title{Test Python SciPy Sparse Matrix Export}
 \usage{
-plc_test_scipy_save_npz(log_target = NULL)
+plc_test_scipy_save_npz()
+}
+\value{
+Logical value indicating success (`TRUE`) or failure (`FALSE`).
 }
 \description{
-Internal test to confirm that scipy.sparse.save_npz() works via reticulate.
-This ensures compatibility between R, reticulate, scipy, and numpy.
+Tests whether `scipy.sparse.save_npz()` can successfully save
+a sparse matrix. Used to determine compatibility with `.npz` export.
 }
