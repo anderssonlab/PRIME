@@ -1,6 +1,6 @@
 Package: PRIME
 Title: An R package for regulatory element analysis using transcription initiation data
-Version: 0.1.1
+Version: 0.1.1.3
 Author: 
     c(person("Natsuda", "Navamajiti", email = "", role = "aut"),
     person("Hjorleifur", "Einarsson", email = "", role = "aut"),
@@ -11,7 +11,7 @@ Maintainer: Robin Andersson <robin@bio.ku.dk>
 Description: An R package for regulatory element analysis using transcription initiation data.
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
     CAGEfightR,
     SummarizedExperiment,
@@ -37,6 +37,8 @@ Imports:
     reticulate,
     rtracklayer,
     yaml,
-    arrow
-
-
+    arrow,
+    future,
+    future.apply,
+    tools,
+    sparseMatrixStats
