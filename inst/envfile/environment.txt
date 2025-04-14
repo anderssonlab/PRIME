@@ -1,0 +1,10 @@
+required_pkgs <- c(
+  "numpy==2.0.2",
+  "scipy==1.13.1",
+  "lightgbm==4.6.0",
+  "scikit-learn==1.6.1",
+  "pandas==2.2.3",
+  "joblib==1.4.2",
+  "pyarrow==17.0.0",
+  "fastparquet==2024.11.0
+)
