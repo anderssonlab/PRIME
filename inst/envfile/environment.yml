@@ -1,4 +1,4 @@
-name: prime-env-numpy2
+name: prime-env
 channels:
   - conda-forge
   - defaults

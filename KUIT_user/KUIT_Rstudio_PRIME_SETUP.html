@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.4">
+  <style type="text/css">
+    p.p3 {margin: 0.0px 0.0px 10.0px 0.0px; font: 14.0px 'Helvetica Neue'; color: #1d1d1d; -webkit-text-stroke: #1d1d1d}
+    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 13.0px Courier; color: #1d1d1d; -webkit-text-stroke: #1d1d1d; background-color: #efefef}
+    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 13.0px Courier; color: #1d1d1d; -webkit-text-stroke: #1d1d1d; background-color: #efefef; min-height: 16.0px}
+    span.s1 {font-kerning: none}
+    span.s2 {font: 14.0px 'Helvetica Neue'; text-decoration: underline ; font-kerning: none; color: #205097; -webkit-text-stroke: 0px #205097}
+  </style>
+</head>
+<body>
+<h1 style="margin: 0.0px 0.0px 10.0px 0.0px; font: 38.0px 'Helvetica Neue'; color: #1d1d1d; -webkit-text-stroke: #1d1d1d"><span class="s1">How to install PRIME for using in current Rstudio server (4.2.2)</span></h1>
+<h3 style="margin: 0.0px 0.0px 10.0px 0.0px; font: 24.0px 'Helvetica Neue'; color: #1d1d1d; -webkit-text-stroke: #1d1d1d"><span class="s1">Step 1: Load Required Modules</span></h3>
+<p class="p3"><span class="s1">Run the following commands in the terminal to load the necessary modules and open the correct version of R:</span></p>
+<p class="p4"><span class="s1">module load gcc/11.2.0</span></p>
+<p class="p4"><span class="s1">module load R/4.2.2</span></p>
+<p class="p4"><span class="s1">R</span></p>
+<h3 style="margin: 0.0px 0.0px 10.0px 0.0px; font: 24.0px 'Helvetica Neue'; color: #1d1d1d; -webkit-text-stroke: #1d1d1d"><span class="s1">Step 2: Install PRIME from GitHub</span></h3>
+<p class="p3"><span class="s1">In R, run the following command to install the PRIME package from the natsuda branch on GitHub:</span></p>
+<p class="p4"><span class="s1">library(devtools)</span></p>
+<p class="p4"><span class="s1">devtools::install_github("anderssonlab/PRIME")</span></p>
+<p class="p4"><span class="s1"># devtools::install_github("anderssonlab/PRIME@natsuda")</span></p>
+<h3 style="margin: 0.0px 0.0px 10.0px 0.0px; font: 24.0px 'Helvetica Neue'; color: #1d1d1d; -webkit-text-stroke: #1d1d1d"><span class="s1">Step 3: Open the Rstudio server and setup a PRIME compatible virtual environment</span></h3>
+<p class="p3"><span class="s1">Open Rstudio server in browser: <a href="http://scarbrna01fl:8787/"><span class="s2">http://scarbrna01fl:8787/</span></a></span></p>
+<p class="p4"><span class="s1">library(yaml)</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1"># Path to the .yml<span class="Apple-converted-space"> </span></span></p>
+<p class="p4"><span class="s1">txt_file &lt;- file.path(find.package("PRIME"), "envfile", "environment.txt")</span></p>
+<p class="p4"><span class="s1">txt_content &lt;- readLines(yml_file)</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1">library(reticulate)</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1"># Install python locally<span class="Apple-converted-space"> </span></span></p>
+<p class="p4"><span class="s1">reticulate::install_python(version = '3.9.22’)</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1"># Create a new virtual environment for running PRIMEloci</span></p>
+<p class="p4"><span class="s1">virtualenv_create("PRIME", python = '3.9.22')</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1"># Activate the environment and install dependencies</span></p>
+<p class="p4"><span class="s1">use_virtualenv("PRIME")</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1">virtualenv_install(envname = "PRIME",</span></p>
+<p class="p4"><span class="s1"><span class="Apple-converted-space">                   </span>packages = txt_content)</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1">virtualenv_install(envname = "PRIME", packages = "matplotlib") #Maybe not needed?</span></p>
+<h3 style="margin: 0.0px 0.0px 10.0px 0.0px; font: 24.0px 'Helvetica Neue'; color: #1d1d1d; -webkit-text-stroke: #1d1d1d"><span class="s1">Step 4: Load required packages and setup the model</span></h3>
+<p class="p4"><span class="s1"># Load required systems libraries</span></p>
+<p class="p4"><span class="s1">dyn.load("/opt/software/netcdf-c/4.8.1/lib/libnetcdf.so.19")</span></p>
+<p class="p4"><span class="s1">dyn.load("/opt/software/libxml2/2.9.9/lib/libxml2.so")</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1"># Load R packages</span></p>
+<p class="p4"><span class="s1">library(PRIME)</span></p>
+<p class="p4"><span class="s1">library(reticulate)</span></p>
+<p class="p4"><span class="s1">library(GenomicRanges)</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1"># Activate virtual environment</span></p>
+<p class="p4"><span class="s1">use_virtualenv("PRIME", required = TRUE)</span></p>
+<p class="p4"><span class="s1"># Copy model to PRIME model directory</span></p>
+<p class="p4"><span class="s1">current.model &lt;- "/maps/projects/ralab/data/projects/nucleiCAGEproject/7.Model_development/PRIMEloci_GM12878_model_1.0.sav"</span></p>
+<p class="p4"><span class="s1">target.model &lt;- file.path(find.package("PRIME"), "model", "PRIMEloci_GM12878_model_1.0.sav")</span></p>
+<p class="p5"><span class="s1"></span><br></p>
+<p class="p4"><span class="s1">if (!file.exists(target.model)) {</span></p>
+<p class="p4"><span class="s1"><span class="Apple-converted-space">  </span>file.copy(from = current.model, to = target.model)</span></p>
+<p class="p4"><span class="s1">} else {</span></p>
+<p class="p4"><span class="s1"><span class="Apple-converted-space">  </span>message("Model file already exists at the target location. No need to copy.")</span></p>
+<p class="p4"><span class="s1">}</span></p>
+<h3 style="margin: 0.0px 0.0px 10.0px 0.0px; font: 24.0px 'Helvetica Neue'; color: #1d1d1d; -webkit-text-stroke: #1d1d1d"><span class="s1">Step 5: Run the test example</span></h3>
+<p class="p4"><span class="s1">ctss.file&lt;- system.file("extdata", "ctss_rse_chr16to17.rds", package = "PRIME")</span></p>
+<p class="p4"><span class="s1">ctss &lt;- readRDS(ctss.file)</span></p>
+<p class="p4"><span class="s1">PL.test &lt;- PRIMEloci(ctss,python_path = paste0(reticulate::virtualenv_root(),"/PRIME"))</span></p>
+</body>
+</html>
