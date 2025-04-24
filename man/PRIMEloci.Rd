@@ -11,7 +11,8 @@ PRIMEloci(
   score_diff = 0.1,
   num_cores = NULL,
   keep_tmp = FALSE,
-  log_dir = NULL
+  log_dir = NULL,
+  ...
 )
 }
 \arguments{

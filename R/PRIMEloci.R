@@ -99,7 +99,8 @@ PRIMEloci <- function(
     score_diff = 0.1,
     num_cores = NULL,
     keep_tmp = FALSE,
-    log_dir = NULL) {
+    log_dir = NULL,
+    ...) {
 
 
   # setting
@@ -414,7 +415,7 @@ PRIMEloci <- function(
                                 score_diff = score_diff,
                                 core_width = core_width,
                                 return_gr = TRUE,
-                                output_dir = NULL,
+                                output_dir = primeloci_tmp,
                                 num_cores = num_cores)
 
     if (!is.null(result_gr)) {

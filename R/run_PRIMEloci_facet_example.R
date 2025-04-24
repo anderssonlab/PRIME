@@ -17,7 +17,8 @@
 #' @export
 run_PRIMEloci_facet_example <- function(python_path = NULL,
                                         log_dir = NULL,
-                                        keep_tmp = FALSE) {
+                                        keep_tmp = FALSE,
+                                        ...) {
 
   rds_ctss <- system.file("extdata",
                           "ctss_rse_chr16to17.rds",
