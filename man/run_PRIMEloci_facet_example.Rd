@@ -7,7 +7,8 @@
 run_PRIMEloci_facet_example(
   python_path = NULL,
   log_dir = NULL,
-  keep_tmp = FALSE
+  keep_tmp = FALSE,
+  ...
 )
 }
 \arguments{

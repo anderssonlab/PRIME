@@ -1514,7 +1514,7 @@ write_granges_to_bed_coreovlwithd <- function(gr,
 #' @param return_gr Logical. If TRUE,
 #' returns the final collapsed GRanges object. Default is TRUE.
 #' @param output_dir Optional directory path to write BED output.
-#' If NULL or FALSE, no output is written.
+#' If NULL, no output is written.
 #' @param num_cores Number of CPU cores to use.
 #' If NULL, will use half of available cores (up to 25). Default is NULL.
 #'

@@ -30,7 +30,7 @@ Default is 151.}
 returns the final collapsed GRanges object. Default is TRUE.}
 
 \item{output_dir}{Optional directory path to write BED output.
-If NULL or FALSE, no output is written.}
+If NULL, no output is written.}
 
 \item{num_cores}{Number of CPU cores to use.
 If NULL, will use half of available cores (up to 25). Default is NULL.}
