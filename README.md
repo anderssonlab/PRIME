@@ -5,26 +5,16 @@
 `PRIME` gathers a suite of `R` functions for:
 * analyzing transcription start site (TSS) data, e.g. CAGE, or other RNA 5' end data like GRO/PRO-cap
 * analyzing divergent transcription
-* calling enhancers from TSS data
+* calling enhancers and promoters from TSS data
 * subsampling of data, e.g. for saturation analyses
 * decomposition of TSS clusters for core promoter analysis
 * calculation of genomic background (noise) expression
-* normalization across libraries versus GC content
-* calculation of bias in expression coverage and expression support versus batch
+* normalization across libraries
+* dealing with experimental batches
 
 ## Installation:
 
-Install `PRIME` directly from GitHub using `devtools`:
-
-```
-devtools::install_github("anderssonlab/PRIME")
-```
-
-You may need to manually install dependencies (See `DESRIPTION`).
-
-## Notes:
-* PRIME uses [`CAGEfightR`](https://github.com/MalteThodberg/CAGEfightR) as a base for data loading and handling
-* R package `bcp` is not vailable from CRAN for `R` >= 4.3. To install `bcp`, use `install_github("swang87/bcp")`
+The `R` package `PRIME` depends on a mix of CRAN and Bioconductor packages, and a GitHub version of `bcp`. Installation also requires a specific `python` environment setup. Please refer to [`Installation instructions`](https://github.com/anderssonlab/PRIME/blob/main/INSTALL_PRIME.md) for details.
 
 ## Contributors
 * Robin Andersson
