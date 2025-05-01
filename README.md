@@ -22,10 +22,3 @@ The `R` package `PRIME` depends on a mix of CRAN and Bioconductor packages, and 
 * Hjorleifur Einarsson
 * Robert Krautz
 * Nicolas Alcaraz
-
-## TO DO
-* write vignettes
-
-## Future development
-* ATAC-CAGE integration
-* QC tools and visualization
