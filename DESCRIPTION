@@ -1,6 +1,6 @@
 Package: PRIME
 Title: An R package for regulatory element analysis using transcription initiation data
-Version: 0.1.1.3
+Version: 0.1.1.4
 Author: 
     c(person("Natsuda", "Navamajiti", email = "", role = "aut"),
     person("Hjorleifur", "Einarsson", email = "", role = "aut"),
