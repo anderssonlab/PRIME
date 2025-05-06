@@ -288,167 +288,167 @@ PRIMEloci <- function(
                           msg = "❌ tc_for_profile is NULL at return. Something failed.") # nolint: line_length_linter.
 
 
-  ## _4_
-  #plc_message("\n")
-  #plc_message("🚀 Running PRIMEloci: compute count & normalized profiles for each sample") # nolint: line_length_linter.
-#
-  #plc_profile(
-  #  ctss_rse,
-  #  tc_for_profile,
-  #  outdir,
-  #  profile_dir_name,
-  #  file_type = file_type,
-  #  python_path = py_conf$python,
-  #  addtn_to_filename = addtn_to_filename,
-  #  save_count_profiles = save_count_profiles,
-  #  num_cores = num_cores,
-  #  ext_dis
-  #)
-#
-#
-  ## _5_
-  #plc_message("\n")
-  #plc_message("🚀 Running PRIMEloci: Prediction using PRIMEloci model")
-#
-  #profile_main_dir <- file.path(primeloci_tmp,
-  #                              profile_dir_name)
-#
-  #profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
-  #profile_files <- list.files(profiles_subtnorm_dir,
-  #                            pattern = "\\.(npz|parquet|csv)$")
-  #if (length(profile_files) == 0) {
-  #  plc_error(paste("❌ No profile files found in:", profile_main_dir))
-  #}
-#
-  #model_path <- file.path(system.file("model", package = "PRIME"), model_name)
-#
-  #python_script_dir <- system.file("python", package = "PRIME")
-  #predict_script_path <- file.path(python_script_dir, "main.py")
-  #assertthat::assert_that(
-  #  file.exists(predict_script_path),
-  #  msg = paste("❌ Prediction script not found at:", predict_script_path)
-  #)
-#
-  #assertthat::assert_that(
-  #  file.exists(model_path),
-  #  msg = paste("❌ Model file not found at:", model_path)
-  #)
-#
-  #py_exec <- py_conf$python
-  #assertthat::assert_that(file.exists(py_exec),
-  #                        msg = paste("❌ Python executable not found at:",
-  #                                    py_exec))
-#
-#
-  ## Build Python command
-  #prediction_cmd <- c(
-  #  py_exec, predict_script_path,
-  #  "--script_dir", python_script_dir,
-  #  "--profile_main_dir", profile_main_dir,
-  #  "--combined_outdir", primeloci_tmp,
-  #  "--model_path", model_path,
-  #  "--log_file", log_target,
-  #  "--name_prefix", name_prefix
-  #)
-#
-  #if (!is.null(num_cores)) {
-  #  prediction_cmd <- c(prediction_cmd, "--num_core", as.character(num_cores))
-  #}
-#
-  ## Log the full Python command for debug before running
-  #plc_message(paste("🔧 Python command:",
-  #                  paste(shQuote(prediction_cmd), collapse = " ")))
-#
-  #plc_message("🔹 Running Python prediction script...")
-  #result <- tryCatch(
-  #  {
-  #    output <- system2(py_exec,
-  #                      args = prediction_cmd[-1],
-  #                      stdout = TRUE,
-  #                      stderr = TRUE)
-  #    attr(output, "status") <- 0
-  #    output
-  #  },
-  #  error = function(e) {
-  #    msg <- paste("❌ ERROR during prediction execution: ", e$message)
-  #    plc_message(msg)
-  #    attr(msg, "status") <- 1
-  #    return(msg)
-  #  }
-  #)
-  #if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
-  #  plc_error("❌ Prediction script failed. Check PRIMEloci.log for details.")
-  #} else {
-  #  plc_message("✅ DONE :: Prediction script executed successfully.")
-  #}
-#
-#
-  ## _6_
-  #plc_message("\n")
-  #plc_message("🚀 Running PRIMEloci: Postprocessing prediction BEDs")
-#
-  #bed_files <- plc_find_bed_files_by_partial_name(primeloci_tmp,
-  #                                                partial_name = postprocess_partial_name) # nolint: line_length_linter.
-  #if (length(bed_files) == 0) {
-  #  plc_error(paste("❌ No BED files found for postprocessing in",
-  #                  primeloci_tmp))
-  #}
-#
-  #plc_message(sprintf("📂 Found %d BED file(s) for processing.",
-  #                    length(bed_files)))
-  #result_named_list <- lapply(seq_along(bed_files), function(i) {
-  #  bed_file <- bed_files[i]
-  #  basename_raw <- tools::file_path_sans_ext(basename(bed_file))
-  #  pattern_match <- sub(paste0("^.*",
-  #                              postprocess_partial_name,
-  #                              "_(.*?)_combined.*$"),
-  #                       "\\1",
-  #                       basename_raw)
-#
-  #  sample_name <- if (identical(pattern_match, basename_raw)) {
-  #    basename_raw
-  #  } else {
-  #    pattern_match
-  #  }
-#
-  #  result_gr <- coreovl_with_d(bed_file = bed_file,
-  #                              score_threshold = score_threshold,
-  #                              score_diff = score_diff,
-  #                              core_width = core_width,
-  #                              return_gr = TRUE,
-  #                              output_dir = primeloci_tmp,
-  #                              num_cores = num_cores)
-#
-  #  if (!is.null(result_gr)) {
-  #    list(name = sample_name, gr = result_gr)
-  #  } else {
-  #    plc_message(paste("⚠️ Skipped due to failure:", bed_file))
-  #    NULL
-  #  }
-  #})
-#
-  ## Filter out failed/null entries
-  #result_named_list <- Filter(Negate(is.null), result_named_list)
-#
-  #if (length(result_named_list) == 0) {
-  #  plc_error("❌ All postprocessing attempts failed or returned NULL.")
-  #}
-  #plc_message(sprintf("✅ DONE :: Postprocessed %d file(s) successfully.",
-  #                    length(result_named_list)))
-#
-  #sample_names <- disambiguate_sample_names(result_named_list)
-#
-  ## Final return object
-  #if (length(result_named_list) == 1) {
-  #  result_gr_final <- result_named_list[[1]]$gr
-  #} else {
-  #  result_gr_final <- GenomicRanges::GRangesList(
-  #    setNames(
-  #      lapply(result_named_list, `[[`, "gr"),
-  #      sample_names
-  #    )
-  #  )
-  #}
+  # _4_
+  plc_message("\n")
+  plc_message("🚀 Running PRIMEloci: compute count & normalized profiles for each sample") # nolint: line_length_linter.
+
+  plc_profile(
+    ctss_rse,
+    tc_for_profile,
+    outdir,
+    profile_dir_name,
+    file_type = file_type,
+    python_path = py_conf$python,
+    addtn_to_filename = addtn_to_filename,
+    save_count_profiles = save_count_profiles,
+    num_cores = num_cores,
+    ext_dis
+  )
+
+
+  # _5_
+  plc_message("\n")
+  plc_message("🚀 Running PRIMEloci: Prediction using PRIMEloci model")
+
+  profile_main_dir <- file.path(primeloci_tmp,
+                                profile_dir_name)
+
+  profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
+  profile_files <- list.files(profiles_subtnorm_dir,
+                              pattern = "\\.(npz|parquet|csv)$")
+  if (length(profile_files) == 0) {
+    plc_error(paste("❌ No profile files found in:", profile_main_dir))
+  }
+
+  model_path <- file.path(system.file("model", package = "PRIME"), model_name)
+
+  python_script_dir <- system.file("python", package = "PRIME")
+  predict_script_path <- file.path(python_script_dir, "main.py")
+  assertthat::assert_that(
+    file.exists(predict_script_path),
+    msg = paste("❌ Prediction script not found at:", predict_script_path)
+  )
+
+  assertthat::assert_that(
+    file.exists(model_path),
+    msg = paste("❌ Model file not found at:", model_path)
+  )
+
+  py_exec <- py_conf$python
+  assertthat::assert_that(file.exists(py_exec),
+                          msg = paste("❌ Python executable not found at:",
+                                      py_exec))
+
+
+  # Build Python command
+  prediction_cmd <- c(
+    py_exec, predict_script_path,
+    "--script_dir", python_script_dir,
+    "--profile_main_dir", profile_main_dir,
+    "--combined_outdir", primeloci_tmp,
+    "--model_path", model_path,
+    "--log_file", log_target,
+    "--name_prefix", name_prefix
+  )
+
+  if (!is.null(num_cores)) {
+    prediction_cmd <- c(prediction_cmd, "--num_core", as.character(num_cores))
+  }
+
+  # Log the full Python command for debug before running
+  plc_message(paste("🔧 Python command:",
+                    paste(shQuote(prediction_cmd), collapse = " ")))
+
+  plc_message("🔹 Running Python prediction script...")
+  result <- tryCatch(
+    {
+      output <- system2(py_exec,
+                        args = prediction_cmd[-1],
+                        stdout = TRUE,
+                        stderr = TRUE)
+      attr(output, "status") <- 0
+      output
+    },
+    error = function(e) {
+      msg <- paste("❌ ERROR during prediction execution: ", e$message)
+      plc_message(msg)
+      attr(msg, "status") <- 1
+      return(msg)
+    }
+  )
+  if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
+    plc_error("❌ Prediction script failed. Check PRIMEloci.log for details.")
+  } else {
+    plc_message("✅ DONE :: Prediction script executed successfully.")
+  }
+
+
+  # _6_
+  plc_message("\n")
+  plc_message("🚀 Running PRIMEloci: Postprocessing prediction BEDs")
+
+  bed_files <- plc_find_bed_files_by_partial_name(primeloci_tmp,
+                                                  partial_name = postprocess_partial_name) # nolint: line_length_linter.
+  if (length(bed_files) == 0) {
+    plc_error(paste("❌ No BED files found for postprocessing in",
+                    primeloci_tmp))
+  }
+
+  plc_message(sprintf("📂 Found %d BED file(s) for processing.",
+                      length(bed_files)))
+  result_named_list <- lapply(seq_along(bed_files), function(i) {
+    bed_file <- bed_files[i]
+    basename_raw <- tools::file_path_sans_ext(basename(bed_file))
+    pattern_match <- sub(paste0("^.*",
+                                postprocess_partial_name,
+                                "_(.*?)_combined.*$"),
+                         "\\1",
+                         basename_raw)
+
+    sample_name <- if (identical(pattern_match, basename_raw)) {
+      basename_raw
+    } else {
+      pattern_match
+    }
+
+    result_gr <- coreovl_with_d(bed_file = bed_file,
+                                score_threshold = score_threshold,
+                                score_diff = score_diff,
+                                core_width = core_width,
+                                return_gr = TRUE,
+                                output_dir = primeloci_tmp,
+                                num_cores = num_cores)
+
+    if (!is.null(result_gr)) {
+      list(name = sample_name, gr = result_gr)
+    } else {
+      plc_message(paste("⚠️ Skipped due to failure:", bed_file))
+      NULL
+    }
+  })
+
+  # Filter out failed/null entries
+  result_named_list <- Filter(Negate(is.null), result_named_list)
+
+  if (length(result_named_list) == 0) {
+    plc_error("❌ All postprocessing attempts failed or returned NULL.")
+  }
+  plc_message(sprintf("✅ DONE :: Postprocessed %d file(s) successfully.",
+                      length(result_named_list)))
+
+  sample_names <- disambiguate_sample_names(result_named_list)
+
+  # Final return object
+  if (length(result_named_list) == 1) {
+    result_gr_final <- result_named_list[[1]]$gr
+  } else {
+    result_gr_final <- GenomicRanges::GRangesList(
+      setNames(
+        lapply(result_named_list, `[[`, "gr"),
+        sample_names
+      )
+    )
+  }
 
   on.exit({
     if (!keep_tmp) {
