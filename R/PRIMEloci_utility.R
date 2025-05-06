@@ -1033,6 +1033,48 @@ plc_save_to_file <- function(data,
   })
 }
 
+#' Batch wrapper for heatmapData that preserves input order
+#'
+#' @param regions A GRanges object of equal-width regions
+#' @param data A GRanges object with CTSS signal
+#' @param batch_size Number of regions to process per batch
+#' @param sparse Logical, whether to return sparse matrix (default = TRUE)
+#' @param ... Additional arguments passed to `heatmapData`
+#'
+#' @return A list of matrices by strand with rows in the same order as `regions`
+#'
+#' @export
+plc_batch_heatmapData <- function(regions,
+                                  data,
+                                  batch_size = 1000,
+                                  sparse = TRUE, ...) {
+  region_chunks <- split(regions, ceiling(seq_along(regions) / batch_size))
+
+  profile_list <- lapply(seq_along(region_chunks), function(i) {
+    r <- region_chunks[[i]]
+    suppressMessages(heatmapData(r, data, sparse = sparse, ...))
+  })
+
+  # Combine nested structure: list("*" = list("+" = ..., "-" = ...))
+  out <- profile_list[[1]]
+  if (length(profile_list) > 1) {
+    for (i in 2:length(profile_list)) {
+      for (strand in c("+", "-")) {
+        out[["*"]][[strand]] <- rbind(
+          out[["*"]][[strand]],
+          profile_list[[i]][["*"]][[strand]]
+        )
+      }
+    }
+  }
+
+  if (!all(sapply(profile_list, function(x) all(c("+", "-") %in% names(x[["*"]]))))) { # nolint: line_length_linter.
+    plc_error("❌ Some batches do not contain both '+' and '-' strands under '*' — check heatmapData output structure.") # nolint: line_length_linter.
+  }
+
+  return(out)
+}
+
 #' Profile CTSS counts over strand-merged sliding windows
 #' for a single chromosome.
 #'
@@ -1081,9 +1123,10 @@ plc_profile_chr <- function(current_region_gr,
 
   # Generate sparse matrix profile
   count_profiles <- suppressMessages(
-    heatmapData(current_region_gr,
-                filtered_ctss_gr,
-                sparse = TRUE)
+    plc_batch_heatmapData(current_region_gr,
+                          filtered_ctss_gr,
+                          batch_size = 1000,
+                          sparse = TRUE)
   )
 
   check_valid_profile_rownames(count_profiles$`*`$`+`, chr_name)

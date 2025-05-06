@@ -9,6 +9,7 @@ Author:
     person("Robin", "Andersson", email = "robin@bio.ku.dk", role = c("aut","cre")))
 Maintainer: Robin Andersson <robin@bio.ku.dk>
 Description: An R package for regulatory element analysis using transcription initiation data.
+Depends: R (>= 3.5.0)
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.2
