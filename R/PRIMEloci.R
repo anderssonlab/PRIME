@@ -105,12 +105,13 @@ PRIMEloci <- function(
 
   # setting
 
+  save_tc <- TRUE
+  save_sld_tc <- TRUE
+
   tc_object <- NULL
-  save_tc <- FALSE
   tc_object_name <- "tc_grl.rds"
   sld_by <- 20
   sld_object_name <- "sld_tc_grl.rds"
-  save_sld_tc <- FALSE
   profile_dir_name <- "PRIMEloci_profiles"
   postprocess_partial_name <- "pred_all"
   save_count_profiles <- FALSE
@@ -465,5 +466,6 @@ PRIMEloci <- function(
   plc_message(sprintf("🏁 Pipeline completed at: %s", Sys.time()))
   plc_message("\n")
 
-  return(result_gr_final)
+  #return(result_gr_final)
+
 }
