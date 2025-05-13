@@ -738,6 +738,27 @@ is_sequential_or_hangs <- function(num_workers, timeout_sec = 10) {
   return(length(unique(result)) == 1)
 }
 
+is_multisession_parallel <- function(timeout_sec = 5) {
+  if (!requireNamespace("R.utils", quietly = TRUE)) {
+    plc_warn("R.utils package is required for timeout detection. Assuming sequential.") # nolint: line_length_linter.
+    return(FALSE)
+  }
+  elapsed <- tryCatch({
+    R.utils::withTimeout({
+      t0 <- Sys.time()
+      future.apply::future_lapply(1:2, function(i) Sys.sleep(1), future.seed = TRUE)
+      as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    }, timeout = timeout_sec, onTimeout = "error")
+  }, TimeoutException = function(e) {
+    plc_message("⏱ Parallel check timed out — assuming sequential.")
+    return(Inf)
+  }, error = function(e) {
+    plc_message(paste("⚠️ Parallel check failed:", conditionMessage(e)))
+    return(Inf)
+  })
+
+  return(elapsed < 1.8)  # If it took ~1 second, it ran in parallel
+}
 
 #' Set a robust parallel plan using multisession or callr
 #' Use multisession if workers >= 2.
@@ -752,8 +773,8 @@ plc_set_parallel_plan <- function(num_workers = 1) {
   if (num_workers >= 2) {
     try({
       future::plan(future::multisession, workers = num_workers)
-      if (is_sequential_or_hangs(num_workers)) {
-        plc_message("⚠️ Multisession ran all tasks in the same PID – falling back to callr.") # nolint: line_length_linter.
+      if (!is_multisession_parallel()) {
+        plc_message("⚠️ Multisession did not run in parallel – falling back to callr.") # fixed logic # nolint: line_length_linter.
       } else {
         plc_message("✅ Using multisession for parallel processing.")
         plan_set <- TRUE
@@ -780,6 +801,7 @@ plc_set_parallel_plan <- function(num_workers = 1) {
   plc_message(paste("🧠 Plan set with", future::nbrOfWorkers(), "worker(s)."))
   on.exit(future::plan(future::sequential), add = TRUE)
 }
+
 
 #' Perform Parallel Sliding Window Expansion on GRanges Tag Clusters
 #'
