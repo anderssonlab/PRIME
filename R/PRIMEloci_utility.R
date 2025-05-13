@@ -706,20 +706,38 @@ tc_sliding_window_chr <- function(gr_per_chr,
 }
 
 # Check PID
-is_sequential_or_slow <- function(timeout_sec = 5) {
-  t_start <- Sys.time()
-  results <- tryCatch({
-    future.apply::future_lapply(1:2, function(i) {
-      Sys.sleep(0.5)
-      Sys.getpid()
-    }, future.seed = TRUE)
-  }, error = function(e) return(NULL))
-  elapsed <- as.numeric(difftime(Sys.time(), t_start, units = "secs"))
-  if (is.null(results)) return(TRUE)  # failed run = assume sequential
-  if (elapsed > timeout_sec) return(TRUE)  # too slow = probably blocked
-  if (length(unique(results)) == 1) return(TRUE)  # same PID = sequential
-  return(FALSE)  # looks parallel
+is_sequential_or_hangs <- function(num_workers, timeout_sec = 10) {
+  if (!requireNamespace("R.utils", quietly = TRUE)) {
+    plc_warn("R.utils package is required for timeout detection. Assuming sequential.") # nolint: line_length_linter.
+    return(TRUE)
+  }
+
+  # Shortcut: if only 1 worker, go straight to callr plan
+  if (num_workers == 1) {
+    future::plan(future.callr::callr, workers = 1)
+    warning("⚠️ Using callr (sequential, one worker).")
+    return(invisible(NULL))
+  }
+
+  result <- tryCatch({
+    R.utils::withTimeout({
+      future.apply::future_lapply(1:2, function(i) {
+        Sys.sleep(0.5)
+        Sys.getpid()
+      }, future.seed = TRUE)
+    }, timeout = timeout_sec, onTimeout = "error")
+  }, TimeoutException = function(e) {
+    plc_message("⏱ PID check timed out — assuming sequential.")
+    return(NULL)
+  }, error = function(e) {
+    plc_message(paste("⚠️ PID check failed:", conditionMessage(e)))
+    return(NULL)
+  })
+
+  if (is.null(result)) return(TRUE)
+  return(length(unique(result)) == 1)
 }
+
 
 #' Set a robust parallel plan using multisession or callr
 #' Use multisession if workers >= 2.
@@ -734,7 +752,7 @@ plc_set_parallel_plan <- function(num_workers = 1) {
   if (num_workers >= 2) {
     try({
       future::plan(future::multisession, workers = num_workers)
-      if (is_sequential_or_slow()) {
+      if (is_sequential_or_hangs(num_workers)) {
         plc_message("⚠️ Multisession ran all tasks in the same PID – falling back to callr.") # nolint: line_length_linter.
       } else {
         plc_message("✅ Using multisession for parallel processing.")
