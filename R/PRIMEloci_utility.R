@@ -556,7 +556,7 @@ plc_get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
     plc_message("🔹 Trimming out-of-bound ranges...")
     new_object <- GenomicRanges::trim(new_object)
 
-    plc_message("🔹 Keep only prefered width...")
+    plc_message("🔹 Keep only preferred width...")
     len_vec <- ext_dis * 2 + 1
 
     new_object_widths <- GenomicRanges::width(new_object)
@@ -1864,14 +1864,18 @@ plc_find_bed_files_by_partial_name <- function(dir,
 #' checks for duplicates, and appends numeric suffixes (e.g., "_1", "_2") to
 #' ensure uniqueness. It logs any name changes using `plc_log()`.
 disambiguate_sample_names <- function(named_list) {
+
   sample_names <- vapply(named_list, `[[`, character(1), "name")
-  if (any(duplicated(sample_names))) { # nolint: line_length_linter.
+
+  if (any(duplicated(sample_names))) {
     plc_warn("⚠️ Duplicate sample names found. Appending numeric suffixes to ensure uniqueness.") # nolint: line_length_linter.
     sample_names_old <- sample_names
     sample_names <- make.unique(sample_names, sep = "_")
     changed <- sample_names_old != sample_names
+
     if (any(changed)) {
       plc_message("🔍 Sample name resolution:")
+
       for (i in which(changed)) {
         plc_message(sprintf(" • %s ➜ %s",
                             sample_names_old[i],

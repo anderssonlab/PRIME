@@ -243,7 +243,7 @@ PRIMEloci_facet <- function(
       msg <- paste("❌ ERROR during prediction execution: ", e$message)
       plc_message(msg)
       attr(msg, "status") <- 1
-      return(msg)
+      msg
     }
   )
   if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
