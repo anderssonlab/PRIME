@@ -739,15 +739,45 @@ plc_tc_sliding_window <- function(granges_obj,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  future::plan(future::multisession, workers = num_workers)
+  
+  # Try callr first
+  plan_set <- FALSE
+  if (requireNamespace("future.callr", quietly = TRUE)) {
+    try({
+      future::plan(future.callr::callr, workers = num_workers)
+      if (is_parallel_plan_working()) {
+        plc_message("Using callr for parallel processing.")
+        plan_set <- TRUE
+      }
+    }, silent = TRUE)
+  }
 
-  options(future.debug = TRUE)
-  f <- future::future(Sys.getpid())
-  future::value(f)
+  # Then try multisession
+  if (!plan_set) {
+    try({
+      future::plan(future::multisession, workers = num_workers)
+      if (is_parallel_plan_working()) {
+        plc_message("Using multisession for parallel processing.")
+        plan_set <- TRUE
+      }
+    }, silent = TRUE)
+  }
 
-  on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
+  # Fallback to sequential
+  if (!plan_set) {
+    future::plan(future::sequential)
+    plc_warn("All parallel plans failed, using sequential.")
+  }
 
-  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  on.exit(future::plan(future::sequential))
+
+  plc_message(paste("Using",
+                    future::nbrOfWorkers(),
+                    "core(s) for parallel processing."))
+
+  #future::plan(future::multisession, workers = num_workers)
+  #on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
+  #plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
 
   # 4) Run in parallel using future_lapply, passing required globals
   result_list <- future.apply::future_lapply(
@@ -1322,7 +1352,7 @@ plc_profile <- function(ctss_rse,
     plc_warn("All parallel plans failed, using sequential.")
   }
 
-  on.exit(future::plan(future::sequential))  # Always clean up
+  on.exit(future::plan(future::sequential))
 
   plc_message(paste("Using",
                     future::nbrOfWorkers(),
@@ -1698,15 +1728,45 @@ coreovl_with_d <- function(bed_file,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  future::plan(future::multisession, workers = num_workers)
 
-  options(future.debug = TRUE)
-  f <- future::future(Sys.getpid())
-  future::value(f)
+  # Try callr first
+  plan_set <- FALSE
+  if (requireNamespace("future.callr", quietly = TRUE)) {
+    try({
+      future::plan(future.callr::callr, workers = num_workers)
+      if (is_parallel_plan_working()) {
+        plc_message("Using callr for parallel processing.")
+        plan_set <- TRUE
+      }
+    }, silent = TRUE)
+  }
 
-  on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
+  # Then try multisession
+  if (!plan_set) {
+    try({
+      future::plan(future::multisession, workers = num_workers)
+      if (is_parallel_plan_working()) {
+        plc_message("Using multisession for parallel processing.")
+        plan_set <- TRUE
+      }
+    }, silent = TRUE)
+  }
 
-  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  # Fallback to sequential
+  if (!plan_set) {
+    future::plan(future::sequential)
+    plc_warn("All parallel plans failed, using sequential.")
+  }
+
+  on.exit(future::plan(future::sequential))
+
+  plc_message(paste("Using",
+                    future::nbrOfWorkers(),
+                    "core(s) for parallel processing."))
+
+  #future::plan(future::multisession, workers = num_workers)
+  #on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
+  #plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
 
   # Process each chromosome in parallel
 
