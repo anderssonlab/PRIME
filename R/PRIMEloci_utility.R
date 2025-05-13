@@ -706,15 +706,19 @@ tc_sliding_window_chr <- function(gr_per_chr,
 }
 
 # Check PID
-is_sequential_by_pid <- function() {
+is_sequential_or_slow <- function(timeout_sec = 5) {
+  t_start <- Sys.time()
   results <- tryCatch({
     future.apply::future_lapply(1:2, function(i) {
       Sys.sleep(0.5)
       Sys.getpid()
     }, future.seed = TRUE)
   }, error = function(e) return(NULL))
-  if (is.null(results)) return(TRUE)
-  return(length(unique(results)) == 1)
+  elapsed <- as.numeric(difftime(Sys.time(), t_start, units = "secs"))
+  if (is.null(results)) return(TRUE)  # failed run = assume sequential
+  if (elapsed > timeout_sec) return(TRUE)  # too slow = probably blocked
+  if (length(unique(results)) == 1) return(TRUE)  # same PID = sequential
+  return(FALSE)  # looks parallel
 }
 
 #' Set a robust parallel plan using multisession or callr
@@ -726,11 +730,11 @@ plc_set_parallel_plan <- function(num_workers = 1) {
 
   plan_set <- FALSE
 
-  # Step 1: Try multisession if workers >= 2
+  # Step 1: Try multisession if more than 1 worker
   if (num_workers >= 2) {
     try({
       future::plan(future::multisession, workers = num_workers)
-      if (is_sequential_by_pid()) {
+      if (is_sequential_or_slow()) {
         plc_message("⚠️ Multisession ran all tasks in the same PID – falling back to callr.") # nolint: line_length_linter.
       } else {
         plc_message("✅ Using multisession for parallel processing.")
