@@ -41,5 +41,6 @@ Imports:
     arrow,
     future,
     future.apply,
+    future.callr,
     tools,
     sparseMatrixStats
