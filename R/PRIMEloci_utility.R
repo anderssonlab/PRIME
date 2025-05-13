@@ -711,6 +711,7 @@ tc_sliding_window_chr <- function(gr_per_chr,
 #' @import IRanges
 #' @importFrom future plan sequential multisession
 #' @importFrom future.apply future_lapply
+#' @importFrom future.callr callr
 #' @importFrom assertthat assert_that
 #' @importFrom parallel detectCores
 #'
@@ -1284,6 +1285,7 @@ is_parallel_plan_working <- function() {
 #' @importFrom parallel detectCores
 #' @importFrom future plan multisession
 #' @importFrom future.apply future_lapply
+#' @importFrom future.callr callr
 #' @importFrom assertthat assert_that
 #' @importFrom reticulate use_python
 #' @export
@@ -1661,6 +1663,7 @@ write_granges_to_bed_coreovlwithd <- function(gr,
 #' @importFrom parallel detectCores
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
+#' @importFrom future.callr callr
 #' @importFrom stringr str_replace_all
 #' @importFrom tools file_path_sans_ext
 #' @importFrom magrittr %>%
