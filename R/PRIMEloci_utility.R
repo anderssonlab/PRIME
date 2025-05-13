@@ -83,6 +83,96 @@ plc_setup_log_target <- function(log, outdir) {
   }
 }
 
+#' Detect optimal parallel backend (multisession or callr)
+#'
+#' Allows for long startup (e.g. on slower systems). Use at setup time to decide plan.
+#'
+#' @param num_workers Number of workers to test
+#' @param startup_tolerance_sec Max time allowed for slow startup without fallback (default 30s)
+#' @return One of: "multisession" or "callr"
+#' @export
+plc_detect_parallel_plan <- function(num_workers = 2,
+                                     startup_tolerance_sec = 30,
+                                     sleep_sec = 2,
+                                     overlap_threshold = 10,
+                                     runtime_threshold = 25) {
+  try({
+    future::plan(future::multisession, workers = num_workers)
+
+    t0 <- Sys.time()
+    result <- R.utils::withTimeout({
+      res <- future.apply::future_lapply(1:2, function(i) {
+        Sys.sleep(sleep_sec)
+        list(pid = Sys.getpid(), time = Sys.time())
+      }, future.seed = TRUE)
+
+      elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+      times <- as.POSIXct(sapply(res, `[[`, "time"))
+      overlap <- as.numeric(difftime(max(times), min(times), units = "secs"))
+      unique_pids <- length(unique(sapply(res, `[[`, "pid")))
+
+      plc_message(sprintf("[Check Result] Elapsed: %.2fs | Overlap: %.2fs | PIDs: %s",
+                          elapsed, overlap, paste(sapply(res, `[[`, "pid"), collapse = ", ")))
+
+      list(
+        is_parallel = (
+          elapsed <= runtime_threshold &&
+          overlap <= overlap_threshold &&
+          unique_pids >= 2
+        ),
+        elapsed = elapsed,
+        overlap = overlap
+      )
+    }, timeout = startup_tolerance_sec, onTimeout = "error")
+
+    if (is.null(result) || !result$is_parallel) {
+      return("callr")
+    } else {
+      return("multisession")
+    }
+  }, silent = TRUE)
+
+  return("callr")
+}
+
+#' Set a robust parallel plan using multisession or callr
+#'
+#' Use multisession if workers >= 2 and it runs in actual parallel.
+#' If multisession fails or is not truly parallel, fall back to callr.
+#' Always warn if callr is used.
+#' Do not fall back to sequential if callr fails.
+#'
+#' @param num_workers Number of workers to attempt. 1 will directly use callr.
+#'
+#' @importFrom future plan multisession sequential nbrOfWorkers
+#' @importFrom future.callr callr
+#' @importFrom future.apply future_lapply
+#' @export
+plc_set_parallel_plan <- function(num_workers) {
+
+  # Step 1: If num_workers = 1, use callr directly
+  if (num_workers == 1) {
+    future::plan(future.callr::callr, workers = 1)
+    plc_message("⚠️ num_workers was set to 1. Using callr backend: tasks will run sequentially (despite using multiple R sessions).") # nolint: line_length_linter.
+  }
+
+  # Step 2: Try multisession if workers >= 2
+  if (num_workers >= 2) {
+    # At the top of your script:
+    method_to_use <- plc_detect_parallel_plan(num_workers = num_workers)
+    future::plan(future::sequential)
+    
+    if (method_to_use == "multisession") {
+      future::plan(future::multisession, workers = num_workers)
+      plc_message("✅ Using multisession for parallel processing.")
+    } else {
+      future::plan(future.callr::callr, workers = num_workers)
+      plc_message("⚠️ Using callr backend: tasks will run sequentially.")
+    }
+
+  plc_message(paste("⚙️ Plan set with", future::nbrOfWorkers(), "worker(s)."))
+}
+
 #' Extract CAGE Transcription Start Sites (CTSSs) from BigWig Files
 #'
 #' This function extracts CTSSs from CAGE data stored in BigWig files,
@@ -705,104 +795,6 @@ tc_sliding_window_chr <- function(gr_per_chr,
   return(sliding_granges)
 }
 
-# Check PID
-is_sequential_or_hangs <- function(num_workers, timeout_sec = 10) {
-  if (!requireNamespace("R.utils", quietly = TRUE)) {
-    plc_warn("R.utils package is required for timeout detection. Assuming sequential.") # nolint: line_length_linter.
-    return(TRUE)
-  }
-
-  # Shortcut: if only 1 worker, go straight to callr plan
-  if (num_workers == 1) {
-    future::plan(future.callr::callr, workers = 1)
-    warning("⚠️ Using callr (sequential, one worker).")
-    return(invisible(NULL))
-  }
-
-  result <- tryCatch({
-    R.utils::withTimeout({
-      future.apply::future_lapply(1:2, function(i) {
-        Sys.sleep(0.5)
-        Sys.getpid()
-      }, future.seed = TRUE)
-    }, timeout = timeout_sec, onTimeout = "error")
-  }, TimeoutException = function(e) {
-    plc_message("⏱ PID check timed out — assuming sequential.")
-    return(NULL)
-  }, error = function(e) {
-    plc_message(paste("⚠️ PID check failed:", conditionMessage(e)))
-    return(NULL)
-  })
-
-  if (is.null(result)) return(TRUE)
-  return(length(unique(result)) == 1)
-}
-
-is_multisession_parallel <- function(timeout_sec = 5) {
-  if (!requireNamespace("R.utils", quietly = TRUE)) {
-    plc_warn("R.utils package is required for timeout detection. Assuming sequential.") # nolint: line_length_linter.
-    return(FALSE)
-  }
-  elapsed <- tryCatch({
-    R.utils::withTimeout({
-      t0 <- Sys.time()
-      future.apply::future_lapply(1:2, function(i) Sys.sleep(1), future.seed = TRUE)
-      as.numeric(difftime(Sys.time(), t0, units = "secs"))
-    }, timeout = timeout_sec, onTimeout = "error")
-  }, TimeoutException = function(e) {
-    plc_message("⏱ Parallel check timed out — assuming sequential.")
-    return(Inf)
-  }, error = function(e) {
-    plc_message(paste("⚠️ Parallel check failed:", conditionMessage(e)))
-    return(Inf)
-  })
-
-  return(elapsed < 1.8)  # If it took ~1 second, it ran in parallel
-}
-
-#' Set a robust parallel plan using multisession or callr
-#' Use multisession if workers >= 2.
-#' If multisession is not truly parallel, fall back to callr.
-#' Always warn if callr is used.
-#' Do not fall back to sequential if callr fails.
-plc_set_parallel_plan <- function(num_workers = 1) {
-
-  plan_set <- FALSE
-
-  # Step 1: Try multisession if more than 1 worker
-  if (num_workers >= 2) {
-    try({
-      future::plan(future::multisession, workers = num_workers)
-      if (!is_multisession_parallel()) {
-        plc_message("⚠️ Multisession did not run in parallel – falling back to callr.") # fixed logic # nolint: line_length_linter.
-      } else {
-        plc_message("✅ Using multisession for parallel processing.")
-        plan_set <- TRUE
-      }
-    }, silent = TRUE)
-  }
-
-  # Step 2: Fallback to callr
-  if (!plan_set || num_workers == 1) {
-    tryCatch({
-      future::plan(future.callr::callr, workers = num_workers)
-      plc_message("⚠️ Using callr backend: tasks will run sequentially (despite using multiple R sessions).") # nolint: line_length_linter.
-      plan_set <- TRUE
-    }, error = function(e) {
-      plc_error("❌ callr plan failed and no further fallback is allowed:\n")
-    })
-  }
-
-  # If no plan is set, and callr is not available or fails, error
-  if (!plan_set) {
-    plc_error("❌ No valid parallel plan could be set. Aborting.")
-  }
-
-  plc_message(paste("🧠 Plan set with", future::nbrOfWorkers(), "worker(s)."))
-  on.exit(future::plan(future::sequential), add = TRUE)
-}
-
-
 #' Perform Parallel Sliding Window Expansion on GRanges Tag Clusters
 #'
 #' @import GenomicRanges
@@ -839,6 +831,7 @@ plc_tc_sliding_window <- function(granges_obj,
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   plc_set_parallel_plan(num_workers)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # 4) Run in parallel using future_lapply, passing required globals
   result_list <- future.apply::future_lapply(
@@ -858,7 +851,6 @@ plc_tc_sliding_window <- function(granges_obj,
       gr_by_chr = gr_by_chr
     )
   )
-
 
   # 5) Convert result into GRangesList and then unlist
   result_grl <- GenomicRanges::GRangesList(result_list)
@@ -1312,14 +1304,6 @@ plc_profile_chr <- function(current_region_gr,
   return(list(chr_name = chr_name, status = "Processed"))
 }
 
-# Helper function
-is_parallel_plan_working <- function() {
-  pids <- tryCatch({
-    future.apply::future_lapply(1:3, function(x) Sys.getpid())
-  }, error = function(e) return(rep(NA, 3)))
-  return(length(unique(pids)) > 1)
-}
-
 #' Process profiles for each column in the CTSS dataset and save results
 #'
 #' This function processes the profiles for each column
@@ -1389,6 +1373,7 @@ plc_profile <- function(ctss_rse,
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   plc_set_parallel_plan(num_workers)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # Sample Loop
   for (i in seq_along(SummarizedExperiment::colnames(ctss_rse))) {
@@ -1758,6 +1743,7 @@ coreovl_with_d <- function(bed_file,
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   plc_set_parallel_plan(num_workers)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # Process each chromosome in parallel
 

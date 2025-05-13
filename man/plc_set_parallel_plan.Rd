@@ -2,18 +2,16 @@
 % Please edit documentation in R/PRIMEloci_utility.R
 \name{plc_set_parallel_plan}
 \alias{plc_set_parallel_plan}
-\title{Set a robust parallel plan using multisession or callr
-Use multisession if workers >= 2.
-If multisession is not truly parallel, fall back to callr.
-Always warn if callr is used.
-Do not fall back to sequential if callr fails.}
+\title{Set a robust parallel plan using multisession or callr}
 \usage{
-plc_set_parallel_plan(num_workers = 1)
+plc_set_parallel_plan(num_workers)
+}
+\arguments{
+\item{num_workers}{Number of workers to attempt. 1 will directly use callr.}
 }
 \description{
-Set a robust parallel plan using multisession or callr
-Use multisession if workers >= 2.
-If multisession is not truly parallel, fall back to callr.
+Use multisession if workers >= 2 and it runs in actual parallel.
+If multisession fails or is not truly parallel, fall back to callr.
 Always warn if callr is used.
 Do not fall back to sequential if callr fails.
 }
