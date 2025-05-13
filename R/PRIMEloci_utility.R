@@ -793,24 +793,28 @@ plc_tc_sliding_window <- function(granges_obj,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   set_parallel_plan(num_workers)
 
   # 4) Run in parallel using future_lapply, passing required globals
   result_list <- future.apply::future_lapply(
-    gr_by_chr,
-    FUN = function(gr) {
-      tc_sliding_window_chr(gr,
-                            sld_by = sld_by,
-                            ext_dis = ext_dis)
+    X = seq_along(gr_by_chr),
+    FUN = function(i) {
+      tc_sliding_window_chr(
+        gr = gr_by_chr[[i]],
+        sld_by = sld_by,
+        ext_dis = ext_dis
+      )
     },
     future.seed = TRUE,
     future.globals = list(
       tc_sliding_window_chr = tc_sliding_window_chr,
       sld_by = sld_by,
-      ext_dis = ext_dis
+      ext_dis = ext_dis,
+      gr_by_chr = gr_by_chr
     )
   )
+
 
   # 5) Convert result into GRangesList and then unlist
   result_grl <- GenomicRanges::GRangesList(result_list)
@@ -1339,7 +1343,7 @@ plc_profile <- function(ctss_rse,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   set_parallel_plan(num_workers)
 
   # Sample Loop
@@ -1708,7 +1712,7 @@ coreovl_with_d <- function(bed_file,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   set_parallel_plan(num_workers)
 
   # Process each chromosome in parallel
