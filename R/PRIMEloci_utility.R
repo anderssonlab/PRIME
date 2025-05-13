@@ -705,6 +705,60 @@ tc_sliding_window_chr <- function(gr_per_chr,
   return(sliding_granges)
 }
 
+#' @title Set up a robust future parallel plan
+#' @description Internal utility to set future plan
+#' with callr or multisession fallback.
+#' @importFrom future plan
+#' @importFrom future.apply future_lapply
+#' @importFrom future.callr callr
+set_parallel_plan <- function(num_workers = 1) {
+  plan_set <- FALSE
+
+  # Try callr first
+  if (requireNamespace("future.callr", quietly = TRUE)) {
+    try({
+      future::plan(future.callr::callr, workers = num_workers)
+      if (is_parallel_plan_working()) {
+        plc_message("Using callr for parallel processing.")
+        plan_set <- TRUE
+      }
+    }, silent = TRUE)
+  }
+
+  # Then try multisession
+  if (!plan_set) {
+    try({
+      future::plan(future::multisession, workers = num_workers)
+      if (is_parallel_plan_working()) {
+        plc_message("Using multisession for parallel processing.")
+        plan_set <- TRUE
+      }
+    }, silent = TRUE)
+  }
+
+  # Fallback to sequential
+  if (!plan_set) {
+    future::plan(future::sequential)
+    plc_warn("All parallel plans failed, using sequential.")
+  }
+
+  on.exit(future::plan(future::sequential), add = TRUE)
+
+  plc_message(paste("Using",
+                    future::nbrOfWorkers(),
+                    "core(s) for parallel processing."))
+}
+
+#' @title Check if current future plan runs in parallel
+#' @description Internal helper to test
+#' whether the future plan executes with multiple PIDs.
+is_parallel_plan_working <- function() {
+  pids <- tryCatch({
+    future.apply::future_lapply(1:3, function(x) Sys.getpid())
+  }, error = function(e) return(rep(NA, 3)))
+  return(length(unique(pids)) > 1)
+}
+
 #' Perform Parallel Sliding Window Expansion on GRanges Tag Clusters
 #'
 #' @import GenomicRanges
@@ -740,45 +794,7 @@ plc_tc_sliding_window <- function(granges_obj,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  
-  # Try callr first
-  plan_set <- FALSE
-  if (requireNamespace("future.callr", quietly = TRUE)) {
-    try({
-      future::plan(future.callr::callr, workers = num_workers)
-      if (is_parallel_plan_working()) {
-        plc_message("Using callr for parallel processing.")
-        plan_set <- TRUE
-      }
-    }, silent = TRUE)
-  }
-
-  # Then try multisession
-  if (!plan_set) {
-    try({
-      future::plan(future::multisession, workers = num_workers)
-      if (is_parallel_plan_working()) {
-        plc_message("Using multisession for parallel processing.")
-        plan_set <- TRUE
-      }
-    }, silent = TRUE)
-  }
-
-  # Fallback to sequential
-  if (!plan_set) {
-    future::plan(future::sequential)
-    plc_warn("All parallel plans failed, using sequential.")
-  }
-
-  on.exit(future::plan(future::sequential))
-
-  plc_message(paste("Using",
-                    future::nbrOfWorkers(),
-                    "core(s) for parallel processing."))
-
-  #future::plan(future::multisession, workers = num_workers)
-  #on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
-  #plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  set_parallel_plan(num_workers)
 
   # 4) Run in parallel using future_lapply, passing required globals
   result_list <- future.apply::future_lapply(
@@ -1324,45 +1340,7 @@ plc_profile <- function(ctss_rse,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-
-  # Try callr first
-  plan_set <- FALSE
-  if (requireNamespace("future.callr", quietly = TRUE)) {
-    try({
-      future::plan(future.callr::callr, workers = num_workers)
-      if (is_parallel_plan_working()) {
-        plc_message("Using callr for parallel processing.")
-        plan_set <- TRUE
-      }
-    }, silent = TRUE)
-  }
-
-  # Then try multisession
-  if (!plan_set) {
-    try({
-      future::plan(future::multisession, workers = num_workers)
-      if (is_parallel_plan_working()) {
-        plc_message("Using multisession for parallel processing.")
-        plan_set <- TRUE
-      }
-    }, silent = TRUE)
-  }
-
-  # Fallback to sequential
-  if (!plan_set) {
-    future::plan(future::sequential)
-    plc_warn("All parallel plans failed, using sequential.")
-  }
-
-  on.exit(future::plan(future::sequential))
-
-  plc_message(paste("Using",
-                    future::nbrOfWorkers(),
-                    "core(s) for parallel processing."))
-
-  #future::plan(future::multisession, workers = num_workers)
-  #on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
-  #plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  set_parallel_plan(num_workers)
 
   # Sample Loop
   for (i in seq_along(SummarizedExperiment::colnames(ctss_rse))) {
@@ -1731,45 +1709,7 @@ coreovl_with_d <- function(bed_file,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-
-  # Try callr first
-  plan_set <- FALSE
-  if (requireNamespace("future.callr", quietly = TRUE)) {
-    try({
-      future::plan(future.callr::callr, workers = num_workers)
-      if (is_parallel_plan_working()) {
-        plc_message("Using callr for parallel processing.")
-        plan_set <- TRUE
-      }
-    }, silent = TRUE)
-  }
-
-  # Then try multisession
-  if (!plan_set) {
-    try({
-      future::plan(future::multisession, workers = num_workers)
-      if (is_parallel_plan_working()) {
-        plc_message("Using multisession for parallel processing.")
-        plan_set <- TRUE
-      }
-    }, silent = TRUE)
-  }
-
-  # Fallback to sequential
-  if (!plan_set) {
-    future::plan(future::sequential)
-    plc_warn("All parallel plans failed, using sequential.")
-  }
-
-  on.exit(future::plan(future::sequential))
-
-  plc_message(paste("Using",
-                    future::nbrOfWorkers(),
-                    "core(s) for parallel processing."))
-
-  #future::plan(future::multisession, workers = num_workers)
-  #on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
-  #plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  set_parallel_plan(num_workers)
 
   # Process each chromosome in parallel
 
