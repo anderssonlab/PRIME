@@ -4,13 +4,7 @@
 \alias{plc_detect_parallel_plan}
 \title{Detect optimal parallel backend (multisession or callr)}
 \usage{
-plc_detect_parallel_plan(
-  num_workers = 2,
-  startup_tolerance_sec = 30,
-  sleep_sec = 2,
-  overlap_threshold = 10,
-  runtime_threshold = 25
-)
+plc_detect_parallel_plan(num_workers, startup_tolerance_sec = 30)
 }
 \arguments{
 \item{num_workers}{Number of workers to test}
