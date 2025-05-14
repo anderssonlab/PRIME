@@ -141,7 +141,7 @@ plc_setup_log_target <- function(log, outdir) {
 #  return("callr")
 #}
 plc_detect_parallel_plan <- function(num_workers,
-                                     startup_tolerance_sec = 30) {
+                                     startup_tolerance_sec = 60) {
   try({
     future::plan(future::multisession, workers = num_workers)
 
