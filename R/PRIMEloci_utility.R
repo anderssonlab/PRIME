@@ -94,48 +94,69 @@ plc_setup_log_target <- function(log, outdir) {
 #'
 #' @return One of: "multisession" or "callr"
 #' @export
-plc_detect_parallel_plan <- function(num_workers = 2,
-                                     startup_tolerance_sec = 30,
-                                     sleep_sec = 2,
-                                     overlap_threshold = 10,
-                                     runtime_threshold = 25) {
+#plc_detect_parallel_plan <- function(num_workers = 2,
+#                                     startup_tolerance_sec = 30,
+#                                     sleep_sec = 2,
+#                                     overlap_threshold = 10,
+#                                     runtime_threshold = 25) {
+#  try({
+#    future::plan(future::multisession, workers = num_workers)
+#
+#    t0 <- Sys.time()
+#    result <- R.utils::withTimeout({
+#      res <- future.apply::future_lapply(1:2, function(i) {
+#        Sys.sleep(sleep_sec)
+#        list(pid = Sys.getpid(), time = Sys.time())
+#      }, future.seed = TRUE)
+#
+#      elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+#      times <- as.POSIXct(sapply(res, `[[`, "time"))
+#      overlap <- as.numeric(difftime(max(times), min(times), units = "secs"))
+#      unique_pids <- length(unique(sapply(res, `[[`, "pid")))
+#
+#      plc_message(sprintf("[Check Result] Elapsed: %.2fs | Overlap: %.2fs | PIDs: %s", # nolint: line_length_linter.
+#                          elapsed,
+#                          overlap,
+#                          paste(sapply(res, `[[`, "pid"),
+#                                collapse = ", ")))
+#
+#      list(
+#        is_parallel = (
+#          elapsed <= runtime_threshold &&
+#            overlap <= overlap_threshold &&
+#            unique_pids >= 2
+#        ),
+#        elapsed = elapsed,
+#        overlap = overlap
+#      )
+#    }, timeout = startup_tolerance_sec, onTimeout = "error")
+#
+#    if (is.null(result) || !result$is_parallel) {
+#      return("callr")
+#    } else {
+#      return("multisession")
+#    }
+#  }, silent = TRUE)
+#
+#  return("callr")
+#}
+plc_detect_parallel_plan <- function(num_workers,
+                                     startup_tolerance_sec = 30) {
   try({
     future::plan(future::multisession, workers = num_workers)
 
     t0 <- Sys.time()
-    result <- R.utils::withTimeout({
-      res <- future.apply::future_lapply(1:2, function(i) {
-        Sys.sleep(sleep_sec)
-        list(pid = Sys.getpid(), time = Sys.time())
-      }, future.seed = TRUE)
-
-      elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-      times <- as.POSIXct(sapply(res, `[[`, "time"))
-      overlap <- as.numeric(difftime(max(times), min(times), units = "secs"))
-      unique_pids <- length(unique(sapply(res, `[[`, "pid")))
-
-      plc_message(sprintf("[Check Result] Elapsed: %.2fs | Overlap: %.2fs | PIDs: %s", # nolint: line_length_linter.
-                          elapsed,
-                          overlap,
-                          paste(sapply(res, `[[`, "pid"),
-                                collapse = ", ")))
-
-      list(
-        is_parallel = (
-          elapsed <= runtime_threshold &&
-            overlap <= overlap_threshold &&
-            unique_pids >= 2
-        ),
-        elapsed = elapsed,
-        overlap = overlap
-      )
+    R.utils::withTimeout({
+      future.apply::future_lapply(1:2,
+                                  function(i) Sys.sleep(2),
+                                  future.seed = TRUE)
     }, timeout = startup_tolerance_sec, onTimeout = "error")
 
-    if (is.null(result) || !result$is_parallel) {
-      return("callr")
-    } else {
-      return("multisession")
-    }
+    elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    plc_message(sprintf("[Check Result] Multisession ran in %.2f seconds",
+                        elapsed))
+    future::plan(future::sequential)
+    return("multisession")
   }, silent = TRUE)
 
   return("callr")
@@ -166,7 +187,6 @@ plc_set_parallel_plan <- function(num_workers) {
   if (num_workers >= 2) {
 
     method_to_use <- plc_detect_parallel_plan(num_workers = num_workers)
-    future::plan(future::sequential)
 
     if (method_to_use == "multisession") {
       future::plan(future::multisession, workers = num_workers)
