@@ -83,6 +83,78 @@ plc_setup_log_target <- function(log, outdir) {
   }
 }
 
+#' Detect optimal parallel backend (multisession or callr)
+#'
+#' Allows for long startup (e.g. on slower systems).
+#' Use at setup time to decide plan.
+plc_detect_parallel_plan <- function(num_workers = 2,
+                                     startup_tolerance_sec = 90,
+                                     sleep_sec = 2) {
+  result <- "callr"  # fallback
+
+  # Ensure the plan always resets to sequential when done
+  on.exit({
+    future::plan(future::sequential)
+    #plc_message("🛑 Plan reset to sequential after detection check.")
+  }, add = FALSE)
+
+  try({
+    future::plan(future::multisession, workers = num_workers)
+    t0 <- Sys.time()
+
+    R.utils::withTimeout({
+      future.apply::future_lapply(1:2,
+                                  function(i) Sys.sleep(sleep_sec),
+                                  future.seed = TRUE)
+    }, timeout = startup_tolerance_sec, onTimeout = "error")
+
+    elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    plc_message(sprintf("[Check Result] Multisession ran in %.2f seconds", elapsed)) # nolint: line_length_linter.
+
+    result <- "multisession"
+  }, silent = TRUE)
+
+  return(result)
+}
+
+
+#' Set a robust parallel plan using multisession or callr
+#'
+#' Use multisession if workers >= 2 and it runs in actual parallel.
+#' If multisession fails or is not truly parallel, fall back to callr.
+#' Always warn if callr is used.
+#' Do not fall back to sequential if callr fails.
+#'
+#' @param num_workers Number of workers to attempt. 1 will directly use callr.
+#'
+#' @importFrom future plan multisession sequential nbrOfWorkers
+#' @importFrom future.callr callr
+#' @importFrom future.apply future_lapply
+#' @export
+plc_set_parallel_plan <- function(num_workers) {
+  # Step 1: If num_workers = 1, use callr directly
+  if (num_workers == 1) {
+    future::plan(future.callr::callr, workers = 1)
+    plc_message("⚠️ num_workers was set to 1. Using callr backend: tasks will run sequentially (despite using multiple R sessions).") # nolint: line_length_linter.
+  }
+
+  # Step 2: Try multisession if workers >= 2
+  if (num_workers >= 2) {
+    method_to_use <- plc_detect_parallel_plan(num_workers = num_workers)
+
+    if (method_to_use == "multisession") {
+      future::plan(future::multisession, workers = num_workers)
+      plc_message("✅ Using multisession for parallel processing.")
+    } else if (method_to_use == "callr") {
+      future::plan(future.callr::callr, workers = num_workers)
+      plc_message("⚠️ Using callr backend: tasks run in separate R sessions. While parallelism is supported, execution may still behave sequentially on some systems or under load.") # nolint: line_length_linter.
+    }
+  }
+
+  # After final plan is set
+  plc_message(sprintf("⚙️ Plan set with %d worker(s).", future::nbrOfWorkers()))
+}
+
 #' Extract CAGE Transcription Start Sites (CTSSs) from BigWig Files
 #'
 #' This function extracts CTSSs from CAGE data stored in BigWig files,
@@ -305,7 +377,6 @@ plc_test_scipy_save_npz <- function() {
   })
 }
 
-
 #' Configure Python environment for PRIMEloci
 #'
 #' Sets and verifies the Python environment
@@ -466,7 +537,7 @@ plc_get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
     plc_message("🔹 Trimming out-of-bound ranges...")
     new_object <- GenomicRanges::trim(new_object)
 
-    plc_message("🔹 Keep only prefered width...")
+    plc_message("🔹 Keep only preferred width...")
     len_vec <- ext_dis * 2 + 1
 
     new_object_widths <- GenomicRanges::width(new_object)
@@ -711,6 +782,7 @@ tc_sliding_window_chr <- function(gr_per_chr,
 #' @import IRanges
 #' @importFrom future plan sequential multisession
 #' @importFrom future.apply future_lapply
+#' @importFrom future.callr callr
 #' @importFrom assertthat assert_that
 #' @importFrom parallel detectCores
 #'
@@ -738,25 +810,26 @@ plc_tc_sliding_window <- function(granges_obj,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  future::plan(future::multisession, workers = num_workers)
-  on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
-
-  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  plc_set_parallel_plan(num_workers)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # 4) Run in parallel using future_lapply, passing required globals
   result_list <- future.apply::future_lapply(
-    gr_by_chr,
-    FUN = function(gr) {
-      tc_sliding_window_chr(gr,
-                            sld_by = sld_by,
-                            ext_dis = ext_dis)
+    X = seq_along(gr_by_chr),
+    FUN = function(i) {
+      tc_sliding_window_chr(
+        gr = gr_by_chr[[i]],
+        sld_by = sld_by,
+        ext_dis = ext_dis
+      )
     },
     future.seed = TRUE,
     future.globals = list(
       tc_sliding_window_chr = tc_sliding_window_chr,
       sld_by = sld_by,
-      ext_dis = ext_dis
+      ext_dis = ext_dis,
+      gr_by_chr = gr_by_chr
     )
   )
 
@@ -1241,6 +1314,7 @@ plc_profile_chr <- function(current_region_gr,
 #' @importFrom parallel detectCores
 #' @importFrom future plan multisession
 #' @importFrom future.apply future_lapply
+#' @importFrom future.callr callr
 #' @importFrom assertthat assert_that
 #' @importFrom reticulate use_python
 #' @export
@@ -1278,11 +1352,9 @@ plc_profile <- function(ctss_rse,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  future::plan(future::multisession, workers = num_workers)
-  on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
-
-  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  plc_set_parallel_plan(num_workers)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # Sample Loop
   for (i in seq_along(SummarizedExperiment::colnames(ctss_rse))) {
@@ -1583,6 +1655,7 @@ write_granges_to_bed_coreovlwithd <- function(gr,
 #' @importFrom parallel detectCores
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
+#' @importFrom future.callr callr
 #' @importFrom stringr str_replace_all
 #' @importFrom tools file_path_sans_ext
 #' @importFrom magrittr %>%
@@ -1649,11 +1722,9 @@ coreovl_with_d <- function(bed_file,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 4 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  future::plan(future::multisession, workers = num_workers)
-  on.exit(future::plan(future::sequential))  # Reset future::plan() to default after execution # nolint: line_length_linter.
-
-  plc_message(paste("Using", num_workers, "core(s) for parallel processing."))
+  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  plc_set_parallel_plan(num_workers)
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # Process each chromosome in parallel
 
@@ -1774,16 +1845,19 @@ plc_find_bed_files_by_partial_name <- function(dir,
 #' checks for duplicates, and appends numeric suffixes (e.g., "_1", "_2") to
 #' ensure uniqueness. It logs any name changes using `plc_log()`.
 disambiguate_sample_names <- function(named_list) {
+
   sample_names <- vapply(named_list, `[[`, character(1), "name")
-  if (any(duplicated(sample_names))) { # nolint: line_length_linter.
+
+  if (any(duplicated(sample_names))) {
     plc_warn("⚠️ Duplicate sample names found. Appending numeric suffixes to ensure uniqueness.") # nolint: line_length_linter.
     sample_names_old <- sample_names
     sample_names <- make.unique(sample_names, sep = "_")
     changed <- sample_names_old != sample_names
+
     if (any(changed)) {
       plc_message("🔍 Sample name resolution:")
       for (i in which(changed)) {
-        plc_message(sprintf(" • %s ➜ %s",
+        plc_message(sprintf("   %s ➜ %s",
                             sample_names_old[i],
                             sample_names[i]))
       }
