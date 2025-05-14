@@ -4,16 +4,11 @@
 \alias{plc_detect_parallel_plan}
 \title{Detect optimal parallel backend (multisession or callr)}
 \usage{
-plc_detect_parallel_plan(num_workers, startup_tolerance_sec = 60)
-}
-\arguments{
-\item{num_workers}{Number of workers to test}
-
-\item{startup_tolerance_sec}{Max time allowed
-for slow startup without fallback (default 30s)}
-}
-\value{
-One of: "multisession" or "callr"
+plc_detect_parallel_plan(
+  num_workers = 2,
+  startup_tolerance_sec = 90,
+  sleep_sec = 2
+)
 }
 \description{
 Allows for long startup (e.g. on slower systems).
