@@ -1875,9 +1875,8 @@ disambiguate_sample_names <- function(named_list) {
 
     if (any(changed)) {
       plc_message("🔍 Sample name resolution:")
-
       for (i in which(changed)) {
-        plc_message(sprintf(" • %s ➜ %s",
+        plc_message(sprintf("   %s ➜ %s",
                             sample_names_old[i],
                             sample_names[i]))
       }
