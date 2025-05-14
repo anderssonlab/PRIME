@@ -85,10 +85,13 @@ plc_setup_log_target <- function(log, outdir) {
 
 #' Detect optimal parallel backend (multisession or callr)
 #'
-#' Allows for long startup (e.g. on slower systems). Use at setup time to decide plan.
+#' Allows for long startup (e.g. on slower systems).
+#' Use at setup time to decide plan.
 #'
 #' @param num_workers Number of workers to test
-#' @param startup_tolerance_sec Max time allowed for slow startup without fallback (default 30s)
+#' @param startup_tolerance_sec Max time allowed
+#' for slow startup without fallback (default 30s)
+#'
 #' @return One of: "multisession" or "callr"
 #' @export
 plc_detect_parallel_plan <- function(num_workers = 2,
@@ -111,14 +114,17 @@ plc_detect_parallel_plan <- function(num_workers = 2,
       overlap <- as.numeric(difftime(max(times), min(times), units = "secs"))
       unique_pids <- length(unique(sapply(res, `[[`, "pid")))
 
-      plc_message(sprintf("[Check Result] Elapsed: %.2fs | Overlap: %.2fs | PIDs: %s",
-                          elapsed, overlap, paste(sapply(res, `[[`, "pid"), collapse = ", ")))
+      plc_message(sprintf("[Check Result] Elapsed: %.2fs | Overlap: %.2fs | PIDs: %s", # nolint: line_length_linter.
+                          elapsed,
+                          overlap,
+                          paste(sapply(res, `[[`, "pid"),
+                                collapse = ", ")))
 
       list(
         is_parallel = (
           elapsed <= runtime_threshold &&
-          overlap <= overlap_threshold &&
-          unique_pids >= 2
+            overlap <= overlap_threshold &&
+            unique_pids >= 2
         ),
         elapsed = elapsed,
         overlap = overlap
@@ -158,10 +164,10 @@ plc_set_parallel_plan <- function(num_workers) {
 
   # Step 2: Try multisession if workers >= 2
   if (num_workers >= 2) {
-    # At the top of your script:
+
     method_to_use <- plc_detect_parallel_plan(num_workers = num_workers)
     future::plan(future::sequential)
-    
+
     if (method_to_use == "multisession") {
       future::plan(future::multisession, workers = num_workers)
       plc_message("✅ Using multisession for parallel processing.")
@@ -169,6 +175,7 @@ plc_set_parallel_plan <- function(num_workers) {
       future::plan(future.callr::callr, workers = num_workers)
       plc_message("⚠️ Using callr backend: tasks will run sequentially.")
     }
+  }
 
   plc_message(paste("⚙️ Plan set with", future::nbrOfWorkers(), "worker(s)."))
 }
