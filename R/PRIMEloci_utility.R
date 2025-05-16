@@ -88,8 +88,9 @@ plc_setup_log_target <- function(log, outdir) {
 #' Allows for long startup (e.g. on slower systems).
 #' Use at setup time to decide plan.
 plc_detect_parallel_plan <- function(num_workers = 2,
-                                     startup_tolerance_sec = 60,
+                                     startup_tolerance_sec = 90,
                                      sleep_sec = 2) {
+
   result <- "callr"  # fallback
 
   # Ensure the plan always resets to sequential when done
@@ -97,59 +98,39 @@ plc_detect_parallel_plan <- function(num_workers = 2,
     future::plan(future::sequential)
   }, add = FALSE)
 
+  # Test multisession
   try({
     future::plan(future::multisession, workers = num_workers)
     t0 <- Sys.time()
-
     R.utils::withTimeout({
       future.apply::future_lapply(1:2,
                                   function(i) Sys.sleep(sleep_sec),
                                   future.seed = TRUE)
     }, timeout = startup_tolerance_sec, onTimeout = "error")
-
     elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
     plc_message(sprintf("[Check Result] Multisession ran in %.2f seconds", elapsed)) # nolint: line_length_linter.
-
     result <- "multisession"
   }, silent = TRUE)
 
   return(result)
 }
 
-
 #' Set a robust parallel plan using multisession or callr
-#'
-#' Use multisession if workers >= 2 and it runs in actual parallel.
-#' If multisession fails or is not truly parallel, fall back to callr.
-#' Always warn if callr is used.
-#' Do not fall back to sequential if callr fails.
-#'
-#' @param num_workers Number of workers to attempt. 1 will directly use callr.
 #'
 #' @importFrom future plan multisession sequential nbrOfWorkers
 #' @importFrom future.callr callr
 #' @importFrom future.apply future_lapply
-#' @export
-plc_set_parallel_plan <- function(num_workers) {
-  # Step 1: If num_workers = 1, use callr directly
-  if (num_workers == 1) {
-    future::plan(future.callr::callr, workers = 1)
-    plc_message("⚠️ num_workers was set to 1. Using callr backend: tasks will run sequentially (despite using multiple R sessions).") # nolint: line_length_linter.
-  }
-
-  # Step 2: Try multisession if workers >= 2
-  if (num_workers >= 2) {
-    method_to_use <- plc_detect_parallel_plan(num_workers = num_workers)
-
-    if (method_to_use == "multisession") {
-      future::plan(future::multisession, workers = num_workers)
-      plc_message("✅ Using multisession for parallel processing.")
-    } else if (method_to_use == "callr") {
-      future::plan(future.callr::callr, workers = num_workers)
+plc_set_parallel_plan <- function(method_to_use,
+                                  num_workers) {
+  if (method_to_use == "multisession") {
+    future::plan(future::multisession, workers = num_workers)
+    plc_message("✅ Using multisession for parallel processing.")
+  } else if (method_to_use == "callr") {
+    future::plan(future.callr::callr, workers = num_workers)
+    if (num_workers > 1) {
       plc_message("⚠️ Using callr backend: tasks run in separate R sessions. While parallelism is supported, execution may still behave sequentially on some systems or under load.") # nolint: line_length_linter.
     }
   }
-
   # After final plan is set
   plc_message(sprintf("⚙️ Plan set with %d worker(s).", future::nbrOfWorkers()))
 }
@@ -789,7 +770,8 @@ tc_sliding_window_chr <- function(gr_per_chr,
 plc_tc_sliding_window <- function(granges_obj,
                                   sld_by = 20,
                                   ext_dis = 200,
-                                  num_cores = NULL) {
+                                  num_cores = NULL,
+                                  processing_method = "multisession") {
 
   assertthat::assert_that(
     !is.null(granges_obj),
@@ -810,7 +792,7 @@ plc_tc_sliding_window <- function(granges_obj,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  plc_set_parallel_plan(num_workers)
+  plc_set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
   # 4) Run in parallel using future_lapply, passing required globals
@@ -1326,6 +1308,7 @@ plc_profile <- function(ctss_rse,
                         addtn_to_filename = "",
                         save_count_profiles = FALSE,
                         num_cores = NULL,
+                        processing_method = "multisession",
                         ext_dis) {
 
   # --- Assertions ---
@@ -1352,7 +1335,7 @@ plc_profile <- function(ctss_rse,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  plc_set_parallel_plan(num_workers)
+  plc_set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
   # Sample Loop
@@ -1664,7 +1647,8 @@ coreovl_with_d <- function(bed_file,
                            core_width = 151,
                            return_gr = TRUE,
                            output_dir = NULL,
-                           num_cores = NULL) {
+                           num_cores = NULL,
+                           processing_method = "multisession") {
 
   # Initialize logging
   plc_log("Starting coreovl_with_d()")
@@ -1722,7 +1706,7 @@ coreovl_with_d <- function(bed_file,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  plc_set_parallel_plan(num_workers)
+  plc_set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
   # Process each chromosome in parallel
