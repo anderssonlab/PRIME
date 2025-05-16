@@ -88,14 +88,13 @@ plc_setup_log_target <- function(log, outdir) {
 #' Allows for long startup (e.g. on slower systems).
 #' Use at setup time to decide plan.
 plc_detect_parallel_plan <- function(num_workers = 2,
-                                     startup_tolerance_sec = 90,
+                                     startup_tolerance_sec = 60,
                                      sleep_sec = 2) {
   result <- "callr"  # fallback
 
   # Ensure the plan always resets to sequential when done
   on.exit({
     future::plan(future::sequential)
-    #plc_message("🛑 Plan reset to sequential after detection check.")
   }, add = FALSE)
 
   try({
