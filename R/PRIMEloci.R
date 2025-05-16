@@ -466,6 +466,6 @@ PRIMEloci <- function(
   plc_message(sprintf("🏁 Pipeline completed at: %s", Sys.time()))
   plc_message("\n")
 
-  #return(result_gr_final)
+  return(result_gr_final)
 
 }
