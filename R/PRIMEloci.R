@@ -416,7 +416,7 @@ PRIMEloci <- function(
                                 score_diff = score_diff,
                                 core_width = core_width,
                                 return_gr = TRUE,
-                                output_dir = primeloci_tmp,
+                                output_dir = outdir,
                                 num_cores = num_cores)
 
     if (!is.null(result_gr)) {
