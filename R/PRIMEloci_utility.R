@@ -1106,7 +1106,7 @@ plc_batch_heatmapData <- function(regions,
 
   profile_list <- lapply(seq_along(region_chunks), function(i) {
     r <- region_chunks[[i]]
-    suppressMessages(heatmapData(r, data, sparse = sparse, ...))
+    heatmapData(r, data, sparse = sparse, ...)
   })
 
   # Combine nested structure: list("*" = list("+" = ..., "-" = ...))
@@ -1176,12 +1176,10 @@ plc_profile_chr <- function(current_region_gr,
   current_region_gr <- remove_metadata_and_duplicates(current_region_gr)
 
   # Generate sparse matrix profile
-  count_profiles <- suppressMessages(
-    plc_batch_heatmapData(current_region_gr,
-                          filtered_ctss_gr,
-                          batch_size = 1000,
-                          sparse = TRUE)
-  )
+  count_profiles <- plc_batch_heatmapData(current_region_gr,
+                                          filtered_ctss_gr,
+                                          batch_size = 1000,
+                                          sparse = TRUE)
 
   check_valid_profile_rownames(count_profiles$`*`$`+`, chr_name)
   check_valid_profile_rownames(count_profiles$`*`$`-`, chr_name)
