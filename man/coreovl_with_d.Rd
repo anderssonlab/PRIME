@@ -11,7 +11,8 @@ coreovl_with_d(
   core_width = 151,
   return_gr = TRUE,
   output_dir = NULL,
-  num_cores = NULL
+  num_cores = NULL,
+  processing_method = "multisession"
 )
 }
 \arguments{

@@ -14,6 +14,7 @@ plc_profile(
   addtn_to_filename = "",
   save_count_profiles = FALSE,
   num_cores = NULL,
+  processing_method = "multisession",
   ext_dis
 )
 }

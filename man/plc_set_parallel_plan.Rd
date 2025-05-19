@@ -4,14 +4,8 @@
 \alias{plc_set_parallel_plan}
 \title{Set a robust parallel plan using multisession or callr}
 \usage{
-plc_set_parallel_plan(num_workers)
-}
-\arguments{
-\item{num_workers}{Number of workers to attempt. 1 will directly use callr.}
+plc_set_parallel_plan(method_to_use, num_workers)
 }
 \description{
-Use multisession if workers >= 2 and it runs in actual parallel.
-If multisession fails or is not truly parallel, fall back to callr.
-Always warn if callr is used.
-Do not fall back to sequential if callr fails.
+Set a robust parallel plan using multisession or callr
 }
