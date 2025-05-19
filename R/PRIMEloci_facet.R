@@ -108,6 +108,16 @@ PRIMEloci_facet <- function(
     )
   }
 
+  if (is.null(num_cores)) {
+    num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
+  }
+  if (num_cores == 1) {
+    processing_method <- "callr"
+    plc_message("⚠️ num_workers was set to 1. Using callr backend: tasks will run sequentially (despite using multiple R sessions).") # nolint: line_length_linter.
+  } else {
+    processing_method <- plc_detect_parallel_plan()
+  }
+
   plc_message("\n")
   plc_message("🚀 Setting up Python environment")
   if (is.null(python_path)) {
@@ -173,6 +183,7 @@ PRIMEloci_facet <- function(
     addtn_to_filename = addtn_to_filename,
     save_count_profiles = save_count_profiles,
     num_cores = num_cores,
+    processing_method = processing_method,
     ext_dis
   )
 

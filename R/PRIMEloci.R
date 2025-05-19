@@ -191,6 +191,16 @@ PRIMEloci <- function(
     )
   }
 
+  if (is.null(num_cores)) {
+    num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
+  }
+  if (num_cores == 1) {
+    processing_method <- "callr"
+    plc_message("⚠️ num_workers was set to 1. Using callr backend: tasks will run sequentially (despite using multiple R sessions).") # nolint: line_length_linter.
+  } else {
+    processing_method <- plc_detect_parallel_plan()
+  }
+
   plc_message("\n")
   plc_message("🚀 Setting up Python environment")
   if (is.null(python_path)) {
@@ -257,7 +267,8 @@ PRIMEloci <- function(
       result <- plc_tc_sliding_window(tc_grl[[i]],
                                       sld_by = sld_by,
                                       ext_dis = ext_dis,
-                                      num_cores = num_cores)
+                                      num_cores = num_cores,
+                                      processing_method = processing_method)
       plc_message(sprintf("⏱️ Time taken: %.2f minutes",
                           as.numeric(difftime(Sys.time(),
                                               start_time,
@@ -302,6 +313,7 @@ PRIMEloci <- function(
     addtn_to_filename = addtn_to_filename,
     save_count_profiles = save_count_profiles,
     num_cores = num_cores,
+    processing_method = processing_method,
     ext_dis
   )
 
@@ -373,7 +385,7 @@ PRIMEloci <- function(
       msg <- paste("❌ ERROR during prediction execution: ", e$message)
       plc_message(msg)
       attr(msg, "status") <- 1
-      return(msg)
+      msg
     }
   )
   if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
@@ -416,8 +428,9 @@ PRIMEloci <- function(
                                 score_diff = score_diff,
                                 core_width = core_width,
                                 return_gr = TRUE,
-                                output_dir = primeloci_tmp,
-                                num_cores = num_cores)
+                                output_dir = outdir,
+                                num_cores = num_cores,
+                                processing_method = processing_method)
 
     if (!is.null(result_gr)) {
       list(name = sample_name, gr = result_gr)

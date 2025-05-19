@@ -8,7 +8,8 @@ plc_tc_sliding_window(
   granges_obj,
   sld_by = 20,
   ext_dis = 200,
-  num_cores = NULL
+  num_cores = NULL,
+  processing_method = "multisession"
 )
 }
 \description{
