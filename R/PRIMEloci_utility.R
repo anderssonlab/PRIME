@@ -1013,10 +1013,10 @@ strands_norm_subtraction <- function(mat, len_vec) {
 
   # Warn and restore sparse format if needed
   if (inherits(mat, "dgCMatrix") && inherits(norm_mat, "dgeMatrix")) {
-    plc_message("⚠️ Normalization returned 'dgeMatrix'. Converting back to 'dgCMatrix'.") # nolint: line_length_linter.
+    #plc_message("⚠️ Normalization returned 'dgeMatrix'. Converting back to 'dgCMatrix'.") # nolint: line_length_linter, commented_code_linter.
     norm_mat <- Matrix::Matrix(norm_mat, sparse = TRUE)
   } else if (inherits(mat, "dgRMatrix") && inherits(norm_mat, "dgeMatrix")) {
-    plc_warn("⚠️ Normalization returned 'dgeMatrix'. Converting back to 'dgRMatrix'.") # nolint: line_length_linter.
+    #plc_warn("⚠️ Normalization returned 'dgeMatrix'. Converting back to 'dgRMatrix'.") # nolint: line_length_linter, commented_code_linter.
     norm_mat <- as(norm_mat, "dgRMatrix")
   }
 
