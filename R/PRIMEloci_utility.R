@@ -1011,6 +1011,15 @@ strands_norm_subtraction <- function(mat, len_vec) {
   max_val <- sparseMatrixStats::rowMaxs(cbind(abs(plus), abs(minus)))
   norm_mat <- (plus - minus) / max_val
 
+  # Warn and restore sparse format if needed
+  if (inherits(mat, "dgCMatrix") && inherits(norm_mat, "dgeMatrix")) {
+    plc_message("⚠️ Normalization returned 'dgeMatrix'. Converting back to 'dgCMatrix'.") # nolint: line_length_linter.
+    norm_mat <- Matrix::Matrix(norm_mat, sparse = TRUE)
+  } else if (inherits(mat, "dgRMatrix") && inherits(norm_mat, "dgeMatrix")) {
+    plc_warn("⚠️ Normalization returned 'dgeMatrix'. Converting back to 'dgRMatrix'.") # nolint: line_length_linter.
+    norm_mat <- as(norm_mat, "dgRMatrix")
+  }
+
   norm_mat
 }
 
@@ -1106,7 +1115,7 @@ plc_batch_heatmapData <- function(regions,
 
   profile_list <- lapply(seq_along(region_chunks), function(i) {
     r <- region_chunks[[i]]
-    heatmapData(r, data, sparse = sparse, ...)
+    suppressMessages(heatmapData(r, data, sparse = sparse, ...))
   })
 
   # Combine nested structure: list("*" = list("+" = ..., "-" = ...))
