@@ -791,7 +791,7 @@ plc_tc_sliding_window <- function(granges_obj,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  options(future.globals.maxSize = 32 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   plc_set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
@@ -1341,7 +1341,7 @@ plc_profile <- function(ctss_rse,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  options(future.globals.maxSize = 32 * 1024^3)  # global variable memory 8GB limit # nolint: line_length_linter.
   plc_set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
@@ -1712,7 +1712,7 @@ coreovl_with_d <- function(bed_file,
     num_cores <- max(1, min(25, parallel::detectCores() %/% 2))
   }
   num_workers <- min(num_cores, num_jobs)
-  options(future.globals.maxSize = 8 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
+  options(future.globals.maxSize = 32 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
   plc_set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
