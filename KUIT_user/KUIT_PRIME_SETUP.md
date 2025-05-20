@@ -1,13 +1,13 @@
 # ⚙️ PRIME Installation on KUIT Server
 
-This guide outlines a full PRIME and PRIMEloci-compatible environment setup on a KUIT server, including module loading, conda environment setup, and special handling for `libcurl` in R.
+This guide outlines a full PRIME and PRIMEloci-compatible environment setup on a KUIT server.
 
 ---
 
 ## 🧩 Step 1: Load Required Modules
 
 ```bash
-module load openjdk/20.0.0 gcc/13.2.0 R/4.4.0
+module load gcc/13.2.0 openjdk/20.0.0 R/4.4.0
 module load hdf5 netcdf-c/4.8.1
 module load miniconda/24.5.0
 ```
@@ -31,7 +31,7 @@ R
 # install necessary packages 
 # see /PRIME/PREP_INSTALL_PRIME.md
 
-install.packages("/path/PRIME/PRIME_0.1.1.3.tar.gz", lib="/path/to/R_packakges/")
+install.packages("/path/PRIME/PRIME_0.1.1.5.tar.gz", lib="/path/to/R_packakges/")
 q()
 ```
 
@@ -62,6 +62,7 @@ If you encounter libcurl-related issues when using R with conda Python:
 - With in conda env
 
 ```bash
+
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 export LD_PRELOAD=$CONDA_PREFIX/lib/libcurl.so
 R
