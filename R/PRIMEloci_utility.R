@@ -27,7 +27,8 @@ plc_error <- function(msg) {
 }
 
 #' Create the output directory if it doesn't exist
-create_output_dir <- function(output_dir) {
+#' @export 
+plc_create_output_dir <- function(output_dir) {
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
     plc_message(sprintf("📁 Output directory created: %s", output_dir))
@@ -87,6 +88,7 @@ plc_setup_log_target <- function(log, outdir) {
 #'
 #' Allows for long startup (e.g. on slower systems).
 #' Use at setup time to decide plan.
+#' @export
 plc_detect_parallel_plan <- function(num_workers = 2,
                                      startup_tolerance_sec = 90,
                                      sleep_sec = 2) {
@@ -1422,27 +1424,35 @@ plc_profile <- function(ctss_rse,
 
 }
 
-#' Load a BED file and validate its columns
+#' Load a BED file and validate required columns
 #'
-#' This function reads a BED file into a `data.table`
-#' and checks that it contains the required columns:
-#' 'chrom', 'chromStart', 'chromEnd', 'strand', and 'score'.
+#' This function reads a BED file into a `data.table` and verifies that
+#' it includes the necessary columns for downstream processing.
+#' By default, it checks for the presence of 'chrom', 'chromStart',
+#' 'chromEnd', 'strand', and 'score'. If `sum_count = TRUE`, it also
+#' requires the 'sum_count' column.
 #'
-#' @param input_bed Character. The path to the input BED file.
+#' @param input_bed Character. Path to the input BED file.
+#' @param sum_count Logical. Whether to require the 'sum_count' column
+#' (default: FALSE).
 #'
-#' @return A `data.table` containing the BED file data.
+#' @return A `data.table` containing the BED file data with validated columns.
 #'
-#' @importFrom data.table fread
 #' @importFrom assertthat assert_that
 #' @export
-plc_load_bed_file <- function(input_bed) {
+plc_load_bed_file <- function(input_bed, sum_count = FALSE) {
   bed_file <- read.table(input_bed,
                          header = TRUE,
                          sep = "\t",
                          stringsAsFactors = FALSE)
-  required_cols <- c("chrom", "chromStart", "chromEnd", "strand", "score")
+  if (sum_count) {
+    required_cols <- c("chrom", "chromStart", "chromEnd", "strand",
+                       "score", "sum_count")
+  } else {
+    required_cols <- c("chrom", "chromStart", "chromEnd", "strand", "score")
+  }
   assertthat::assert_that(all(required_cols %in% colnames(bed_file)),
-                          msg = "The BED file must contain 'chrom', 'chromStart', 'chromEnd', 'strand', and 'score' columns.") # nolint: line_length_linter.
+                          msg = "The BED file must contain 'chrom', 'chromStart', 'chromEnd', 'strand', 'score', (and sum_count if it sets to TRUE) columns. ") # nolint: line_length_linter.
   bed_file
 }
 
@@ -1854,4 +1864,103 @@ disambiguate_sample_names <- function(named_list) {
     }
   }
   sample_names
+}
+
+
+plc_facet_prediction_to_rse <- function(facet_prediction_dir,
+                                        postprocess_partial_name = "pred_all") {
+
+  bed_files <- plc_find_bed_files_by_partial_name(facet_prediction_dir,
+                                                  partial_name = postprocess_partial_name) # nolint: line_length_linter.
+  if (length(bed_files) == 0) {
+    plc_error(paste("❌ No BED files found for postprocessing in",
+                    facet_prediction_dir))
+  }
+
+  plc_message(sprintf("📂 Found %d BED file(s) for processing.",
+                      length(bed_files)))
+  result_named_list <- lapply(seq_along(bed_files), function(i) {
+    bed_file <- bed_files[i]
+    basename_raw <- tools::file_path_sans_ext(basename(bed_file))
+    pattern_match <- sub(paste0("^.*",
+                                postprocess_partial_name,
+                                "_(.*?)_combined.*$"),
+                         "\\1",
+                         basename_raw)
+    # Load and prepare data
+    bed <- plc_load_bed_file(bed_file, sum_count = TRUE)
+    gr <- create_granges_from_bed(bed)
+
+    sample_name <- if (identical(pattern_match, basename_raw)) {
+      basename_raw
+    } else {
+      pattern_match
+    }
+
+    if (!is.null(gr)) {
+      list(name = sample_name, gr = gr)
+    } else {
+      plc_message(paste("⚠️ Skipped due to failure:", bed_file))
+      NULL
+    }
+  })
+
+  # Filter out failed/null entries
+  result_named_list <- Filter(Negate(is.null), result_named_list)
+
+  if (length(result_named_list) == 0) {
+    plc_error("❌ All attempts failed or returned NULL.")
+  }
+  plc_message(sprintf("✅ DONE :: importing %d file(s) successfully.",
+                      length(result_named_list)))
+
+  sample_names <- disambiguate_sample_names(result_named_list)
+
+  # Final return object
+  if (length(result_named_list) == 1) {
+    result_gr_final <- result_named_list[[1]]$gr
+  } else {
+    result_gr_final <- GenomicRanges::GRangesList(
+      setNames(
+        lapply(result_named_list, `[[`, "gr"),
+        sample_names
+      )
+    )
+  }
+
+  # Put the score to NA where sum_count is 0
+  result_gr_final <- S4Vectors::endoapply(result_gr_final, function(gr) {
+    S4Vectors::mcols(gr)$score[S4Vectors::mcols(gr)$sum_count == 0] <- NA
+    gr
+  })
+
+  # All GRanges objects must have identical ranges
+  stopifnot(all(sapply(result_gr_final, function(gr) identical(granges(gr), granges(result_gr_final[[1]]))))) # nolint: line_length_linter.
+
+  # Use one as a template for the final GRanges
+  common_gr <- result_gr_final[[1]]
+  S4Vectors::mcols(common_gr) <- NULL
+
+  # Build score matrix: one column per sample
+  score_matrix <- do.call(cbind, lapply(sample_names, function(s) {
+    S4Vectors::mcols(result_gr_final[[s]])$score
+  }))
+  colnames(score_matrix) <- sample_names
+
+  # Build sum_count matrix: one column per sample
+  count_matrix <- do.call(cbind, lapply(sample_names, function(s) {
+    S4Vectors::mcols(result_gr_final[[s]])$sum_count
+  }))
+  colnames(count_matrix) <- sample_names
+
+  # Build the RangedSummarizedExperiment object
+  final_rse <- SummarizedExperiment::SummarizedExperiment(
+    assays = list(
+      PRIMEloci_score = score_matrix,
+      sum_count = count_matrix
+    ),
+    rowRanges = common_gr
+  )
+
+  final_rse
 }
