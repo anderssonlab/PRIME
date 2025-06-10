@@ -27,7 +27,7 @@ plc_error <- function(msg) {
 }
 
 #' Create the output directory if it doesn't exist
-#' @export 
+#' @export
 plc_create_output_dir <- function(output_dir) {
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -307,15 +307,15 @@ convert_to_scipy_sparse <- function(mat, scipy) {
 
   if (inherits(mat, "dgRMatrix")) {
     if (has_csr_array) {
-      return(scipy$csr_array(
+      scipy$csr_array(
         reticulate::tuple(mat@x, mat@j, mat@p),
         shape = reticulate::tuple(mat@Dim[1], mat@Dim[2])
-      ))
+      )
     } else {
-      return(scipy$csr_matrix(
+      scipy$csr_matrix(
         reticulate::tuple(mat@x, mat@j, mat@p),
         shape = reticulate::tuple(mat@Dim[1], mat@Dim[2])
-      ))
+      )
     }
   }
 }
@@ -355,7 +355,7 @@ plc_test_scipy_save_npz <- function() {
 
   }, error = function(e) {
     plc_message(paste("⚠️ scipy.sparse.save_npz() failed.", e$message))
-    return(FALSE)
+    FALSE
   })
 }
 
@@ -1843,7 +1843,7 @@ plc_find_bed_files_by_partial_name <- function(dir,
 #'
 #' This internal function extracts sample names from a list of result objects,
 #' checks for duplicates, and appends numeric suffixes (e.g., "_1", "_2") to
-#' ensure uniqueness. It logs any name changes using `plc_log()`.
+#' ensure uniqueness.
 disambiguate_sample_names <- function(named_list) {
 
   sample_names <- vapply(named_list, `[[`, character(1), "name")
@@ -1866,7 +1866,14 @@ disambiguate_sample_names <- function(named_list) {
   sample_names
 }
 
-
+#' Convert a directory of facet predictions to a RangedSummarizedExperiment
+#' @import GenomicRanges
+#' @import S4Vectors
+#' @import SummarizedExperiment
+#' @importFrom tools file_path_sans_ext
+#' @importFrom stringr str_match
+#' @importFrom magrittr %>%
+#' @export
 plc_facet_prediction_to_rse <- function(facet_prediction_dir,
                                         postprocess_partial_name = "pred_all") {
 

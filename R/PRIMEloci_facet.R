@@ -40,8 +40,7 @@ PRIMEloci_facet <- function(
     python_path = NULL,
     num_cores = NULL,
     keep_tmp = FALSE,
-    log_dir = NULL,
-    ...) {
+    log_dir = NULL) {
 
 
   # setting
@@ -267,7 +266,7 @@ PRIMEloci_facet <- function(
   plc_message("🚀 Importing prediction BEDs")
 
   final_rse <- plc_facet_prediction_to_rse(primeloci_tmp,
-                                           postprocess_partial_name = "pred_all") # nolint: line_length_linter.
+                                           postprocess_partial_name = postprocess_partial_name) # nolint: line_length_linter.
 
   on.exit({
     if (!keep_tmp) {
