@@ -9,5 +9,5 @@ disambiguate_sample_names(named_list)
 \description{
 This internal function extracts sample names from a list of result objects,
 checks for duplicates, and appends numeric suffixes (e.g., "_1", "_2") to
-ensure uniqueness. It logs any name changes using `plc_log()`.
+ensure uniqueness.
 }
