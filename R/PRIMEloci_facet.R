@@ -266,63 +266,8 @@ PRIMEloci_facet <- function(
   plc_message("\n")
   plc_message("🚀 Importing prediction BEDs")
 
-  bed_files <- plc_find_bed_files_by_partial_name(primeloci_tmp,
-                                                  partial_name = postprocess_partial_name) # nolint: line_length_linter.
-  if (length(bed_files) == 0) {
-    plc_error(paste("❌ No BED files found for postprocessing in",
-                    primeloci_tmp))
-  }
-
-  plc_message(sprintf("📂 Found %d BED file(s) for processing.",
-                      length(bed_files)))
-  result_named_list <- lapply(seq_along(bed_files), function(i) {
-    bed_file <- bed_files[i]
-    basename_raw <- tools::file_path_sans_ext(basename(bed_file))
-    pattern_match <- sub(paste0("^.*",
-                                postprocess_partial_name,
-                                "_(.*?)_combined.*$"),
-                         "\\1",
-                         basename_raw)
-    # Load and prepare data
-    bed <- plc_load_bed_file(bed_file)
-    gr <- create_granges_from_bed(bed)
-
-    sample_name <- if (identical(pattern_match, basename_raw)) {
-      basename_raw
-    } else {
-      pattern_match
-    }
-
-    if (!is.null(gr)) {
-      list(name = sample_name, gr = gr)
-    } else {
-      plc_message(paste("⚠️ Skipped due to failure:", bed_file))
-      NULL
-    }
-  })
-
-  # Filter out failed/null entries
-  result_named_list <- Filter(Negate(is.null), result_named_list)
-
-  if (length(result_named_list) == 0) {
-    plc_error("❌ All attempts failed or returned NULL.")
-  }
-  plc_message(sprintf("✅ DONE :: importing %d file(s) successfully.",
-                      length(result_named_list)))
-
-  sample_names <- disambiguate_sample_names(result_named_list)
-
-  # Final return object
-  if (length(result_named_list) == 1) {
-    result_gr_final <- result_named_list[[1]]$gr
-  } else {
-    result_gr_final <- GenomicRanges::GRangesList(
-      setNames(
-        lapply(result_named_list, `[[`, "gr"),
-        sample_names
-      )
-    )
-  }
+  final_rse <- plc_facet_prediction_to_rse(primeloci_tmp,
+                                           postprocess_partial_name = "pred_all") # nolint: line_length_linter.
 
   on.exit({
     if (!keep_tmp) {
@@ -339,5 +284,5 @@ PRIMEloci_facet <- function(
   plc_message(sprintf("🏁 Pipeline completed at: %s", Sys.time()))
   plc_message("\n")
 
-  return(result_gr_final)
+  return(final_rse)
 }
