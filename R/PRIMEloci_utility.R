@@ -1658,17 +1658,18 @@ write_granges_to_bed_coreovlwithd <- function(gr,
 #' @importFrom stringr str_replace_all
 #' @importFrom tools file_path_sans_ext
 #' @importFrom magrittr %>%
-coreovl_with_d <- function(bed_file,
-                           score_threshold = 0.75,
-                           score_diff = 0.1,
-                           core_width = 151,
-                           return_gr = TRUE,
-                           output_dir = NULL,
-                           num_cores = NULL,
-                           processing_method = "multisession") {
+#' @export
+plc_coreovl_with_d <- function(bed_file,
+                               score_threshold = 0.75,
+                               score_diff = 0.1,
+                               core_width = 151,
+                               return_gr = TRUE,
+                               output_dir = NULL,
+                               num_cores = NULL,
+                               processing_method = "multisession") {
 
   # Initialize logging
-  plc_log("Starting coreovl_with_d()")
+  plc_log("Starting plc_coreovl_with_d()")
 
   assert_that(file.exists(bed_file),
               msg = "❌ Input BED file not found.")

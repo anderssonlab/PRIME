@@ -423,14 +423,14 @@ PRIMEloci <- function(
       pattern_match
     }
 
-    result_gr <- coreovl_with_d(bed_file = bed_file,
-                                score_threshold = score_threshold,
-                                score_diff = score_diff,
-                                core_width = core_width,
-                                return_gr = TRUE,
-                                output_dir = outdir,
-                                num_cores = num_cores,
-                                processing_method = processing_method)
+    result_gr <- plc_coreovl_with_d(bed_file = bed_file,
+                                    score_threshold = score_threshold,
+                                    score_diff = score_diff,
+                                    core_width = core_width,
+                                    return_gr = TRUE,
+                                    output_dir = outdir,
+                                    num_cores = num_cores,
+                                    processing_method = processing_method)
 
     if (!is.null(result_gr)) {
       list(name = sample_name, gr = result_gr)
