@@ -67,10 +67,6 @@ PRIMEloci_facet <- function(
   dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
   plc_message(sprintf("📁 Temporary output directory: %s", outdir))
 
-  # Temporary working directories
-  #primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
-  #dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
-
   # Logging setup
   if (is.null(log_dir)) {
     log_target <- stdout()  # Console-only
@@ -191,8 +187,6 @@ PRIMEloci_facet <- function(
   plc_message("\n")
   plc_message("🚀 Predicting probability using PRIMEloci model")
 
-  #profile_main_dir <- file.path(primeloci_tmp,
-  #                              profile_dir_name)
   profile_main_dir <- file.path(outdir,
                                 profile_dir_name)
   profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
@@ -226,7 +220,6 @@ PRIMEloci_facet <- function(
     py_exec, predict_script_path,
     "--script_dir", python_script_dir,
     "--profile_main_dir", profile_main_dir,
-    #"--combined_outdir", primeloci_tmp,
     "--combined_outdir", outdir,
     "--model_path", model_path,
     "--log_file", log_target,
@@ -266,9 +259,6 @@ PRIMEloci_facet <- function(
 
   plc_message("\n")
   plc_message("🚀 Importing prediction BEDs")
-
-  #final_rse <- plc_facet_prediction_to_rse(primeloci_tmp,
-  #                                         postprocess_partial_name = postprocess_partial_name) # nolint: line_length_linter.
 
   final_rse <- plc_facet_prediction_to_rse(outdir,
                                            postprocess_partial_name = postprocess_partial_name) # nolint: line_length_linter.

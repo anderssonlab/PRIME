@@ -135,10 +135,6 @@ PRIMEloci <- function(
   dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
   plc_message(sprintf("📁 Temporary output directory: %s", outdir))
 
-  # Temporary working directories
-  #primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
-  #dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
-
   # Set up logging
   if (is.null(log_dir)) {
     log_target <- stdout()  # Log to R console only
@@ -288,12 +284,10 @@ PRIMEloci <- function(
   }
 
   if (save_sld_tc) {
-    plc_message(sprintf("Saving TC objects to PRIMEloci_tmp .."))
+    plc_message(sprintf("Saving TC objects to output directory .."))
     saveRDS(tc_sliding_window_grl,
-            #file.path(primeloci_tmp, sld_object_name))
             file.path(outdir, sld_object_name))
   }
-  #plc_message("✅ DONE :: Sliding window TC object is saved to PRIMEloci_tmp")
   plc_message("✅ DONE :: Sliding window TC object is saved to output directory") # nolint: line_length_linter.
   tc_for_profile <- tc_sliding_window_grl
 
@@ -324,8 +318,6 @@ PRIMEloci <- function(
   plc_message("\n")
   plc_message("🚀 Running PRIMEloci: Prediction using PRIMEloci model")
 
-  #profile_main_dir <- file.path(primeloci_tmp,
-  #                              profile_dir_name)
   profile_main_dir <- file.path(outdir,
                                 profile_dir_name)
   profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
@@ -360,7 +352,6 @@ PRIMEloci <- function(
     py_exec, predict_script_path,
     "--script_dir", python_script_dir,
     "--profile_main_dir", profile_main_dir,
-    #"--combined_outdir", primeloci_tmp,
     "--combined_outdir", outdir,
     "--model_path", model_path,
     "--log_file", log_target,
@@ -403,13 +394,9 @@ PRIMEloci <- function(
   plc_message("\n")
   plc_message("🚀 Running PRIMEloci: Postprocessing prediction BEDs")
 
-  #bed_files <- plc_find_bed_files_by_partial_name(primeloci_tmp,
-  #                                                partial_name = postprocess_partial_name) # nolint: line_length_linter.
   bed_files <- plc_find_bed_files_by_partial_name(outdir,
                                                   partial_name = postprocess_partial_name) # nolint: line_length_linter.
   if (length(bed_files) == 0) {
-    #plc_error(paste("❌ No BED files found for postprocessing in",
-    #                primeloci_tmp))
     plc_error(paste("❌ No BED files found for postprocessing in",
                     outdir))
   }
