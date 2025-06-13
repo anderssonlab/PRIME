@@ -136,8 +136,8 @@ PRIMEloci <- function(
   plc_message(sprintf("📁 Temporary output directory: %s", outdir))
 
   # Temporary working directories
-  primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
-  dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
+  #primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
+  #dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
 
   # Set up logging
   if (is.null(log_dir)) {
@@ -290,9 +290,11 @@ PRIMEloci <- function(
   if (save_sld_tc) {
     plc_message(sprintf("Saving TC objects to PRIMEloci_tmp .."))
     saveRDS(tc_sliding_window_grl,
-            file.path(primeloci_tmp, sld_object_name))
+            #file.path(primeloci_tmp, sld_object_name))
+            file.path(outdir, sld_object_name))
   }
-  plc_message("✅ DONE :: Sliding window TC object is saved to PRIMEloci_tmp")
+  #plc_message("✅ DONE :: Sliding window TC object is saved to PRIMEloci_tmp")
+  plc_message("✅ DONE :: Sliding window TC object is saved to output directory") # nolint: line_length_linter.
   tc_for_profile <- tc_sliding_window_grl
 
   assertthat::assert_that(!is.null(tc_for_profile),
@@ -322,9 +324,10 @@ PRIMEloci <- function(
   plc_message("\n")
   plc_message("🚀 Running PRIMEloci: Prediction using PRIMEloci model")
 
-  profile_main_dir <- file.path(primeloci_tmp,
+  #profile_main_dir <- file.path(primeloci_tmp,
+  #                              profile_dir_name)
+  profile_main_dir <- file.path(outdir,
                                 profile_dir_name)
-
   profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
   profile_files <- list.files(profiles_subtnorm_dir,
                               pattern = "\\.(npz|parquet|csv)$")
@@ -357,7 +360,8 @@ PRIMEloci <- function(
     py_exec, predict_script_path,
     "--script_dir", python_script_dir,
     "--profile_main_dir", profile_main_dir,
-    "--combined_outdir", primeloci_tmp,
+    #"--combined_outdir", primeloci_tmp,
+    "--combined_outdir", outdir,
     "--model_path", model_path,
     "--log_file", log_target,
     "--name_prefix", name_prefix
@@ -399,11 +403,15 @@ PRIMEloci <- function(
   plc_message("\n")
   plc_message("🚀 Running PRIMEloci: Postprocessing prediction BEDs")
 
-  bed_files <- plc_find_bed_files_by_partial_name(primeloci_tmp,
+  #bed_files <- plc_find_bed_files_by_partial_name(primeloci_tmp,
+  #                                                partial_name = postprocess_partial_name) # nolint: line_length_linter.
+  bed_files <- plc_find_bed_files_by_partial_name(outdir,
                                                   partial_name = postprocess_partial_name) # nolint: line_length_linter.
   if (length(bed_files) == 0) {
+    #plc_error(paste("❌ No BED files found for postprocessing in",
+    #                primeloci_tmp))
     plc_error(paste("❌ No BED files found for postprocessing in",
-                    primeloci_tmp))
+                    outdir))
   }
 
   plc_message(sprintf("📂 Found %d BED file(s) for processing.",

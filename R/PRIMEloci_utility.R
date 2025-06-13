@@ -839,7 +839,8 @@ prep_profile_dir <- function(output_dir = ".",
                                           "predictions")) {
 
   # Create the output dir and main dir
-  new_path <- file.path(output_dir, "PRIMEloci_tmp", profile_dir_name)
+  #new_path <- file.path(output_dir, "PRIMEloci_tmp", profile_dir_name)
+  new_path <- file.path(output_dir, profile_dir_name)
 
   if (!file.exists(new_path)) {
     dir.create(new_path, recursive = TRUE, showWarnings = FALSE)
