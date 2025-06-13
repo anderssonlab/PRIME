@@ -1,13 +1,13 @@
-#' Run an Example of the PRIMEloci Facet Pipeline
+#' Run an Example of the PRIMEloci focal Pipeline
 #'
-#' This function demonstrates how to run the `PRIMEloci_facet()` pipeline
+#' This function demonstrates how to run the `PRIMEloci_focal()` pipeline
 #' using example CTSS and region data bundled with the `PRIME` package.
 #' It loads pre-packaged test data, runs the pipeline, and returns the result.
 #'
 #' @param python_path Character path to the Python binary
 #'   in the desired environment. Default is NULL.
 #' @param log_dir Optional character path to save the log file.
-#'   Default is `"/Users/natsudanav/Desktop/PRIMEloci_facet.log"`.
+#'   Default is `"/Users/natsudanav/Desktop/PRIMEloci_focal.log"`.
 #' @param keep_tmp Logical. If `TRUE`, temporary files and folders are retained.
 #'   Default is `FALSE`.
 #'
@@ -15,7 +15,7 @@
 #'   depending on the number of samples in the example dataset.
 
 #' @export
-run_PRIMEloci_facet_example <- function(python_path = NULL,
+run_PRIMEloci_focal_example <- function(python_path = NULL,
                                         log_dir = NULL,
                                         keep_tmp = FALSE,
                                         ...) {
@@ -33,7 +33,7 @@ run_PRIMEloci_facet_example <- function(python_path = NULL,
   ctss_rse <- readRDS(rds_ctss)
   tc_gr <- readRDS(rds_tc)
 
-  result <- PRIMEloci_facet(ctss_rse = ctss_rse,
+  result <- PRIMEloci_focal(ctss_rse = ctss_rse,
                             tc_gr = tc_gr,
                             python_path = python_path,
                             log_dir = log_dir,
