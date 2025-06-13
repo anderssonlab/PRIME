@@ -63,7 +63,7 @@ PRIMEloci_facet <- function(
   )
 
   # Set internal temporary output directory
-  outdir <- file.path(tempdir(), "PRIMEloci_output")
+  outdir <- file.path(tempdir())
   dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
   plc_message(sprintf("📁 Temporary output directory: %s", outdir))
 
