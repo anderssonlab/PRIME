@@ -1,4 +1,4 @@
-#' Run the PRIMEloci Facet Pipeline on CTSS and Identified Regions
+#' Run the PRIMEloci focal Pipeline on CTSS and Identified Regions
 #'
 #' This function executes a partial PRIMEloci pipeline,
 #' which includes the steps of validating and extending existing regions—
@@ -34,7 +34,7 @@
 #' @import GenomicRanges
 #' @import assertthat
 #' @export
-PRIMEloci_facet <- function(
+PRIMEloci_focal <- function(
     ctss_rse,
     tc_gr,
     python_path = NULL,
@@ -130,7 +130,7 @@ PRIMEloci_facet <- function(
   }
 
   plc_message("\n")
-  plc_message("🚀 Starting PRIMEloci facet pipeline")
+  plc_message("🚀 Starting PRIMEloci focal pipeline")
 
   # _2_
   plc_message("\n")
@@ -260,7 +260,7 @@ PRIMEloci_facet <- function(
   plc_message("\n")
   plc_message("🚀 Importing prediction BEDs")
 
-  final_rse <- plc_facet_prediction_to_rse(outdir,
+  final_rse <- plc_focal_prediction_to_rse(outdir,
                                            postprocess_partial_name = postprocess_partial_name) # nolint: line_length_linter.
 
   on.exit({
@@ -274,7 +274,7 @@ PRIMEloci_facet <- function(
   }, add = TRUE)
 
   plc_message("\n")
-  plc_message("✅✅✅ PRIMEloci facet pipeline completed successfully !!!!!")
+  plc_message("✅✅✅ PRIMEloci focal pipeline completed successfully !!!!!")
   plc_message(sprintf("🏁 Pipeline completed at: %s", Sys.time()))
   plc_message("\n")
 

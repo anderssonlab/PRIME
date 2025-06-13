@@ -1868,7 +1868,7 @@ disambiguate_sample_names <- function(named_list) {
   sample_names
 }
 
-#' Convert a directory of facet predictions to a RangedSummarizedExperiment
+#' Convert a directory of focal predictions to a RangedSummarizedExperiment
 #' @import GenomicRanges
 #' @import S4Vectors
 #' @import SummarizedExperiment
@@ -1876,14 +1876,14 @@ disambiguate_sample_names <- function(named_list) {
 #' @importFrom stringr str_match
 #' @importFrom magrittr %>%
 #' @export
-plc_facet_prediction_to_rse <- function(facet_prediction_dir,
+plc_focal_prediction_to_rse <- function(focal_prediction_dir,
                                         postprocess_partial_name = "pred_all") {
 
-  bed_files <- plc_find_bed_files_by_partial_name(facet_prediction_dir,
+  bed_files <- plc_find_bed_files_by_partial_name(focal_prediction_dir,
                                                   partial_name = postprocess_partial_name) # nolint: line_length_linter.
   if (length(bed_files) == 0) {
     plc_error(paste("❌ No BED files found for postprocessing in",
-                    facet_prediction_dir))
+                    focal_prediction_dir))
   }
 
   plc_message(sprintf("📂 Found %d BED file(s) for processing.",
