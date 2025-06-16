@@ -532,7 +532,24 @@ plc_get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
   return(tc_grl)
 }
 
-extend_fromthick <- function(tc_gr, ext_dis = 200) {
+#' Extend GRanges from thick regions and trim to fixed width
+#'
+#' Extends each region in a `GRanges` object based on its `thick` metadata,
+#' symmetrically by a specified distance, then trims out-of-bound ranges
+#' and keeps only those with the expected fixed width.
+#'
+#' @param tc_gr A `GRanges` object with a `thick` metadata column
+#' (of type `IRanges`).
+#' @param ext_dis An integer specifying how many bases to extend
+#' on each side of the thick region. Default is 200.
+#'
+#' @return A trimmed `GRanges` object with fixed-width ranges.
+#'
+#' @importFrom IRanges IRanges ranges
+#' @importFrom GenomicRanges trim width
+#' @importFrom assertthat assert_that
+#' @export
+plc_extend_fromthick <- function(tc_gr, ext_dis = 200) {
 
   assertthat::assert_that(
     inherits(tc_gr, "GRanges"),
@@ -839,7 +856,8 @@ prep_profile_dir <- function(output_dir = ".",
                                           "predictions")) {
 
   # Create the output dir and main dir
-  new_path <- file.path(output_dir, "PRIMEloci_tmp", profile_dir_name)
+  #new_path <- file.path(output_dir, "PRIMEloci_tmp", profile_dir_name)
+  new_path <- file.path(output_dir, profile_dir_name)
 
   if (!file.exists(new_path)) {
     dir.create(new_path, recursive = TRUE, showWarnings = FALSE)
@@ -1463,6 +1481,8 @@ plc_load_bed_file <- function(input_bed, sum_count = FALSE) {
 #' The required columns are extracted and
 #' used to define the `GRanges` object, and the remaining
 #' columns are added as metadata.
+#' If `thickStart` and `thickEnd` are present,
+#' they are converted to 1-based `IRanges` and added as metadata.
 #'
 #' @param bed_file A `data.table` containing the BED file data.
 #'
@@ -1472,14 +1492,29 @@ plc_load_bed_file <- function(input_bed, sum_count = FALSE) {
 #' @importFrom IRanges IRanges
 #' @importFrom S4Vectors mcols
 create_granges_from_bed <- function(bed_file) {
-  gr <- GenomicRanges::GRanges(seqnames = bed_file$chrom,
-                               ranges = IRanges::IRanges(start = bed_file$chromStart + 1, # nolint: line_length_linter.
-                                                         end = bed_file$chromEnd), # nolint: line_length_linter.
-                               strand = bed_file$strand)
-  S4Vectors::mcols(gr) <- bed_file[, !(names(bed_file) %in% c("chrom",
-                                                              "chromStart",
-                                                              "chromEnd",
-                                                              "strand"))]
+  gr <- GenomicRanges::GRanges(
+    seqnames = bed_file$chrom,
+    ranges = IRanges::IRanges(start = bed_file$chromStart + 1,
+                               end = bed_file$chromEnd),
+    strand = bed_file$strand
+  )
+
+  # Prepare metadata
+  meta_cols <- setdiff(names(bed_file), c("chrom",
+                                          "chromStart",
+                                          "chromEnd",
+                                          "strand",
+                                          "thickStart",
+                                          "thickEnd"))
+  meta <- bed_file[, meta_cols]
+
+  # Add thick as IRanges if present
+  if (all(c("thickStart", "thickEnd") %in% names(bed_file))) {
+    meta$thick <- IRanges::IRanges(start = bed_file$thickStart + 1,
+                                   end = bed_file$thickEnd)
+  }
+
+  S4Vectors::mcols(gr) <- meta
   gr
 }
 
@@ -1665,6 +1700,7 @@ plc_coreovl_with_d <- function(bed_file,
                                core_width = 151,
                                return_gr = TRUE,
                                output_dir = NULL,
+                               save_rds = FALSE,
                                num_cores = NULL,
                                processing_method = "multisession") {
 
@@ -1808,6 +1844,12 @@ plc_coreovl_with_d <- function(bed_file,
       output_basename
     )
 
+    if (save_rds == TRUE) {
+      rds_file <- file.path(output_dir, paste0(output_basename, ".rds"))
+      plc_message(sprintf("Saving collapsed GRanges to RDS: %s", rds_file))
+      saveRDS(collapsed_gr, rds_file)
+    }
+
     plc_message("✅ coreovl_with_d() method finished successfully.")
   }
 
@@ -1867,7 +1909,7 @@ disambiguate_sample_names <- function(named_list) {
   sample_names
 }
 
-#' Convert a directory of facet predictions to a RangedSummarizedExperiment
+#' Convert a directory of focal predictions to a RangedSummarizedExperiment
 #' @import GenomicRanges
 #' @import S4Vectors
 #' @import SummarizedExperiment
@@ -1875,14 +1917,14 @@ disambiguate_sample_names <- function(named_list) {
 #' @importFrom stringr str_match
 #' @importFrom magrittr %>%
 #' @export
-plc_facet_prediction_to_rse <- function(facet_prediction_dir,
+plc_focal_prediction_to_rse <- function(focal_prediction_dir,
                                         postprocess_partial_name = "pred_all") {
 
-  bed_files <- plc_find_bed_files_by_partial_name(facet_prediction_dir,
+  bed_files <- plc_find_bed_files_by_partial_name(focal_prediction_dir,
                                                   partial_name = postprocess_partial_name) # nolint: line_length_linter.
   if (length(bed_files) == 0) {
     plc_error(paste("❌ No BED files found for postprocessing in",
-                    facet_prediction_dir))
+                    focal_prediction_dir))
   }
 
   plc_message(sprintf("📂 Found %d BED file(s) for processing.",
@@ -1971,4 +2013,46 @@ plc_facet_prediction_to_rse <- function(facet_prediction_dir,
   )
 
   final_rse
+}
+
+#' Convert a BED file to a GRanges object and save as RDS
+#'
+#' This function reads a BED file, assigns column names,
+#' converts the data to a `GRanges` object
+#' using `create_granges_from_bed()`,
+#' and saves the result as an `.rds` file.
+#'
+#' @param bed_file A character string specifying the path to the input BED file.
+#' @param colnames A character vector of column names to assign to the BED file.
+#'   Defaults to standard BED fields: `chrom`, `chromStart`, `chromEnd`,
+#'   `name`, `score`, `strand`, `thickStart`, `thickEnd`.
+#'
+#' @return No return value. A `.rds` file
+#' containing the GRanges object is saved to disk.
+#'
+#' @importFrom tools file_path_sans_ext
+#' @importFrom utils read.delim
+#' @export
+plc_postprocessed_bed_to_rds <- function(bed_file,
+                                         colnames = c("chrom",
+                                                      "chromStart",
+                                                      "chromEnd",
+                                                      "name",
+                                                      "score",
+                                                      "strand",
+                                                      "thickStart",
+                                                      "thickEnd")) {
+  # Read the BED file
+  bed_data <- utils::read.delim(bed_file,
+                                header = FALSE,
+                                stringsAsFactors = FALSE)
+  colnames(bed_data) <- colnames
+
+  # Convert to GRanges using PRIME internal function
+  gr <- create_granges_from_bed(bed_data)
+
+  # Save as RDS file
+  saveRDS(gr,
+          file = paste0(tools::file_path_sans_ext(basename(bed_file)),
+                        "_gr.rds"))
 }

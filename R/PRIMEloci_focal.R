@@ -1,4 +1,4 @@
-#' Run the PRIMEloci Facet Pipeline on CTSS and Identified Regions
+#' Run the PRIMEloci focal Pipeline on CTSS and Identified Regions
 #'
 #' This function executes a partial PRIMEloci pipeline,
 #' which includes the steps of validating and extending existing regions—
@@ -34,7 +34,7 @@
 #' @import GenomicRanges
 #' @import assertthat
 #' @export
-PRIMEloci_facet <- function(
+PRIMEloci_focal <- function(
     ctss_rse,
     tc_gr,
     python_path = NULL,
@@ -63,13 +63,9 @@ PRIMEloci_facet <- function(
   )
 
   # Set internal temporary output directory
-  outdir <- file.path(tempdir(), "PRIMEloci_output")
+  outdir <- file.path(tempdir())
   dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
   plc_message(sprintf("📁 Temporary output directory: %s", outdir))
-
-  # Temporary working directories
-  primeloci_tmp <- file.path(outdir, "PRIMEloci_tmp")
-  dir.create(primeloci_tmp, recursive = TRUE, showWarnings = FALSE)
 
   # Logging setup
   if (is.null(log_dir)) {
@@ -134,7 +130,7 @@ PRIMEloci_facet <- function(
   }
 
   plc_message("\n")
-  plc_message("🚀 Starting PRIMEloci facet pipeline")
+  plc_message("🚀 Starting PRIMEloci focal pipeline")
 
   # _2_
   plc_message("\n")
@@ -153,8 +149,8 @@ PRIMEloci_facet <- function(
     msg <- paste("⚠️ All regions in the object (GRanges) must have width",
                  len_vec,
                  " : extend 401 bp from thick if existed")
-    tc_gr <- extend_fromthick(tc_gr = tc_gr,
-                              ext_dis = ext_dis)
+    tc_gr <- plc_extend_fromthick(tc_gr = tc_gr,
+                                  ext_dis = ext_dis)
   } else {
     msg <- paste("✅ All regions in the object (GRanges) have width", len_vec) # nolint: line_length_linter.
   }
@@ -191,9 +187,8 @@ PRIMEloci_facet <- function(
   plc_message("\n")
   plc_message("🚀 Predicting probability using PRIMEloci model")
 
-  profile_main_dir <- file.path(primeloci_tmp,
+  profile_main_dir <- file.path(outdir,
                                 profile_dir_name)
-
   profiles_subtnorm_dir <- file.path(profile_main_dir, "profiles_subtnorm")
   profile_files <- list.files(profiles_subtnorm_dir,
                               pattern = "\\.(npz|parquet|csv)$")
@@ -225,7 +220,7 @@ PRIMEloci_facet <- function(
     py_exec, predict_script_path,
     "--script_dir", python_script_dir,
     "--profile_main_dir", profile_main_dir,
-    "--combined_outdir", primeloci_tmp,
+    "--combined_outdir", outdir,
     "--model_path", model_path,
     "--log_file", log_target,
     "--name_prefix", name_prefix
@@ -265,7 +260,7 @@ PRIMEloci_facet <- function(
   plc_message("\n")
   plc_message("🚀 Importing prediction BEDs")
 
-  final_rse <- plc_facet_prediction_to_rse(primeloci_tmp,
+  final_rse <- plc_focal_prediction_to_rse(outdir,
                                            postprocess_partial_name = postprocess_partial_name) # nolint: line_length_linter.
 
   on.exit({
@@ -279,7 +274,7 @@ PRIMEloci_facet <- function(
   }, add = TRUE)
 
   plc_message("\n")
-  plc_message("✅✅✅ PRIMEloci facet pipeline completed successfully !!!!!")
+  plc_message("✅✅✅ PRIMEloci focal pipeline completed successfully !!!!!")
   plc_message(sprintf("🏁 Pipeline completed at: %s", Sys.time()))
   plc_message("\n")
 
