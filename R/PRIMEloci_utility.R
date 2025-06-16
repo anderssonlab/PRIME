@@ -1481,6 +1481,8 @@ plc_load_bed_file <- function(input_bed, sum_count = FALSE) {
 #' The required columns are extracted and
 #' used to define the `GRanges` object, and the remaining
 #' columns are added as metadata.
+#' If `thickStart` and `thickEnd` are present,
+#' they are converted to 1-based `IRanges` and added as metadata.
 #'
 #' @param bed_file A `data.table` containing the BED file data.
 #'
@@ -1490,14 +1492,29 @@ plc_load_bed_file <- function(input_bed, sum_count = FALSE) {
 #' @importFrom IRanges IRanges
 #' @importFrom S4Vectors mcols
 create_granges_from_bed <- function(bed_file) {
-  gr <- GenomicRanges::GRanges(seqnames = bed_file$chrom,
-                               ranges = IRanges::IRanges(start = bed_file$chromStart + 1, # nolint: line_length_linter.
-                                                         end = bed_file$chromEnd), # nolint: line_length_linter.
-                               strand = bed_file$strand)
-  S4Vectors::mcols(gr) <- bed_file[, !(names(bed_file) %in% c("chrom",
-                                                              "chromStart",
-                                                              "chromEnd",
-                                                              "strand"))]
+  gr <- GenomicRanges::GRanges(
+    seqnames = bed_file$chrom,
+    ranges = IRanges::IRanges(start = bed_file$chromStart + 1,
+                               end = bed_file$chromEnd),
+    strand = bed_file$strand
+  )
+
+  # Prepare metadata
+  meta_cols <- setdiff(names(bed_file), c("chrom",
+                                          "chromStart",
+                                          "chromEnd",
+                                          "strand",
+                                          "thickStart",
+                                          "thickEnd"))
+  meta <- bed_file[, meta_cols]
+
+  # Add thick as IRanges if present
+  if (all(c("thickStart", "thickEnd") %in% names(bed_file))) {
+    meta$thick <- IRanges::IRanges(start = bed_file$thickStart + 1,
+                                   end = bed_file$thickEnd)
+  }
+
+  S4Vectors::mcols(gr) <- meta
   gr
 }
 
@@ -1683,6 +1700,7 @@ plc_coreovl_with_d <- function(bed_file,
                                core_width = 151,
                                return_gr = TRUE,
                                output_dir = NULL,
+                               save_rds = FALSE,
                                num_cores = NULL,
                                processing_method = "multisession") {
 
@@ -1825,6 +1843,12 @@ plc_coreovl_with_d <- function(bed_file,
       sample_label,
       output_basename
     )
+
+    if (save_rds == TRUE) {
+      rds_file <- file.path(output_dir, paste0(output_basename, ".rds"))
+      plc_message(sprintf("Saving collapsed GRanges to RDS: %s", rds_file))
+      saveRDS(collapsed_gr, rds_file)
+    }
 
     plc_message("✅ coreovl_with_d() method finished successfully.")
   }

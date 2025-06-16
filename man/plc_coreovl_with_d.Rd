@@ -11,6 +11,7 @@ plc_coreovl_with_d(
   core_width = 151,
   return_gr = TRUE,
   output_dir = NULL,
+  save_rds = FALSE,
   num_cores = NULL,
   processing_method = "multisession"
 )
