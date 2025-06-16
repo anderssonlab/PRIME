@@ -532,7 +532,24 @@ plc_get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
   return(tc_grl)
 }
 
-extend_fromthick <- function(tc_gr, ext_dis = 200) {
+#' Extend GRanges from thick regions and trim to fixed width
+#'
+#' Extends each region in a `GRanges` object based on its `thick` metadata,
+#' symmetrically by a specified distance, then trims out-of-bound ranges
+#' and keeps only those with the expected fixed width.
+#'
+#' @param tc_gr A `GRanges` object with a `thick` metadata column
+#' (of type `IRanges`).
+#' @param ext_dis An integer specifying how many bases to extend
+#' on each side of the thick region. Default is 200.
+#'
+#' @return A trimmed `GRanges` object with fixed-width ranges.
+#'
+#' @importFrom IRanges IRanges ranges
+#' @importFrom GenomicRanges trim width
+#' @importFrom assertthat assert_that
+#' @export
+plc_extend_fromthick <- function(tc_gr, ext_dis = 200) {
 
   assertthat::assert_that(
     inherits(tc_gr, "GRanges"),
@@ -1972,4 +1989,46 @@ plc_focal_prediction_to_rse <- function(focal_prediction_dir,
   )
 
   final_rse
+}
+
+#' Convert a BED file to a GRanges object and save as RDS
+#'
+#' This function reads a BED file, assigns column names,
+#' converts the data to a `GRanges` object
+#' using `create_granges_from_bed()`,
+#' and saves the result as an `.rds` file.
+#'
+#' @param bed_file A character string specifying the path to the input BED file.
+#' @param colnames A character vector of column names to assign to the BED file.
+#'   Defaults to standard BED fields: `chrom`, `chromStart`, `chromEnd`,
+#'   `name`, `score`, `strand`, `thickStart`, `thickEnd`.
+#'
+#' @return No return value. A `.rds` file
+#' containing the GRanges object is saved to disk.
+#'
+#' @importFrom tools file_path_sans_ext
+#' @importFrom utils read.delim
+#' @export
+plc_postprocessed_bed_to_rds <- function(bed_file,
+                                         colnames = c("chrom",
+                                                      "chromStart",
+                                                      "chromEnd",
+                                                      "name",
+                                                      "score",
+                                                      "strand",
+                                                      "thickStart",
+                                                      "thickEnd")) {
+  # Read the BED file
+  bed_data <- utils::read.delim(bed_file,
+                                header = FALSE,
+                                stringsAsFactors = FALSE)
+  colnames(bed_data) <- colnames
+
+  # Convert to GRanges using PRIME internal function
+  gr <- create_granges_from_bed(bed_data)
+
+  # Save as RDS file
+  saveRDS(gr,
+          file = paste0(tools::file_path_sans_ext(basename(bed_file)),
+                        "_gr.rds"))
 }

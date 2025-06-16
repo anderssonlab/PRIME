@@ -149,8 +149,8 @@ PRIMEloci_focal <- function(
     msg <- paste("⚠️ All regions in the object (GRanges) must have width",
                  len_vec,
                  " : extend 401 bp from thick if existed")
-    tc_gr <- extend_fromthick(tc_gr = tc_gr,
-                              ext_dis = ext_dis)
+    tc_gr <- plc_extend_fromthick(tc_gr = tc_gr,
+                                  ext_dis = ext_dis)
   } else {
     msg <- paste("✅ All regions in the object (GRanges) have width", len_vec) # nolint: line_length_linter.
   }
