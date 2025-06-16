@@ -18,4 +18,6 @@ containing BED file data into a `GRanges` object.
 The required columns are extracted and
 used to define the `GRanges` object, and the remaining
 columns are added as metadata.
+If `thickStart` and `thickEnd` are present,
+they are converted to 1-based `IRanges` and added as metadata.
 }
