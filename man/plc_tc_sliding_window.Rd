@@ -2,7 +2,9 @@
 % Please edit documentation in R/PRIMEloci_utility.R
 \name{plc_tc_sliding_window}
 \alias{plc_tc_sliding_window}
-\title{Perform Parallel Sliding Window Expansion on GRanges Tag Clusters}
+\title{Perform Parallel Sliding Window Expansion on GRanges Tag Clusters
+The function performs sliding window expansion
+parallelly for each chromosome in a sample using tc_sliding_window_chr().}
 \usage{
 plc_tc_sliding_window(
   granges_obj,
@@ -14,4 +16,6 @@ plc_tc_sliding_window(
 }
 \description{
 Perform Parallel Sliding Window Expansion on GRanges Tag Clusters
+The function performs sliding window expansion
+parallelly for each chromosome in a sample using tc_sliding_window_chr().
 }

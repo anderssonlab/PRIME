@@ -7,7 +7,5 @@
 remove_metadata_and_duplicates(gr)
 }
 \description{
-This function takes a `GRanges` object, removes all metadata,
-and then eliminates duplicate genomic ranges based on sequence names,
-start and end positions, and strand information.
+Remove Metadata and Duplicate Genomic Ranges
 }
