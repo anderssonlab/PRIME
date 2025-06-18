@@ -11,6 +11,5 @@ plc_detect_parallel_plan(
 )
 }
 \description{
-Allows for long startup (e.g. on slower systems).
-Use at setup time to decide plan.
+Detect optimal parallel backend (multisession or callr)
 }

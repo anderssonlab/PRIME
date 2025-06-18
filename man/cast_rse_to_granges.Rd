@@ -7,6 +7,5 @@
 cast_rse_to_granges(rse, assay = "counts", coln_assay = 1, colname = "score")
 }
 \description{
-This function converts a `SummarizedExperiment` object to a `GRanges` object
-and adds a specified assay data column to the resulting `GRanges` object.
+Convert SummarizedExperiment to GRanges with Assay Data
 }

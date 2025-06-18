@@ -1,129 +1,8 @@
-#' Logging Functions for PRIMEloci
-#' @export
-plc_log <- function(message,
-                    level = "INFO") {
-  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-  cat(sprintf("[%s] %s %s\n", level, timestamp, message))
-}
-
-#' Log a message with INFO level
-#' @export
-plc_message <- function(msg) {
-  plc_log(msg, level = "INFO")
-}
-
-#' Log a message with WARN level
-#' @export
-plc_warn <- function(msg) {
-  plc_log(msg, level = "WARN")
-  warning(msg, call. = FALSE)
-}
-
-#' Log a message with ERROR level
-#' @export
-plc_error <- function(msg) {
-  plc_log(msg, level = "ERROR")
-  stop(msg, call. = FALSE)
-}
-
-#' Create the output directory if it doesn't exist
-#' @export
-plc_create_output_dir <- function(output_dir) {
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    plc_message(sprintf("📁 Output directory created: %s", output_dir))
-  } else {
-    plc_message(sprintf("📁 Output directory already exists: %s", output_dir))
-  }
-}
-
-#' Set up temporary directory under output directory
-#'
-#' Creates a `PRIMEloci_tmp` folder under the given output directory
-#' if it does not already exist.
-#'
-#' @param output_dir A character string specifying the path
-#' to the output directory.
-#'
-#' @return A character string with the full path to the temporary directory.
-#' @export
-plc_setup_tmp_dir <- function(output_dir) {
-  tmp_dir <- file.path(output_dir, "PRIMEloci_tmp")
-  if (!dir.exists(tmp_dir)) {
-    dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
-    plc_message(sprintf("📁 Temporary directory created: %s", tmp_dir))
-  } else {
-    plc_message(sprintf("📁 Temporary directory already exists: %s", tmp_dir))
-  }
-  tmp_dir
-}
-
-#' Set up logging to console or file
-#'
-#' @param log Logical or NULL. If NULL, log to console; otherwise,
-#' log to file.
-#' @param outdir Character. Path to the output directory
-#' where logs will be stored.
-#'
-#' @return A connection or file path to be used as the logging target.
-#' @export
-plc_setup_log_target <- function(log, outdir) {
-  if (is.null(log)) {
-    stdout()
-  } else {
-    log_dir <- file.path(outdir, "PRIMEloci_log")
-    if (!dir.exists(log_dir)) {
-      dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
-      plc_message(sprintf("📁 Log directory created: %s", log_dir))
-    } else {
-      plc_message(sprintf("📁 Log directory already exists: %s", log_dir))
-    }
-    log_file <- file.path(log_dir, "PRIMEloci.log")
-    plc_message(sprintf("📝 Log file will be saved to: %s", log_file))
-    log_file
-  }
-}
-
-#' Detect optimal parallel backend (multisession or callr)
-#'
-#' Allows for long startup (e.g. on slower systems).
-#' Use at setup time to decide plan.
-#' @export
-plc_detect_parallel_plan <- function(num_workers = 2,
-                                     startup_tolerance_sec = 90,
-                                     sleep_sec = 2) {
-
-  result <- "callr"  # fallback
-
-  # Ensure the plan always resets to sequential when done
-  on.exit({
-    future::plan(future::sequential)
-  }, add = FALSE)
-
-  # Test multisession
-  try({
-    future::plan(future::multisession, workers = num_workers)
-    t0 <- Sys.time()
-    R.utils::withTimeout({
-      future.apply::future_lapply(1:2,
-                                  function(i) Sys.sleep(sleep_sec),
-                                  future.seed = TRUE)
-    }, timeout = startup_tolerance_sec, onTimeout = "error")
-    elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-    plc_message(sprintf("[Check Result] Multisession ran in %.2f seconds", elapsed)) # nolint: line_length_linter.
-    result <- "multisession"
-  }, silent = TRUE)
-
-  return(result)
-}
+#### General functions, not exported ####
 
 #' Set a robust parallel plan using multisession or callr
-#'
-#' @importFrom future plan multisession sequential nbrOfWorkers
-#' @importFrom future.callr callr
-#' @importFrom future.apply future_lapply
-plc_set_parallel_plan <- function(method_to_use,
-                                  num_workers) {
+set_parallel_plan <- function(method_to_use,
+                              num_workers) {
   if (method_to_use == "multisession") {
     future::plan(future::multisession, workers = num_workers)
     plc_message("✅ Using multisession for parallel processing.")
@@ -137,75 +16,7 @@ plc_set_parallel_plan <- function(method_to_use,
   plc_message(sprintf("⚙️ Plan set with %d worker(s).", future::nbrOfWorkers()))
 }
 
-#' Extract CAGE Transcription Start Sites (CTSSs) from BigWig Files
-#'
-#' This function extracts CTSSs from CAGE data stored in BigWig files,
-#' as specified in the provided design matrix. It allows for optional
-#' genomic filtering based on a provided `Seqinfo` object and can exclude
-#' or include specific chromosomes.
-#'
-#' @param dir_cage_bw A character string specifying the directory containing
-#'   the BigWig files for both plus and minus strands.
-#' @param design_matrix A data frame that must contain columns named
-#'   \code{"BigWigPlus"} and \code{"BigWigMinus"}, which specify the paths
-#'   to the respective BigWig files.
-#' @param genome_info An optional \code{Seqinfo} object containing genome
-#'   information. If provided, it allows for the use of `drop_chr`
-#'   and `keep_chr` parameters.
-#' @param drop_chr An optional character vector of chromosome names to be
-#'   excluded from the analysis. Requires \code{genome_info} to be specified.
-#' @param keep_chr An optional character vector of chromosome names to be
-#'   included in the analysis. Requires \code{genome_info} to be specified.
-#' @return A \code{CTSS} object containing the quantified and normalized
-#'   counts of transcription start sites, including pooled counts.
-#' @examples
-#' \dontrun{
-#' ctss_result <- plc_get_ctss_from_bw("path/to/bigwig/files",
-#'                                     design_matrix,
-#'                                     genome_info,
-#'                                     drop_chr = c("chrM"))
-#' }
-#' @import rtracklayer
-#' @import GenomicRanges
-#' @import CAGEfightR
-#' @export
-plc_get_ctss_from_bw <- function(dir_cage_bw,
-                                 design_matrix,
-                                 genome_info = NULL,
-                                 drop_chr = NULL,
-                                 keep_chr = NULL) {
-
-  # Create BigWigFileList objects for plus and minus strands
-  bwplus <- rtracklayer::BigWigFileList(file.path(dir_cage_bw,
-                                                  design_matrix$BigWigPlus))
-  bwminus <- rtracklayer::BigWigFileList(file.path(dir_cage_bw,
-                                                   design_matrix$BigWigMinus))
-  names(bwplus) <- names(bwminus) <- rownames(design_matrix)
-
-  # Handle genome_info, drop_chr, and keep_chr
-  gn <- genome_info
-  if (!is.null(genome_info)) {
-    if (!is.null(drop_chr)) {
-      gn <- GenomeInfoDb::dropSeqlevels(gn, drop_chr)
-    }
-    if (!is.null(keep_chr)) {
-      gn <- GenomeInfoDb::keepSeqlevels(gn, keep_chr)
-    }
-  } else if (!is.null(drop_chr) || !is.null(keep_chr)) {
-    plc_error("❌ genome_info must be provided when using drop_chr or keep_chr.")
-  }
-
-  # Quantify CTSSs and calculate pooled counts
-  orig_ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bwplus,
-                                         minusStrand = bwminus,
-                                         design = design_matrix,
-                                         genome = gn)
-  orig_ctss <- CAGEfightR::calcPooled(orig_ctss, inputAssay = "counts")
-
-  return(orig_ctss)
-}
-
-# Dynamically choose required packages based on numpy version
+#' Dynamically choose required packages based on numpy version
 choose_required_packages <- function(required_numpy1, required_numpy2) {
   if (!reticulate::py_available(initialize = TRUE)) {
     stop("Python not initialized.")
@@ -221,16 +32,7 @@ choose_required_packages <- function(required_numpy1, required_numpy2) {
 }
 
 #' Check Required Python Dependencies
-#'
-#' Checks that all required Python packages are installed and meet
-#' the specified minimum version requirements. Raises an error
-#' if any package is missing or incompatible.
-#'
-#' @param required_packages Named list of required packages
-#' with minimum versions.
-#'
-#' @export
-plc_check_python_dependencies <- function(required_packages) {
+check_python_dependencies <- function(required_packages) {
   plc_message("🔍 Checking Python dependencies...")
   failed <- setNames(logical(length(required_packages)),
                      names(required_packages))
@@ -320,43 +122,232 @@ convert_to_scipy_sparse <- function(mat, scipy) {
   }
 }
 
-#' Test Python SciPy Sparse Matrix Export
-#'
-#' Tests whether `scipy.sparse.save_npz()` can successfully save
-#' a sparse matrix. Used to determine compatibility with `.npz` export.
-#'
-#' @return Logical value indicating success (`TRUE`) or failure (`FALSE`).
-#' @export
-plc_test_scipy_save_npz <- function() {
-  tryCatch({
-    # Mimic heatmapData(..., sparse = TRUE) structure
-    sparse_vectors <- lapply(1:10, function(i) {
-      vec <- Matrix::sparseVector(i = sample(1:20, 3),
-                                  x = runif(3),
-                                  length = 20)
-      as(vec, "dsparseVector")
-    })
-    test_matrix <- vectorListToMatrix(sparse_vectors)  # dgCMatrix
+## mainly profile helper functions
 
-    scipy <- reticulate::import("scipy.sparse", delay_load = FALSE)
+#' Convert SummarizedExperiment to GRanges with Assay Data
+#'
+#' @importFrom SummarizedExperiment rowRanges assay
+#' @importFrom GenomicRanges GRanges mcols
+#' @importFrom magrittr %>%
+cast_rse_to_granges <- function(rse,
+                                assay = "counts",
+                                coln_assay = 1,
+                                colname = "score") {
+  # Extract the row ranges from the SummarizedExperiment object
+  gr <- SummarizedExperiment::rowRanges(rse) %>% GenomicRanges::GRanges() # nolint: pipe_operator_linter
 
-    test_py <- convert_to_scipy_sparse(test_matrix, scipy)
-    if (is.null(test_py)) {
-      plc_message("⚠️ Unsupported sparse matrix for SciPy check.")
-      return(FALSE)
+  # Extract the assay data
+  assay_data <- SummarizedExperiment::assay(rse, assay)
+
+  # Assign the assay data to the specified column name in the GRanges object
+  GenomicRanges::mcols(gr)[[colname]] <- assay_data[, coln_assay]
+
+  return(gr)
+}
+
+#' Convert Strand Information to No Strand for GRanges Object
+#'
+#' @importFrom GenomicRanges strand
+convert_strand_to_nostrand_gr <- function(region_gr) {
+  GenomicRanges::strand(region_gr) <- "*"
+  region_gr
+}
+
+#' Remove Metadata and Duplicate Genomic Ranges
+#'
+#' @importFrom GenomicRanges GRanges seqnames ranges strand start end duplicated
+#' @importFrom IRanges IRanges
+remove_metadata_and_duplicates <- function(gr) {
+  # Remove metadata columns by creating a new GRanges object without metadata
+  gr_no_metadata <- GenomicRanges::GRanges(
+    seqnames = GenomicRanges::seqnames(gr),
+    ranges = IRanges::IRanges(start = GenomicRanges::start(gr),
+                              end = GenomicRanges::end(gr)),
+    strand = GenomicRanges::strand(gr)
+  )
+
+  # Identify duplicated ranges based on seqnames, ranges, and strand
+  duplicated_indices <- GenomicRanges::duplicated(gr_no_metadata)
+
+  # Subset the GRanges object to keep only unique ranges
+  unique_gr <- gr_no_metadata[!duplicated_indices]
+
+  unique_gr
+}
+
+#' Check presence and format of rownames in a profile matrix
+check_valid_profile_rownames <- function(profile_matrix, chr_name) {
+  rn <- rownames(profile_matrix)
+
+  if (is.null(rn)) {
+    plc_error(sprintf("❌ No rownames found in heatmapData output for chromosome %s.", # nolint: line_length_linter.
+                      chr_name))
+  }
+
+  bad_rn <- rn[!grepl("^[^:]+:\\d+-\\d+;.$", rn)]
+
+  if (length(bad_rn) > 0) {
+    plc_error(sprintf("❌ %d rownames have invalid format in heatmapData output for chromosome %s. Example: %s", # nolint: line_length_linter.
+                      length(bad_rn), chr_name, bad_rn[1]))
+  }
+}
+
+#' Extract chr, start, end, and strand from row names
+#' like "chr:start-end;strand"
+extract_rowname_components <- function(row_names) {
+  str_parts <- strsplit(row_names, "[:]|-|;")
+
+  # Convert to matrix (columns: chr, start, end, strand)
+  components <- do.call(rbind, str_parts)
+
+  if (ncol(components) != 4) {
+    plc_error("❌ Invalid row name format. Expected 'chr:start-end;strand'")
+  }
+
+  components
+}
+
+#' Create GRanges object from row names like "chr:start-end;strand"
+create_granges_from_rownames <- function(row_names_str) {
+  components <- extract_rowname_components(row_names_str)
+
+  GenomicRanges::GRanges(
+    seqnames = components[, 1],
+    ranges = IRanges::IRanges(
+      start = as.integer(components[, 2]),
+      end   = as.integer(components[, 3])
+    ),
+    strand = components[, 4]
+  )
+}
+
+#' Convert strand suffix in row names to "*"
+convert_rowname_to_nostrand <- function(strand_str) {
+  gsub("[+-]$", "*", strand_str)
+}
+
+#' Modify row names to no-strand if both strands match
+modify_profile_rownames <- function(profiles, count_profiles) {
+  plus_names <- convert_rowname_to_nostrand(rownames(count_profiles$`*`$`+`))
+  minus_names <- convert_rowname_to_nostrand(rownames(count_profiles$`*`$`-`))
+
+  if (identical(sort(plus_names), sort(minus_names))) {
+    rownames(profiles) <- plus_names
+  } else {
+    plc_error("❌ Row names from + and - strands are not aligned after strand conversion from modify_profile_rownames().") # nolint: line_length_linter.
+  }
+
+  profiles
+}
+
+## End profile helper functions
+
+#' Set up temporary directory under output directory
+setup_tmp_dir <- function(output_dir) {
+  tmp_dir <- file.path(output_dir, "PRIMEloci_tmp")
+  if (!dir.exists(tmp_dir)) {
+    dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+    plc_message(sprintf("📁 Temporary directory created: %s", tmp_dir))
+  } else {
+    plc_message(sprintf("📁 Temporary directory already exists: %s", tmp_dir))
+  }
+  tmp_dir
+}
+
+#' Set up logging to console or file
+setup_log_target <- function(log, outdir) {
+  if (is.null(log)) {
+    stdout()
+  } else {
+    log_dir <- file.path(outdir, "PRIMEloci_log")
+    if (!dir.exists(log_dir)) {
+      dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
+      plc_message(sprintf("📁 Log directory created: %s", log_dir))
+    } else {
+      plc_message(sprintf("📁 Log directory already exists: %s", log_dir))
     }
+    log_file <- file.path(log_dir, "PRIMEloci.log")
+    plc_message(sprintf("📝 Log file will be saved to: %s", log_file))
+    log_file
+  }
+}
 
-    tmpfile <- tempfile(fileext = ".npz")
-    scipy$save_npz(tmpfile, test_py)
-    unlink(tmpfile)
 
-    plc_message("✅ SciPy sparse matrix save test passed.")
-    return(TRUE)
 
-  }, error = function(e) {
-    plc_message(paste("⚠️ scipy.sparse.save_npz() failed.", e$message))
-    FALSE
-  })
+#### General functions, exported ####
+
+## Logging Functions for PRIMEloci
+
+#' @export
+plc_log <- function(message,
+                    level = "INFO") {
+  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  cat(sprintf("[%s] %s %s\n", level, timestamp, message))
+}
+
+#' Log a message with INFO level
+#' @export
+plc_message <- function(msg) {
+  plc_log(msg, level = "INFO")
+}
+
+#' Log a message with WARN level
+#' @export
+plc_warn <- function(msg) {
+  plc_log(msg, level = "WARN")
+  warning(msg, call. = FALSE)
+}
+
+#' Log a message with ERROR level
+#' @export
+plc_error <- function(msg) {
+  plc_log(msg, level = "ERROR")
+  stop(msg, call. = FALSE)
+}
+
+## Directory related functions
+
+#' Create the output directory if it doesn't exist
+#' @export
+plc_create_output_dir <- function(output_dir) {
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    plc_message(sprintf("📁 Output directory created: %s", output_dir))
+  } else {
+    plc_message(sprintf("📁 Output directory already exists: %s", output_dir))
+  }
+}
+
+## System preparation Functions
+
+#' Detect optimal parallel backend (multisession or callr)
+#' @export
+plc_detect_parallel_plan <- function(num_workers = 2,
+                                     startup_tolerance_sec = 90,
+                                     sleep_sec = 2) {
+
+  result <- "callr"  # fallback
+
+  # Ensure the plan always resets to sequential when done
+  on.exit({
+    future::plan(future::sequential)
+  }, add = FALSE)
+
+  # Test multisession
+  try({
+    future::plan(future::multisession, workers = num_workers)
+    t0 <- Sys.time()
+    R.utils::withTimeout({
+      future.apply::future_lapply(1:2,
+                                  function(i) Sys.sleep(sleep_sec),
+                                  future.seed = TRUE)
+    }, timeout = startup_tolerance_sec, onTimeout = "error")
+    elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    plc_message(sprintf("[Check Result] Multisession ran in %.2f seconds", elapsed)) # nolint: line_length_linter.
+    result <- "multisession"
+  }, silent = TRUE)
+
+  return(result)
 }
 
 #' Configure Python environment for PRIMEloci
@@ -435,9 +426,259 @@ plc_configure_python <- function(python_path = NULL) {
   required_packages <- choose_required_packages(required_packages_numpy1,
                                                 required_packages_numpy2)
 
-  plc_check_python_dependencies(required_packages)
+  check_python_dependencies(required_packages)
 
   return(py_conf)
+}
+
+#' Test Python SciPy Sparse Matrix Export
+#'
+#' Tests whether `scipy.sparse.save_npz()` can successfully save
+#' a sparse matrix. Used to determine compatibility with `.npz` export.
+#'
+#' @return Logical value indicating success (`TRUE`) or failure (`FALSE`).
+#' @export
+plc_test_scipy_save_npz <- function() {
+  tryCatch({
+    # Mimic heatmapData(..., sparse = TRUE) structure
+    sparse_vectors <- lapply(1:10, function(i) {
+      vec <- Matrix::sparseVector(i = sample(1:20, 3),
+                                  x = runif(3),
+                                  length = 20)
+      as(vec, "dsparseVector")
+    })
+    test_matrix <- vectorListToMatrix(sparse_vectors)  # dgCMatrix
+
+    scipy <- reticulate::import("scipy.sparse", delay_load = FALSE)
+
+    test_py <- convert_to_scipy_sparse(test_matrix, scipy)
+    if (is.null(test_py)) {
+      plc_message("⚠️ Unsupported sparse matrix for SciPy check.")
+      return(FALSE)
+    }
+
+    tmpfile <- tempfile(fileext = ".npz")
+    scipy$save_npz(tmpfile, test_py)
+    unlink(tmpfile)
+
+    plc_message("✅ SciPy sparse matrix save test passed.")
+    return(TRUE)
+
+  }, error = function(e) {
+    plc_message(paste("⚠️ scipy.sparse.save_npz() failed.", e$message))
+    FALSE
+  })
+}
+
+## part of PRIMEloci pipeline
+
+#' Extend GRanges from thick regions and trim to fixed width
+#'
+#' Extends each region in a `GRanges` object based on its `thick` metadata,
+#' symmetrically by a specified distance, then trims out-of-bound ranges
+#' and keeps only those with the expected fixed width.
+#'
+#' @param tc_gr A `GRanges` object with a `thick` metadata column
+#' (of type `IRanges`).
+#' @param ext_dis An integer specifying how many bases to extend
+#' on each side of the thick region. Default is 200.
+#'
+#' @return A trimmed `GRanges` object with fixed-width ranges.
+#'
+#' @importFrom IRanges IRanges ranges
+#' @importFrom GenomicRanges trim width
+#' @importFrom assertthat assert_that
+#' @export
+plc_extend_fromthick <- function(tc_gr, ext_dis = 200) {
+
+  assertthat::assert_that(
+    inherits(tc_gr, "GRanges"),
+    msg = "❌ tc_object must be a GRanges object"
+  )
+
+  # Create new ranges around thick positions
+  new_ranges <- IRanges::IRanges(start = start(tc_gr$thick) - ext_dis,
+                                 end = end(tc_gr$thick) + ext_dis)
+
+  # Assign new ranges to object
+  new_object <- tc_gr
+  IRanges::ranges(new_object) <- new_ranges
+
+  # Trim new object
+  plc_message("Trimming out-of-bound ranges...")
+  new_object <- GenomicRanges::trim(new_object)
+
+  plc_message("Keep only prefered width...")
+  len_vec <- ext_dis * 2 + 1
+  new_object_widths <- GenomicRanges::width(new_object)
+  new_object <- new_object[new_object_widths == len_vec]
+
+  return(new_object)
+}
+
+#' Load a BED file and validate required columns
+#'
+#' This function reads a BED file into a `data.table` and verifies that
+#' it includes the necessary columns for downstream processing.
+#' By default, it checks for the presence of 'chrom', 'chromStart',
+#' 'chromEnd', 'strand', and 'score'. If `sum_count = TRUE`, it also
+#' requires the 'sum_count' column.
+#'
+#' @param input_bed Character. Path to the input BED file.
+#' @param sum_count Logical. Whether to require the 'sum_count' column
+#' (default: FALSE).
+#'
+#' @return A `data.table` containing the BED file data with validated columns.
+#'
+#' @importFrom assertthat assert_that
+#' @export
+plc_load_bed_file_wt_header <- function(input_bed, sum_count = FALSE) {
+  bed_file <- read.table(input_bed,
+                         header = TRUE,
+                         sep = "\t",
+                         stringsAsFactors = FALSE)
+  if (sum_count) {
+    required_cols <- c("chrom", "chromStart", "chromEnd", "strand",
+                       "score", "sum_count")
+  } else {
+    required_cols <- c("chrom", "chromStart", "chromEnd", "strand", "score")
+  }
+  assertthat::assert_that(all(required_cols %in% colnames(bed_file)),
+                          msg = "The BED file must contain 'chrom', 'chromStart', 'chromEnd', 'strand', 'score', (and sum_count if it sets to TRUE) columns. ") # nolint: line_length_linter.
+  bed_file
+}
+
+#' Create a GRanges object from a BED data.table
+#'
+#' This function converts a `data.table`
+#' containing BED file data into a `GRanges` object.
+#' If `thickStart` and `thickEnd` are present,
+#' they are converted to 1-based `IRanges` and added as metadata.
+#'
+#' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
+#' @importFrom S4Vectors mcols
+#' @export
+plc_create_granges_from_bed <- function(bed_file) {
+  gr <- GenomicRanges::GRanges(
+    seqnames = bed_file$chrom,
+    ranges = IRanges::IRanges(start = bed_file$chromStart + 1,
+                               end = bed_file$chromEnd),
+    strand = bed_file$strand
+  )
+
+  # Prepare metadata
+  meta_cols <- setdiff(names(bed_file), c("chrom",
+                                          "chromStart",
+                                          "chromEnd",
+                                          "strand",
+                                          "thickStart",
+                                          "thickEnd"))
+  meta <- bed_file[, meta_cols]
+
+  # Add thick as IRanges if present
+  if (all(c("thickStart", "thickEnd") %in% names(bed_file))) {
+    meta$thick <- IRanges::IRanges(start = bed_file$thickStart + 1,
+                                   end = bed_file$thickEnd)
+  }
+
+  S4Vectors::mcols(gr) <- meta
+  gr
+}
+
+#' Find .bed files matching a partial name in a directory
+#'
+#' @return A character vector of matching .bed file paths (may be empty).
+#' @export
+plc_find_bed_files_by_partial_name <- function(dir,
+                                               partial_name) {
+  pattern <- paste0("(?i)", partial_name, ".*\\.bed$")
+  files <- list.files(
+    path = dir,
+    pattern = pattern,
+    full.names = TRUE
+  )
+
+  if (length(files) == 0) {
+    plc_warn(sprintf("⚠️ No .bed files found in '%s' matching '%s'",
+                     dir, partial_name))
+  }
+
+  files
+}
+
+
+
+#### Specific main functions ####
+#### use once at the main steps ####
+#### both exported and not exported ####
+
+#' Extract CAGE Transcription Start Sites (CTSSs) from BigWig Files
+#'
+#' This function extracts CTSSs from CAGE data stored in BigWig files,
+#' as specified in the provided design matrix. It allows for optional
+#' genomic filtering based on a provided `Seqinfo` object and can exclude
+#' or include specific chromosomes.
+#'
+#' @param dir_cage_bw A character string specifying the directory containing
+#'   the BigWig files for both plus and minus strands.
+#' @param design_matrix A data frame that must contain columns named
+#'   \code{"BigWigPlus"} and \code{"BigWigMinus"}, which specify the paths
+#'   to the respective BigWig files.
+#' @param genome_info An optional \code{Seqinfo} object containing genome
+#'   information. If provided, it allows for the use of `drop_chr`
+#'   and `keep_chr` parameters.
+#' @param drop_chr An optional character vector of chromosome names to be
+#'   excluded from the analysis. Requires \code{genome_info} to be specified.
+#' @param keep_chr An optional character vector of chromosome names to be
+#'   included in the analysis. Requires \code{genome_info} to be specified.
+#' @return A \code{CTSS} object containing the quantified and normalized
+#'   counts of transcription start sites, including pooled counts.
+#' @examples
+#' \dontrun{
+#' ctss_result <- plc_get_ctss_from_bw("path/to/bigwig/files",
+#'                                     design_matrix,
+#'                                     genome_info,
+#'                                     drop_chr = c("chrM"))
+#' }
+#' @import rtracklayer
+#' @import GenomicRanges
+#' @import CAGEfightR
+#' @export
+plc_get_ctss_from_bw <- function(dir_cage_bw,
+                                 design_matrix,
+                                 genome_info = NULL,
+                                 drop_chr = NULL,
+                                 keep_chr = NULL) {
+
+  # Create BigWigFileList objects for plus and minus strands
+  bwplus <- rtracklayer::BigWigFileList(file.path(dir_cage_bw,
+                                                  design_matrix$BigWigPlus))
+  bwminus <- rtracklayer::BigWigFileList(file.path(dir_cage_bw,
+                                                   design_matrix$BigWigMinus))
+  names(bwplus) <- names(bwminus) <- rownames(design_matrix)
+
+  # Handle genome_info, drop_chr, and keep_chr
+  gn <- genome_info
+  if (!is.null(genome_info)) {
+    if (!is.null(drop_chr)) {
+      gn <- GenomeInfoDb::dropSeqlevels(gn, drop_chr)
+    }
+    if (!is.null(keep_chr)) {
+      gn <- GenomeInfoDb::keepSeqlevels(gn, keep_chr)
+    }
+  } else if (!is.null(drop_chr) || !is.null(keep_chr)) {
+    plc_error("❌ genome_info must be provided when using drop_chr or keep_chr.")
+  }
+
+  # Quantify CTSSs and calculate pooled counts
+  orig_ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bwplus,
+                                         minusStrand = bwminus,
+                                         design = design_matrix,
+                                         genome = gn)
+  orig_ctss <- CAGEfightR::calcPooled(orig_ctss, inputAssay = "counts")
+
+  return(orig_ctss)
 }
 
 #' Get tag clusters and extend from thick positions
@@ -532,50 +773,6 @@ plc_get_tcs_and_extend_fromthick <- function(ctss_rse, ext_dis = 200) {
   return(tc_grl)
 }
 
-#' Extend GRanges from thick regions and trim to fixed width
-#'
-#' Extends each region in a `GRanges` object based on its `thick` metadata,
-#' symmetrically by a specified distance, then trims out-of-bound ranges
-#' and keeps only those with the expected fixed width.
-#'
-#' @param tc_gr A `GRanges` object with a `thick` metadata column
-#' (of type `IRanges`).
-#' @param ext_dis An integer specifying how many bases to extend
-#' on each side of the thick region. Default is 200.
-#'
-#' @return A trimmed `GRanges` object with fixed-width ranges.
-#'
-#' @importFrom IRanges IRanges ranges
-#' @importFrom GenomicRanges trim width
-#' @importFrom assertthat assert_that
-#' @export
-plc_extend_fromthick <- function(tc_gr, ext_dis = 200) {
-
-  assertthat::assert_that(
-    inherits(tc_gr, "GRanges"),
-    msg = "❌ tc_object must be a GRanges object"
-  )
-
-  # Create new ranges around thick positions
-  new_ranges <- IRanges::IRanges(start = start(tc_gr$thick) - ext_dis,
-                                 end = end(tc_gr$thick) + ext_dis)
-
-  # Assign new ranges to object
-  new_object <- tc_gr
-  IRanges::ranges(new_object) <- new_ranges
-
-  # Trim new object
-  plc_message("Trimming out-of-bound ranges...")
-  new_object <- GenomicRanges::trim(new_object)
-
-  plc_message("Keep only prefered width...")
-  len_vec <- ext_dis * 2 + 1
-  new_object_widths <- GenomicRanges::width(new_object)
-  new_object <- new_object[new_object_widths == len_vec]
-
-  return(new_object)
-}
-
 #' Validate a TC object
 #'
 #' This function ensures that a given `GenomicRanges::GRanges` or
@@ -626,7 +823,7 @@ plc_validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
       plc_message(paste0("   → ctss_rse seqlevels:  ",
                          paste(sl_ctss, collapse = ", ")))
     } else {
-      plc_message("✅ seqlevels match between tc_object and ctss_rse")
+      plc_message("✅ Seqlevels match between tc_object and ctss_rse")
     }
 
   } else {
@@ -703,8 +900,6 @@ plc_validate_tc_object <- function(tc_object, ctss_rse, ext_dis = 200) {
 #'
 #' @import GenomicRanges
 #' @import IRanges
-#'
-#' @keywords internal
 tc_sliding_window_chr <- function(gr_per_chr,
                                   sld_by = 20,
                                   ext_dis = 200) {
@@ -776,6 +971,8 @@ tc_sliding_window_chr <- function(gr_per_chr,
 }
 
 #' Perform Parallel Sliding Window Expansion on GRanges Tag Clusters
+#' The function performs sliding window expansion
+#' parallelly for each chromosome in a sample using tc_sliding_window_chr().
 #'
 #' @import GenomicRanges
 #' @import IRanges
@@ -811,7 +1008,7 @@ plc_tc_sliding_window <- function(granges_obj,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 32 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  plc_set_parallel_plan(processing_method, num_workers)
+  set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
   # 4) Run in parallel using future_lapply, passing required globals
@@ -855,8 +1052,7 @@ prep_profile_dir <- function(output_dir = ".",
                                           "profiles_subtnorm",
                                           "predictions")) {
 
-  # Create the output dir and main dir
-  #new_path <- file.path(output_dir, "PRIMEloci_tmp", profile_dir_name)
+  # Create the output dir and main dir (previously at PRIMEloci_tmp)
   new_path <- file.path(output_dir, profile_dir_name)
 
   if (!file.exists(new_path)) {
@@ -875,127 +1071,6 @@ prep_profile_dir <- function(output_dir = ".",
   return(new_path)
 }
 
-#' Convert SummarizedExperiment to GRanges with Assay Data
-#'
-#' This function converts a `SummarizedExperiment` object to a `GRanges` object
-#' and adds a specified assay data column to the resulting `GRanges` object.
-#'
-#' @importFrom SummarizedExperiment rowRanges assay
-#' @importFrom GenomicRanges GRanges mcols
-#' @importFrom magrittr %>%
-cast_rse_to_granges <- function(rse,
-                                assay = "counts",
-                                coln_assay = 1,
-                                colname = "score") {
-  # Extract the row ranges from the SummarizedExperiment object
-  gr <- SummarizedExperiment::rowRanges(rse) %>% GenomicRanges::GRanges() # nolint: pipe_operator_linter
-
-  # Extract the assay data
-  assay_data <- SummarizedExperiment::assay(rse, assay)
-
-  # Assign the assay data to the specified column name in the GRanges object
-  GenomicRanges::mcols(gr)[[colname]] <- assay_data[, coln_assay]
-
-  return(gr)
-}
-
-#' Convert Strand Information to No Strand for GRanges Object
-#'
-#' @importFrom GenomicRanges strand
-convert_strand_to_nostrand_gr <- function(region_gr) {
-  GenomicRanges::strand(region_gr) <- "*"
-  region_gr
-}
-
-#' Remove Metadata and Duplicate Genomic Ranges
-#'
-#' This function takes a `GRanges` object, removes all metadata,
-#' and then eliminates duplicate genomic ranges based on sequence names,
-#' start and end positions, and strand information.
-#'
-#' @importFrom GenomicRanges GRanges seqnames ranges strand start end duplicated
-#' @importFrom IRanges IRanges
-remove_metadata_and_duplicates <- function(gr) {
-  # Remove metadata columns by creating a new GRanges object without metadata
-  gr_no_metadata <- GenomicRanges::GRanges(
-    seqnames = GenomicRanges::seqnames(gr),
-    ranges = IRanges::IRanges(start = GenomicRanges::start(gr),
-                              end = GenomicRanges::end(gr)),
-    strand = GenomicRanges::strand(gr)
-  )
-
-  # Identify duplicated ranges based on seqnames, ranges, and strand
-  duplicated_indices <- GenomicRanges::duplicated(gr_no_metadata)
-
-  # Subset the GRanges object to keep only unique ranges
-  unique_gr <- gr_no_metadata[!duplicated_indices]
-
-  unique_gr
-}
-
-# Check presence and format of rownames in a profile matrix
-check_valid_profile_rownames <- function(profile_matrix, chr_name) {
-  rn <- rownames(profile_matrix)
-
-  if (is.null(rn)) {
-    plc_error(sprintf("❌ No rownames found in heatmapData output for chromosome %s.", # nolint: line_length_linter.
-                      chr_name))
-  }
-
-  bad_rn <- rn[!grepl("^[^:]+:\\d+-\\d+;.$", rn)]
-
-  if (length(bad_rn) > 0) {
-    plc_error(sprintf("❌ %d rownames have invalid format in heatmapData output for chromosome %s. Example: %s", # nolint: line_length_linter.
-                      length(bad_rn), chr_name, bad_rn[1]))
-  }
-}
-
-# Extract chr, start, end, and strand from row names like "chr:start-end;strand"
-extract_rowname_components <- function(row_names) {
-  str_parts <- strsplit(row_names, "[:]|-|;")
-
-  # Convert to matrix (columns: chr, start, end, strand)
-  components <- do.call(rbind, str_parts)
-
-  if (ncol(components) != 4) {
-    plc_error("❌ Invalid row name format. Expected 'chr:start-end;strand'")
-  }
-
-  components
-}
-
-# Create GRanges object from row names like "chr:start-end;strand"
-create_granges_from_rownames <- function(row_names_str) {
-  components <- extract_rowname_components(row_names_str)
-
-  GenomicRanges::GRanges(
-    seqnames = components[, 1],
-    ranges = IRanges::IRanges(
-      start = as.integer(components[, 2]),
-      end   = as.integer(components[, 3])
-    ),
-    strand = components[, 4]
-  )
-}
-
-# Convert strand suffix in row names to "*"
-convert_rowname_to_nostrand <- function(strand_str) {
-  gsub("[+-]$", "*", strand_str)
-}
-
-# Modify row names to no-strand if both strands match
-modify_profile_rownames <- function(profiles, count_profiles) {
-  plus_names <- convert_rowname_to_nostrand(rownames(count_profiles$`*`$`+`))
-  minus_names <- convert_rowname_to_nostrand(rownames(count_profiles$`*`$`-`))
-
-  if (identical(sort(plus_names), sort(minus_names))) {
-    rownames(profiles) <- plus_names
-  } else {
-    plc_error("❌ Row names from + and - strands are not aligned after strand conversion from modify_profile_rownames().") # nolint: line_length_linter.
-  }
-
-  profiles
-}
 
 # Combine plus and minus strand profiles
 combine_plus_minus_profiles <- function(count_profiles, len_vec) {
@@ -1065,11 +1140,11 @@ strands_norm_subtraction_all <- function(windows,
 
 # Save profile or metadata to file
 # (csv, parquet, or npz with fallback and logging)
-plc_save_to_file <- function(data,
-                             suffix,
-                             file_type,
-                             chr_name,
-                             file_path) {
+save_profile_to_file <- function(data,
+                                 suffix,
+                                 file_type,
+                                 chr_name,
+                                 file_path) {
   full_file_path <- paste0(file_path, "_", chr_name, suffix)
 
   is_sparse <- inherits(data, "dgCMatrix") || inherits(data, "dgRMatrix")
@@ -1127,10 +1202,10 @@ plc_save_to_file <- function(data,
 #' @return A list of matrices by strand with rows in the same order as `regions`
 #'
 #' @export
-plc_batch_heatmapData <- function(regions,
-                                  data,
-                                  batch_size = 1000,
-                                  sparse = TRUE, ...) {
+batch_heatmapData <- function(regions,
+                              data,
+                              batch_size = 1000,
+                              sparse = TRUE, ...) {
   region_chunks <- split(regions, ceiling(seq_along(regions) / batch_size))
 
   profile_list <- lapply(seq_along(region_chunks), function(i) {
@@ -1205,10 +1280,10 @@ plc_profile_chr <- function(current_region_gr,
   current_region_gr <- remove_metadata_and_duplicates(current_region_gr)
 
   # Generate sparse matrix profile
-  count_profiles <- plc_batch_heatmapData(current_region_gr,
-                                          filtered_ctss_gr,
-                                          batch_size = 1000,
-                                          sparse = TRUE)
+  count_profiles <- batch_heatmapData(current_region_gr,
+                                      filtered_ctss_gr,
+                                      batch_size = 1000,
+                                      sparse = TRUE)
 
   check_valid_profile_rownames(count_profiles$`*`$`+`, chr_name)
   check_valid_profile_rownames(count_profiles$`*`$`-`, chr_name)
@@ -1244,43 +1319,43 @@ plc_profile_chr <- function(current_region_gr,
   # All saving
 
   # Save normalized profiles
-  plc_save_to_file(combined_subtnorm_profiles,
-                   "_profiles_subtnorm",
-                   file_type,
-                   chr_name,
-                   file.path(file_path,
-                             "profiles_subtnorm",
-                             output_file_prefix))
+  save_profile_to_file(combined_subtnorm_profiles,
+                       "_profiles_subtnorm",
+                       file_type,
+                       chr_name,
+                       file.path(file_path,
+                                 "profiles_subtnorm",
+                                 output_file_prefix))
   rm(combined_subtnorm_profiles)
 
   if (save_count_profiles) {
     if (output_sparse) {
-      plc_save_to_file(combined_count_profiles,
-                       "_profiles",
-                       file_type,
-                       chr_name,
-                       file.path(file_path,
-                                 "profiles",
-                                 output_file_prefix))
+      save_profile_to_file(combined_count_profiles,
+                           "_profiles",
+                           file_type,
+                           chr_name,
+                           file.path(file_path,
+                                     "profiles",
+                                     output_file_prefix))
     } else {
-      plc_save_to_file(as.matrix(combined_count_profiles),
-                       "_profiles",
-                       file_type,
-                       chr_name,
-                       file.path(file_path,
-                                 "profiles",
-                                 output_file_prefix))
+      save_profile_to_file(as.matrix(combined_count_profiles),
+                           "_profiles",
+                           file_type,
+                           chr_name,
+                           file.path(file_path,
+                                     "profiles",
+                                     output_file_prefix))
     }
   }
 
   # Save metadata as parquet (if npz) or user-specified format
-  plc_save_to_file(as.data.frame(combined_count_metadata),
-                   "_metadata",
-                   metadata_file_type,
-                   chr_name,
-                   file.path(file_path,
-                             "metadata",
-                             output_file_prefix))
+  save_profile_to_file(as.data.frame(combined_count_metadata),
+                       "_metadata",
+                       metadata_file_type,
+                       chr_name,
+                       file.path(file_path,
+                                 "metadata",
+                                 output_file_prefix))
 
   # Cleanup
   rm(combined_count_metadata)
@@ -1362,7 +1437,7 @@ plc_profile <- function(ctss_rse,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 32 * 1024^3)  # global variable memory 8GB limit # nolint: line_length_linter.
-  plc_set_parallel_plan(processing_method, num_workers)
+  set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
   # Sample Loop
@@ -1440,82 +1515,6 @@ plc_profile <- function(ctss_rse,
 
   invisible(TRUE)
 
-}
-
-#' Load a BED file and validate required columns
-#'
-#' This function reads a BED file into a `data.table` and verifies that
-#' it includes the necessary columns for downstream processing.
-#' By default, it checks for the presence of 'chrom', 'chromStart',
-#' 'chromEnd', 'strand', and 'score'. If `sum_count = TRUE`, it also
-#' requires the 'sum_count' column.
-#'
-#' @param input_bed Character. Path to the input BED file.
-#' @param sum_count Logical. Whether to require the 'sum_count' column
-#' (default: FALSE).
-#'
-#' @return A `data.table` containing the BED file data with validated columns.
-#'
-#' @importFrom assertthat assert_that
-#' @export
-plc_load_bed_file <- function(input_bed, sum_count = FALSE) {
-  bed_file <- read.table(input_bed,
-                         header = TRUE,
-                         sep = "\t",
-                         stringsAsFactors = FALSE)
-  if (sum_count) {
-    required_cols <- c("chrom", "chromStart", "chromEnd", "strand",
-                       "score", "sum_count")
-  } else {
-    required_cols <- c("chrom", "chromStart", "chromEnd", "strand", "score")
-  }
-  assertthat::assert_that(all(required_cols %in% colnames(bed_file)),
-                          msg = "The BED file must contain 'chrom', 'chromStart', 'chromEnd', 'strand', 'score', (and sum_count if it sets to TRUE) columns. ") # nolint: line_length_linter.
-  bed_file
-}
-
-#' Create a GRanges object from a BED data.table
-#'
-#' This function converts a `data.table`
-#' containing BED file data into a `GRanges` object.
-#' The required columns are extracted and
-#' used to define the `GRanges` object, and the remaining
-#' columns are added as metadata.
-#' If `thickStart` and `thickEnd` are present,
-#' they are converted to 1-based `IRanges` and added as metadata.
-#'
-#' @param bed_file A `data.table` containing the BED file data.
-#'
-#' @return A `GRanges` object.
-#'
-#' @importFrom GenomicRanges GRanges
-#' @importFrom IRanges IRanges
-#' @importFrom S4Vectors mcols
-create_granges_from_bed <- function(bed_file) {
-  gr <- GenomicRanges::GRanges(
-    seqnames = bed_file$chrom,
-    ranges = IRanges::IRanges(start = bed_file$chromStart + 1,
-                               end = bed_file$chromEnd),
-    strand = bed_file$strand
-  )
-
-  # Prepare metadata
-  meta_cols <- setdiff(names(bed_file), c("chrom",
-                                          "chromStart",
-                                          "chromEnd",
-                                          "strand",
-                                          "thickStart",
-                                          "thickEnd"))
-  meta <- bed_file[, meta_cols]
-
-  # Add thick as IRanges if present
-  if (all(c("thickStart", "thickEnd") %in% names(bed_file))) {
-    meta$thick <- IRanges::IRanges(start = bed_file$thickStart + 1,
-                                   end = bed_file$thickEnd)
-  }
-
-  S4Vectors::mcols(gr) <- meta
-  gr
 }
 
 #' Selectively merge overlapping cores based on score difference.
@@ -1738,8 +1737,8 @@ plc_coreovl_with_d <- function(bed_file,
   }
 
   # Load and prepare data
-  bed <- plc_load_bed_file(bed_file)
-  gr <- create_granges_from_bed(bed)
+  bed <- plc_load_bed_file_wt_header(bed_file)
+  gr <- plc_create_granges_from_bed(bed)
 
   # Filter by score threshold
   filtered_gr <- gr[gr$score >= score_threshold]
@@ -1760,7 +1759,7 @@ plc_coreovl_with_d <- function(bed_file,
   }
   num_workers <- min(num_cores, num_jobs)
   options(future.globals.maxSize = 32 * 1024^3)  # global variable memory 4GB limit # nolint: line_length_linter.
-  plc_set_parallel_plan(processing_method, num_workers)
+  set_parallel_plan(processing_method, num_workers)
   on.exit(future::plan(future::sequential), add = TRUE)
 
   # Process each chromosome in parallel
@@ -1857,31 +1856,6 @@ plc_coreovl_with_d <- function(bed_file,
 
 }
 
-#' Find .bed files matching a partial name in a directory and log if none found
-#'
-#' @param dir Path to the directory to search.
-#' @param partial_name Partial file name to match (not case-sensitive).
-#' If provided, logs will be written.
-#'
-#' @return A character vector of matching .bed file paths (may be empty).
-#' @export
-plc_find_bed_files_by_partial_name <- function(dir,
-                                               partial_name) {
-  pattern <- paste0("(?i)", partial_name, ".*\\.bed$")
-  files <- list.files(
-    path = dir,
-    pattern = pattern,
-    full.names = TRUE
-  )
-
-  if (length(files) == 0) {
-    plc_warn(sprintf("⚠️ No .bed files found in '%s' matching '%s'",
-                     dir, partial_name))
-  }
-
-  files
-}
-
 #' Disambiguate duplicate sample names from a named result list
 #'
 #' This internal function extracts sample names from a list of result objects,
@@ -1938,8 +1912,8 @@ plc_focal_prediction_to_rse <- function(focal_prediction_dir,
                          "\\1",
                          basename_raw)
     # Load and prepare data
-    bed <- plc_load_bed_file(bed_file, sum_count = TRUE)
-    gr <- create_granges_from_bed(bed)
+    bed <- plc_load_bed_file_wt_header(bed_file, sum_count = TRUE)
+    gr <- plc_create_granges_from_bed(bed)
 
     sample_name <- if (identical(pattern_match, basename_raw)) {
       basename_raw
@@ -2013,46 +1987,4 @@ plc_focal_prediction_to_rse <- function(focal_prediction_dir,
   )
 
   final_rse
-}
-
-#' Convert a BED file to a GRanges object and save as RDS
-#'
-#' This function reads a BED file, assigns column names,
-#' converts the data to a `GRanges` object
-#' using `create_granges_from_bed()`,
-#' and saves the result as an `.rds` file.
-#'
-#' @param bed_file A character string specifying the path to the input BED file.
-#' @param colnames A character vector of column names to assign to the BED file.
-#'   Defaults to standard BED fields: `chrom`, `chromStart`, `chromEnd`,
-#'   `name`, `score`, `strand`, `thickStart`, `thickEnd`.
-#'
-#' @return No return value. A `.rds` file
-#' containing the GRanges object is saved to disk.
-#'
-#' @importFrom tools file_path_sans_ext
-#' @importFrom utils read.delim
-#' @export
-plc_postprocessed_bed_to_rds <- function(bed_file,
-                                         colnames = c("chrom",
-                                                      "chromStart",
-                                                      "chromEnd",
-                                                      "name",
-                                                      "score",
-                                                      "strand",
-                                                      "thickStart",
-                                                      "thickEnd")) {
-  # Read the BED file
-  bed_data <- utils::read.delim(bed_file,
-                                header = FALSE,
-                                stringsAsFactors = FALSE)
-  colnames(bed_data) <- colnames
-
-  # Convert to GRanges using PRIME internal function
-  gr <- create_granges_from_bed(bed_data)
-
-  # Save as RDS file
-  saveRDS(gr,
-          file = paste0(tools::file_path_sans_ext(basename(bed_file)),
-                        "_gr.rds"))
 }

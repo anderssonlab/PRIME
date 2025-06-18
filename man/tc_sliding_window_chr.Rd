@@ -38,4 +38,3 @@ gr_chr <- GenomicRanges::GRanges(
 windows <- tc_sliding_window_chr(gr_chr, sld_by = 20, ext_dis = 200)
 
 }
-\keyword{internal}
