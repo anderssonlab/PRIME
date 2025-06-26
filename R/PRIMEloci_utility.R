@@ -712,6 +712,7 @@ plc_get_ctss_from_bw <- function(dir_cage_bw,
 #'
 #' @import SummarizedExperiment
 #' @import GenomicRanges
+#' @importFrom GenomicRanges seqnames
 #' @import IRanges
 #' @import CAGEfightR
 #' @import assertthat
