@@ -21,7 +21,8 @@ subsampleTarget <- function(object, inputAssay = "counts", target) {
   
   a <- assay(object,inputAssay)
   n <- ncol(a)
-  nz <- lapply(1:n, function(i) DAPAR::nonzero(a[,i,drop=FALSE])[,1])
+  # nz <- lapply(1:n, function(i) DAPAR::nonzero(a[,i,drop=FALSE])[,1])
+  nz <- lapply(1:n, function(i) nonzero(a[,i,drop=FALSE])[,1])
   s <- Matrix::colSums(a)
   d <- unlist(lapply(1:n, function(i) {
     if (s[i]<=target)
@@ -50,8 +51,6 @@ subsampleTarget <- function(object, inputAssay = "counts", target) {
 #' @return A \code{SummarizedExperiment} object with the subsampled counts.
 #' 
 #' @export
-#' 
-###' @importFrom DAPAR nonzero
 subsampleProportion <- function(object, inputAssay = "counts", proportion) {
   
   assert_that(is(object, "SummarizedExperiment"),

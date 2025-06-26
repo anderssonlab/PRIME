@@ -13,15 +13,18 @@ The R package `PRIME` depends on a mix of CRAN and Bioconductor packages, and a 
 ```r
 # 1. Install required CRAN packages
 install.packages(c(
+	"R.utils",
   "future",
   "future.apply",
+  "future.callr",
   "foreach",
   "argparse",
   "doParallel",
   "reticulate",
   "arrow",
   "Matrix",
-  "caTools"
+  "caTools",
+  "zoo"
 ))
 
 # 3. Install BiocManager (if not already installed)
@@ -51,6 +54,11 @@ devtools::install_github("swang87/bcp")
 
 # *** specify << lib = "/path/to/R_packakges/" >> in install.packages() and BiocManager::install() if necessary
 # *** using remotes package instead of devtools if not successfully install devtools
+
+# 7. Install PRIME
+## install from .tar.gz (model will be set up at PRIME inst directory)
+## otherwise make sure that the model in the path was exist
+install.packages("/PATH/TO/PRIME/PRIME_0.1.1.6.tar.gz")
 ```
 
 ---
@@ -85,7 +93,7 @@ virtualenv_create(envname = env_name)
 use_virtualenv(env_name, required = TRUE)
 
 # Install Python packages
-required_pkgs <- readLines("/PATH/to/PRIME/inst/envfile/environment.txt")
+required_pkgs <- readLines("/PATH/TO/PRIME/inst/envfile/environment.txt")
 reticulate::py_install(packages = required_pkgs, envname = env_name, method = "virtualenv")
 
 # Confirm active Python path
@@ -95,6 +103,7 @@ py_config()$python
 #### Example usage:
 
 ```r
+run_PRIMEloci_focal_example(python_path = py_config()$python)
 run_PRIMEloci_example(python_path = py_config()$python)
 ```
 
@@ -123,8 +132,8 @@ conda deactivate
 #### Example in R:
 
 ```r
+run_PRIMEloci_focal_example(python_path = "~/.conda/envs/prime-env/bin/python3")
 run_PRIMEloci_example(python_path = "~/.conda/envs/prime-env/bin/python3")
-run_PRIMEloci_facet_example(python_path = "~/.conda/envs/prime-env/bin/python3")
 ```
 
 ---
@@ -148,8 +157,8 @@ which python3
 #### Example in R:
 
 ```r
+run_PRIMEloci_focal_example(python_path = "~/prime_env/bin/python3")
 run_PRIMEloci_example(python_path = "~/prime_env/bin/python3")
-run_PRIMEloci_facet_example(python_path = "~/prime_env/bin/python3")
 ```
 
 ---
@@ -167,6 +176,7 @@ which python3
 ```
 
 ```r
+run_PRIMEloci_focal_example(python_path = "/path/to/your/python")
 run_PRIMEloci_example(python_path = "/path/to/your/python")
 ```
 
