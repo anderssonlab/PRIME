@@ -2,6 +2,32 @@
 
 This guide explains how to set up the required **R** and **Python** environments to use the `PRIME` R package. The Python environment is also compatible with `PRIMEloci()` if used.
 
+FOR MacOS users: **`libomp` is required** for LightGBM to enable OpenMP (multithreading).
+
+#### 
+
+```bash
+# Check if libomp exists
+
+## Apple Silicon Mac
+ls /opt/homebrew/opt/libomp/lib/libomp.dylib
+## Intel Macs
+ls /usr/local/opt/libomp/lib/libomp.dylib
+```
+
+```bash
+# If libomp does not exist
+
+brew install libomp
+
+## If Apple Silicon Mac
+echo 'export DYLD_LIBRARY_PATH="/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH"' >> ~/.zshrc
+## or if Intel Macs
+echo 'export DYLD_LIBRARY_PATH="/usr/local/opt/libomp/lib:$DYLD_LIBRARY_PATH"' >> ~/.zshrc
+
+source ~/.zshrc
+```
+
 ---
 
 ## 📦 R Installation for PRIME

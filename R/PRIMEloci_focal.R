@@ -222,7 +222,7 @@ PRIMEloci_focal <- function(
     "--profile_main_dir", profile_main_dir,
     "--combined_outdir", outdir,
     "--model_path", model_path,
-    "--log_file", log_target,
+    "--log_file", file.path(profile_main_dir, "PRIMEloci_prediction.log"),
     "--name_prefix", name_prefix
   )
 
@@ -251,6 +251,7 @@ PRIMEloci_focal <- function(
       msg
     }
   )
+
   if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
     plc_error("❌ Prediction script failed. Check PRIMEloci.log for details.")
   } else {
