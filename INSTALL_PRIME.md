@@ -2,16 +2,19 @@
 
 This guide explains how to set up the required **R** and **Python** environments to use the `PRIME` R package. The Python environment is also compatible with `PRIMEloci()` if used.
 
-FOR MacOS users: **`libomp` is required** for LightGBM to enable OpenMP (multithreading).
+```bash
+# In terminal
+git clone ⁦https://github.com/anderssonlab/PRIME.git
+```
 
-#### 
+FOR MacOS users: **`libomp` is required** for LightGBM to enable OpenMP (multithreading).
 
 ```bash
 # Check if libomp exists
 
-## Apple Silicon Mac
+## Apple Silicon (M1/M2/M3/...)
 ls /opt/homebrew/opt/libomp/lib/libomp.dylib
-## Intel Macs
+## Intel macOS (x86_64)
 ls /usr/local/opt/libomp/lib/libomp.dylib
 ```
 
@@ -20,9 +23,9 @@ ls /usr/local/opt/libomp/lib/libomp.dylib
 
 brew install libomp
 
-## If Apple Silicon Mac
+## If Apple Silicon (M1/M2/M3/...)
 echo 'export DYLD_LIBRARY_PATH="/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH"' >> ~/.zshrc
-## or if Intel Macs
+## or if Intel macOS (x86_64)
 echo 'export DYLD_LIBRARY_PATH="/usr/local/opt/libomp/lib:$DYLD_LIBRARY_PATH"' >> ~/.zshrc
 
 source ~/.zshrc
@@ -76,14 +79,21 @@ if (!requireNamespace("devtools", quietly = TRUE))
   install.packages("devtools")
 
 # 6. Install bcp from GitHub (custom version)
+
 devtools::install_github("swang87/bcp")
 
-# *** specify << lib = "/path/to/R_packakges/" >> in install.packages() and BiocManager::install() if necessary
-# *** using remotes package instead of devtools if not successfully install devtools
+# If installing bcp on macOS fails due to missing gcc,
+# check with << gfortran --version >>. 
+# If not found, install Xcode command line tools and Homebrew.
+# Then run << brew install gcc >>, check << gfortran --version >>, 
+# and reinstall bcp.
+
+# Using remotes package with << remote::install_github("swang87/bcp") >>
+# instead of devtools if not successfully install devtools
 
 # 7. Install PRIME
-## install from .tar.gz (model will be set up at PRIME inst directory)
-## otherwise make sure that the model in the path was exist
+## Install from .tar.gz (model will be set up at PRIME inst directory),
+## otherwise, make sure that the model in the path was exist.
 install.packages("/PATH/TO/PRIME/PRIME_0.1.1.6.tar.gz")
 ```
 
@@ -95,9 +105,11 @@ You can prepare the Python environment in **four ways**. The recommended default
 
 ---
 
-### 🌐 Option 1 (Default): Virtualenv via `reticulate` in R
+### 🌐 Option 1 : Virtualenv via `reticulate` in R
 
 This is the **default and recommended** method for setting up the Python environment using only R. It ensures full compatibility with `PRIME` and `PRIMEloci()` 
+
+Reticulate virtualenv (in R) is easiest for R-focused workflows without needing external software, **but requires running `use_virtualenv()` in each session** and is not ideal for CLI use.
 
 #### Setup instructions in R:
 
