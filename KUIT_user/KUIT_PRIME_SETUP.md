@@ -31,7 +31,7 @@ R
 # install necessary packages 
 # see /PRIME/PREP_INSTALL_PRIME.md
 
-install.packages("/path/PRIME/PRIME_0.1.1.5.tar.gz", lib="/path/to/R_packakges/")
+install.packages("/path/PRIME/PRIME_0.1.1.6.tar.gz", lib="/path/to/R_packakges/")
 q()
 ```
 
