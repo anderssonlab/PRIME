@@ -7,8 +7,7 @@ This guide explains how to set up the required **R** and **Python** environments
 git clone ⁦https://github.com/anderssonlab/PRIME.git
 ```
 
-FOR MacOS users: **`libomp` is required** for LightGBM to enable OpenMP (multithreading).
-
+For macOS users: libomp is required for LightGBM to enable OpenMP (multithreading). Without libomp, LightGBM may fail to use multithreading properly and can produce silent errors or crashes during training without clear messages. (To follow this setup, Xcode Command Line Tools and Homebrew are required.)
 ```bash
 # Check if libomp exists
 
@@ -22,14 +21,8 @@ ls /usr/local/opt/libomp/lib/libomp.dylib
 # If libomp does not exist
 
 brew install libomp
-
-## If Apple Silicon (M1/M2/M3/...)
-echo 'export DYLD_LIBRARY_PATH="/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH"' >> ~/.zshrc
-## or if Intel macOS (x86_64)
-echo 'export DYLD_LIBRARY_PATH="/usr/local/opt/libomp/lib:$DYLD_LIBRARY_PATH"' >> ~/.zshrc
-
-source ~/.zshrc
 ```
+On macOS, R (via Homebrew libomp) and Python environments (via Conda or Virtualenv libomp) can conflict when used together through reticulate, potentially causing crashes with errors. If this occurs, managing environment variables (DYLD_LIBRARY_PATH, KMP_DUPLICATE_LIB_OK, OMP_NUM_THREADS) or aligning libomp paths may be necessary to avoid conflicts while maintaining multithreaded performance.
 
 ---
 
@@ -37,12 +30,31 @@ source ~/.zshrc
 
 The R package `PRIME` depends on a mix of CRAN and Bioconductor packages, and a custom GitHub version of `bcp`.
 
+Note that we recommend using R 4.4 or higher. While R versions >4.2 can also be used, they may require additional setup steps. For example, on macOS, you may need to run:
+```bash
+# core build tools for R packages
+brew install gcc pkg-config
+
+# libraries for graphics, fonts, and rendering
+brew install freetype harfbuzz fribidi libpng cairo
+
+# libraries for image support
+brew install jpeg libpng libtiff
+
+# version control and Git support
+brew install libgit2
+```
+when using R 4.2 to install system libraries required for building certain R packages from source.
+
+Optional (Recommended for macOS users on R 4.2.x):
+To avoid X11-related warnings and enable x11() graphics, install XQuartz. This is not required if you only use RStudio or file-based plots, but it ensures maximum compatibility with all packages and plotting functions in R.
+
 ### ✅ Full R Setup
 
 ```r
 # 1. Install required CRAN packages
 install.packages(c(
-	"R.utils",
+  "R.utils",
   "future",
   "future.apply",
   "future.callr",
@@ -51,34 +63,38 @@ install.packages(c(
   "doParallel",
   "reticulate",
   "arrow",
-  "Matrix",
+  "igraph",
   "caTools",
   "zoo"
 ))
 
-# 3. Install BiocManager (if not already installed)
+# 2. Install BiocManager (if not already installed)
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
-# 4. Install required Bioconductor packages
-BiocManager::install(c(
-  "CAGEfightR",
-  "SummarizedExperiment",
-  "S4Vectors",
-  "GenomicRanges",
-  "BiocParallel",
-  "IRanges",
-  "GenomeInfoDb",
-  "BSgenome",
-  "rtracklayer",
-  "sparseMatrixStats"
-))
+# 3. Install required Bioconductor packages
+## General principle: Installing `CAGEfightR` with:
 
-# 5. Install devtools if needed
+BiocManager::install("CAGEfightR")
+
+## will automatically pull in dependencies.
+## You do NOT need to install these manually unless an error occurs.**
+
+## If errors occur, install in layers:
+## core:
+BiocManager::install("S4Vectors", "IRanges", "GenomeInfoDb")
+## data structures:
+BiocManager::install("SummarizedExperiment", "GenomicRanges", "sparseMatrixStats")
+## utilities
+BiocManager::install("BiocParallel", "BSgenome", "rtracklayer")
+## CAGEfightR
+BiocManager::install("CAGEfightR")
+
+# 4. Install devtools if needed
 if (!requireNamespace("devtools", quietly = TRUE))
   install.packages("devtools")
 
-# 6. Install bcp from GitHub (custom version)
+# 5. Install bcp from GitHub (custom version)
 
 devtools::install_github("swang87/bcp")
 
@@ -91,10 +107,13 @@ devtools::install_github("swang87/bcp")
 # Using remotes package with << remote::install_github("swang87/bcp") >>
 # instead of devtools if not successfully install devtools
 
-# 7. Install PRIME
+# 6. Install PRIME
 ## Install from .tar.gz (model will be set up at PRIME inst directory),
-## otherwise, make sure that the model in the path was exist.
+
 install.packages("/PATH/TO/PRIME/PRIME_0.1.1.6.tar.gz")
+
+## otherwise, make sure that the model in the path was exist.
+## The published PRIMEloci model can be found at XXXXXXXXXXXXXXXXXXXXX.
 ```
 
 ---
@@ -141,6 +160,8 @@ py_config()$python
 #### Example usage:
 
 ```r
+library(PRIME)
+library(GenomicRanges)
 run_PRIMEloci_focal_example(python_path = py_config()$python)
 run_PRIMEloci_example(python_path = py_config()$python)
 ```
@@ -170,6 +191,8 @@ conda deactivate
 #### Example in R:
 
 ```r
+library(PRIME)
+library(GenomicRanges)
 run_PRIMEloci_focal_example(python_path = "~/.conda/envs/prime-env/bin/python3")
 run_PRIMEloci_example(python_path = "~/.conda/envs/prime-env/bin/python3")
 ```
@@ -195,6 +218,8 @@ which python3
 #### Example in R:
 
 ```r
+library(PRIME)
+library(GenomicRanges)
 run_PRIMEloci_focal_example(python_path = "~/prime_env/bin/python3")
 run_PRIMEloci_example(python_path = "~/prime_env/bin/python3")
 ```
@@ -214,6 +239,8 @@ which python3
 ```
 
 ```r
+library(PRIME)
+library(GenomicRanges)
 run_PRIMEloci_focal_example(python_path = "/path/to/your/python")
 run_PRIMEloci_example(python_path = "/path/to/your/python")
 ```
