@@ -1,6 +1,6 @@
 # 🧪 PRIME Installation Preparation Guide
 
-This guide explains how to set up the required **R** and **Python** environments to use the `PRIME` R package. The Python environment is also compatible with `PRIMEloci()` if used.
+This guide explains how to set up the required **R** and **Python** environments to use the `PRIME` R package. The Python environment is compatible with `PRIMEloci()` if used.
 
 ```bash
 # In terminal
