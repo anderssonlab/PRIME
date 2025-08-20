@@ -81,8 +81,9 @@ ls $HOME/.conda/envs/prime-env/lib/libcurl*
 ```
 
 ```bash
-export LD_LIBRARY_PATH=/home/KU_ID/.conda/envs/prime-env/lib:$LD_LIBRARY_PATH
-export LD_PRELOAD=/home/KU_ID/.conda/envs/prime-env/lib/libcurl.so
+# replace << KU_ID >>
+export LD_LIBRARY_PATH=/home/<< KU_ID >>/.conda/envs/prime-env/lib:$LD_LIBRARY_PATH
+export LD_PRELOAD=/home/<< KU_ID >>/.conda/envs/prime-env/lib/libcurl.so
 R
 ```
 
