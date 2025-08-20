@@ -101,7 +101,7 @@ library(GenomicRanges)
 library(PRIME)
 
 # Run examples
-plc_facet <- run_PRIMEloci_facet_example("~/.conda/envs/prime-env/bin/python3")
+plc_facet <- run_PRIMEloci_focal_example("~/.conda/envs/prime-env/bin/python3")
 plc <- run_PRIMEloci_example("~/.conda/envs/prime-env/bin/python3")
 ```
 
