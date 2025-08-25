@@ -251,7 +251,11 @@ def combine_bed_files(input_dir, output_dir):
     print(f"🔍 Combining BED files from: {input_dir}")
     os.makedirs(output_dir, exist_ok=True)
 
-    bed_files = glob.glob(os.path.join(input_dir, "*.bed"))
+    bed_files = [f for f in glob.glob(os.path.join(input_dir, "*.bed"))
+                 if not f.endswith("_combined.bed")]
+
+    #bed_files = glob.glob(os.path.join(input_dir, "*.bed"))
+
     if not bed_files:
         print("⚠️ No .bed files found to combine.")
         return
@@ -281,19 +285,13 @@ def combine_bed_files(input_dir, output_dir):
 
         for i, file in enumerate(sorted(files)):
             logging.info(f"   Reading {os.path.basename(file)}")
-            df = pd.read_csv(file, sep="\t", header=0)
+            df = pd.read_csv(file, sep="\t", header=0, comment="#")
             if combined_df is None:
                 combined_df = df
             else:
-                if df.columns.equals(combined_df.columns):
-                    combined_df = pd.concat([combined_df, df.iloc[1:]],
-                                            ignore_index=True)
-                else:
-                    print(
-                        f"⚠️ Column mismatch in {file}, including full file."
-                    )
-                    combined_df = pd.concat([combined_df, df],
-                                            ignore_index=True)
+                combined_df = pd.concat([combined_df, df],
+                                        ignore_index=True)
 
         combined_df.to_csv(combined_path, sep="\t", header=True, index=False)
+
         print(f"✅ Combined files into {combined_path}")
