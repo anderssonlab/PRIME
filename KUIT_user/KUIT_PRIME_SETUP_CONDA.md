@@ -1,4 +1,4 @@
-# PRIME Environment Setup Guide (with Expected Outputs)
+# PRIME Environment Setup Guide
 
 This guide sets up PRIME in a clean, reproducible `conda` environment.
 
