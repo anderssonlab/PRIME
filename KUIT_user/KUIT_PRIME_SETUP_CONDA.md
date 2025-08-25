@@ -98,7 +98,7 @@ PY
 
 ## 7. Install prebuilt CRAN R packages
 ```bash
-conda install -y -c conda-forge   r-r.utils r-future r-future.apply r-future.callr r-foreach r-argparse   r-doparallel r-reticulate r-arrow r-igraph r-catools r-zoo   r-biocmanager r-remotes r-devtools
+conda install -y -c conda-forge r-r.utils r-future r-future.apply r-future.callr r-foreach r-argparse r-doparallel r-reticulate r-arrow r-igraph r-catools r-zoo r-biocmanager r-remotes r-devtools
 ```
 
 **Expect:** R packages installed without compilation.
@@ -107,7 +107,7 @@ conda install -y -c conda-forge   r-r.utils r-future r-future.apply r-future.cal
 
 ## 8. Install Bioconductor packages (Conda binaries)
 ```bash
-conda install -y -c conda-forge -c bioconda   bioconductor-cagefightr   bioconductor-rtracklayer   bioconductor-genomicranges   bioconductor-iranges   bioconductor-genomeinfodb   bioconductor-summarizedexperiment   bioconductor-biocparallel   bioconductor-bsgenome
+conda install -y -c conda-forge -c bioconda bioconductor-cagefightr bioconductor-rtracklayer bioconductor-genomicranges bioconductor-iranges bioconductor-genomeinfodb bioconductor-summarizedexperiment bioconductor-biocparallel bioconductor-bsgenome
 ```
 
 Quick check:
