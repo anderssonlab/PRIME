@@ -280,4 +280,5 @@ PRIMEloci_focal <- function(
   plc_message("\n")
 
   return(final_rse)
+
 }

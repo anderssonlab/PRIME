@@ -537,6 +537,7 @@ plc_load_bed_file_wt_header <- function(input_bed, sum_count = FALSE) {
                          header = TRUE,
                          sep = "\t",
                          stringsAsFactors = FALSE)
+
   if (sum_count) {
     required_cols <- c("chrom", "chromStart", "chromEnd", "strand",
                        "score", "sum_count")
@@ -563,7 +564,7 @@ plc_create_granges_from_bed <- function(bed_file) {
   gr <- GenomicRanges::GRanges(
     seqnames = bed_file$chrom,
     ranges = IRanges::IRanges(start = bed_file$chromStart + 1,
-                               end = bed_file$chromEnd),
+                              end = bed_file$chromEnd),
     strand = bed_file$strand
   )
 
