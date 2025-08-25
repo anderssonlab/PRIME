@@ -153,12 +153,12 @@ library(bcp, lib.loc=target_lib); cat("bcp loaded from: ", system.file(package="
 ## 11. Install PRIME (local tarball)
 ```bash
 ## Change path to PRIME directiry before running this command
-R -q -e 'Sys.setenv(RETICULATE_PYTHON="~/.conda/envs/prime-conda-env/bin/python3", PYTHONNOUSERSITE="1"); install.packages("/PATH/TO/PRIME/PRIME_0.1.1.6.tar.gz", repos=NULL, type="source", lib=.libPaths()[1]); library(PRIME); packageVersion("PRIME"); library(reticulate); print(py_config()); cat("\nPRIME loaded OK ✅\n")'
+R -q -e 'Sys.setenv(RETICULATE_PYTHON="~/.conda/envs/prime-conda-env/bin/python3", PYTHONNOUSERSITE="1"); install.packages("/PATH/TO/PRIME/PRIME_0.1.1.7.tar.gz", repos=NULL, type="source", lib=.libPaths()[1]); library(PRIME); packageVersion("PRIME"); library(reticulate); print(py_config()); cat("\nPRIME loaded OK ✅\n")'
 ```
 
 **Expect:**
 - PRIME installs cleanly.
-- `packageVersion("PRIME")` prints `0.1.1.6`.
+- `packageVersion("PRIME")` prints `0.1.1.7`.
 - `py_config()` shows Python from `prime-conda-env`.
 - Final message: `PRIME loaded OK ✅`.
 
