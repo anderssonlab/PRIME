@@ -76,7 +76,7 @@ tcs <- CAGEfightR::clusterUnidirectionally(orig_ctss)
 #DL functions
 dl <- PRIME::divergentLoci(tcs, orig_ctss)
 
-ctss_complexity <- PRIME::calcCTSSComplexity(orig_ctss)
+ctss_complexity <- PRIME::calcCTSSComplexity(orig_ctss, minCTSSsupport = 1)
 
 CAGEfightR::calcTotalTags(orig_ctss, inputAssay = "counts")
 ```
