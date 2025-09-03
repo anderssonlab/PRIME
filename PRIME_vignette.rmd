@@ -32,7 +32,7 @@ library(CAGEfightR)
 2.  Design matrix 
 ```{r}
 # Design matrix
-dir_design_matrix <- system.file("extdata", "design_matrix_k562.tsv",
+dir_design_matrix <- system.file("extdata", "design_matrix_k562_10pct.tsv",
                                  package = "PRIME")
 design_matrix <- read.table(dir_design_matrix, header = TRUE, sep = "\t")
 rownames(design_matrix) <- design_matrix$Name
@@ -63,7 +63,7 @@ orig_ctss <- CAGEfightR::calcTPM(orig_ctss,
                                  outputColumn = "totalTags")
 
 orig_ctss
-head(assay(orig_ctss,"counts"))
+head(assay(orig_ctss, "counts"))
 colData(orig_ctss)
 rowData(orig_ctss)
 orig_ctss$totalTags
