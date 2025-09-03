@@ -1,9 +1,9 @@
 Package: PRIME
 Title: An R package for regulatory element analysis using transcription initiation data
-Version: 0.1.1.7
+Version: 0.2.1
 Author: 
-    c(person("Natsuda", "Navamajiti", email = "", role = "aut"),
-    person("Hjorleifur", "Einarsson", email = "", role = "aut"),
+    c(person("Hjorleifur", "Einarsson", email = "", role = "aut"),
+    person("Natsuda", "Navamajiti", email = "", role = "aut")
     person("Robert", "Krautz", email = "", role = "aut"),
     person("Nicolas", "Alcaraz", email = "", role = "aut"),
     person("Robin", "Andersson", email = "robin@bio.ku.dk", role = c("aut","cre")))
@@ -14,34 +14,20 @@ License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.2
 Imports:
+    BSgenome,
     CAGEfightR,
-    SummarizedExperiment,
-    Matrix,
-    S4Vectors,
     GenomicRanges,
+    IRanges,
+    S4Vectors,
+    SummarizedExperiment,
+    data.table,
+    Matrix,
+    BiocParallel,
+    GenomeInfoDb,
+    Hmisc,
     assertthat,
-    methods,
-    bcp,
     caTools,
     igraph,
-    zoo,
-    Hmisc,
-    BiocParallel,
-    IRanges,
-    GenomeInfoDb,
-    foreach,
-    magrittr,
-    BSgenome,
-    argparse,
-    data.table,
-    doParallel,
-    reticulate,
-    rtracklayer,
-    yaml,
-    arrow,
-    future,
-    future.apply,
-    future.callr,
-    R.utils,
-    tools,
-    sparseMatrixStats
+    methods,
+    stats,
+    zoo

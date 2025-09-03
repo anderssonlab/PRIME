@@ -1,0 +1,82 @@
+---
+title: "PRIME Vignette"
+author: ""
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+0. Installation via devtools
+```{r}
+library("devtools")
+devtools::install_github("anderssonlab/PRIME")
+```
+
+1.  Libraries:
+```{r}
+library(PRIME)
+library(rtracklayer)
+library(CAGEfightR)
+```
+      
+2.  Design matrix 
+```{r}
+# Design matrix
+dir_design_matrix <- system.file("extdata", "design_matrix_k562.tsv",
+                                 package = "PRIME")
+design_matrix <- read.table(dir_design_matrix, header = TRUE, sep = "\t")
+rownames(design_matrix) <- design_matrix$Name
+```
+
+3. BigWig files
+```{r}
+dir_bw <- system.file("extdata", "CAGE_bw", package = "PRIME")
+
+bw_plus  <- file.path(dir_bw, design_matrix$BigWigPlus)
+bw_minus <- file.path(dir_bw, design_matrix$BigWigMinus)
+
+bw_plus <- rtracklayer::BigWigFileList(bw_plus)
+bw_minus <- rtracklayer::BigWigFileList(bw_minus)
+names(bw_plus) <- names(bw_minus) <- design_matrix$Name
+```
+
+4.  Build CTSS (single base pair CAGE-inferred transcription start site (TSS)) object
+```{r}
+orig_ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                                       minusStrand = bw_minus,
+                                       design = design_matrix)
+orig_ctss <- CAGEfightR::calcPooled(orig_ctss, inputAssay = "counts")
+orig_ctss <- CAGEfightR::calcTPM(orig_ctss,
+                                 inputAssay = "counts",
+                                 outputAssay = "TPM",
+                                 totalTags = NULL,
+                                 outputColumn = "totalTags")
+
+orig_ctss
+head(assay(orig_ctss,"counts"))
+colData(orig_ctss)
+rowData(orig_ctss)
+orig_ctss$totalTags
+```
+
+
+```{r}
+tcs <- CAGEfightR::clusterUnidirectionally(orig_ctss)
+
+#DL functions
+dl <- PRIME::divergentLoci(tcs, orig_ctss)
+
+ctss_complexity <- PRIME::calcCTSSComplexity(orig_ctss, minCTSSsupport = 1)
+
+CAGEfightR::calcTotalTags(orig_ctss, inputAssay = "counts")
+```
