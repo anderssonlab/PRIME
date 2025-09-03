@@ -104,7 +104,7 @@ devtools::install_github("swang87/bcp")
 # Then run << brew install gcc >>, check << gfortran --version >>, 
 # and reinstall bcp.
 
-# Using remotes package with << remote::install_github("swang87/bcp") >>
+# Using remotes package with << remotes::install_github("swang87/bcp") >>
 # instead of devtools if not successfully install devtools
 
 # 6. Install PRIME
