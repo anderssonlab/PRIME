@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 0. Installation via devtools
 ```{r}
 library("devtools")
-devtools::install_github("anderssonlab/PRIME@remove_PRIMEloci")
+devtools::install_github("anderssonlab/PRIME")
 ```
 
 1.  Libraries:
