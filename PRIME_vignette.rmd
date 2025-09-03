@@ -16,6 +16,12 @@ knitr::opts_chunk$set(
 )
 ```
 
+0. Installation via devtools
+```{r}
+library("devtools")
+devtools::install_github("anderssonlab/PRIME@remove_PRIMEloci")
+```
+
 1.  Libraries:
 ```{r}
 library(PRIME)
@@ -46,19 +52,31 @@ names(bw_plus) <- names(bw_minus) <- design_matrix$Name
 
 4.  Build CTSS (single base pair CAGE-inferred transcription start site (TSS)) object
 ```{r}
-orig_ctss <- quantifyCTSSs(plusStrand = bw_plus,
-                           minusStrand = bw_minus,
-                           design = design_matrix)
-orig_ctss <- calcPooled(orig_ctss, inputAssay = "counts")
-orig_ctss <- calcTPM(orig_ctss,
-                     inputAssay = "counts",
-                     outputAssay = "TPM",
-                     totalTags = NULL,
-                     outputColumn = "totalTags")
+orig_ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                                       minusStrand = bw_minus,
+                                       design = design_matrix)
+orig_ctss <- CAGEfightR::calcPooled(orig_ctss, inputAssay = "counts")
+orig_ctss <- CAGEfightR::calcTPM(orig_ctss,
+                                 inputAssay = "counts",
+                                 outputAssay = "TPM",
+                                 totalTags = NULL,
+                                 outputColumn = "totalTags")
 
 #orig_ctss
 #head(assay(orig_ctss,"counts"))
 #colData(orig_ctss)
 #rowData(orig_ctss)
 #orig_ctss$totalTags
+```
+
+
+```{r}
+tcs <- CAGEfightR::clusterUnidirectionally(CTSSs)
+
+#DL functions
+dl <- PRIME::divergentLoci(tcs, orig_ctss)
+
+ctss_complexity <- PRIME::calcCTSSComplexity(orig_ctss)
+
+CAGEfightR::calcTotalTags(orig_ctss, inputAssay = "counts")
 ```
