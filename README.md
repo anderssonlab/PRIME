@@ -14,12 +14,12 @@
 
 ## Installation
 
-The `R` package `PRIME` depends on a mix of CRAN, Bioconductor, and GitHub packages. Installation also requires a specific `python` environment setup. Please refer to [Installation instructions](https://github.com/anderssonlab/PRIME/blob/main/INSTALL_PRIME.md) for details.
+The `R` package `PRIME` depends on a mix of CRAN, Bioconductor, and GitHub packages. Please refer to [Installation instructions](https://github.com/anderssonlab/PRIME/blob/main/INSTALL_PRIME.md) for details.
 
 ## Associated repos
 
 * [PRIMEprep](https://github.com/anderssonlab/PRIMEprep) Preprocessing and mapping of CAGE sequencing data. Recommended to prepare data for `PRIME` analysis.
-* [PRIMEloci](https://github.com/anderssonlab/PRIMEloci) Prediction of regulatory elements from transcription initiation data. PRIMEloci is integrated in the `PRIME` R package.
+* [PRIMEloci](https://github.com/anderssonlab/PRIMEloci) Prediction of regulatory elements from transcription initiation data.
 
 ## Contributors
 * [Robin Andersson](https://github.com/anderssonrobin)
