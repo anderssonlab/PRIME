@@ -7,8 +7,8 @@ The R package `PRIME` depends on a mix of CRAN and Bioconductor, and GitHub pack
 R
 ```
 
+1. Install required CRAN packages
 ```r
-# 1. Install required CRAN packages
 install.packages(c(
   "assertthat",
   "data.table",
@@ -19,20 +19,23 @@ install.packages(c(
   "igraph",
   "zoo"
 ))
+```
 
-# 2. Install BiocManager (if not already installed)
+2. Install BiocManager (if not already installed)
+```r
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
+```
 
-# 3. Install required Bioconductor packages
+3. Install required Bioconductor packages
+```r
 ## General principle: Installing `CAGEfightR` with:
-
 BiocManager::install("CAGEfightR")
-
 ## will automatically pull in dependencies.
 ## You do NOT need to install these manually unless an error occurs.**
-
-## If errors occur, install in layers:
+```
+If errors occur, install in layers:
+```r
 ## core:
 BiocManager::install("S4Vectors", "IRanges", "GenomeInfoDb")
 ## data structures:
@@ -41,15 +44,21 @@ BiocManager::install("SummarizedExperiment", "GenomicRanges")
 BiocManager::install("BiocParallel", "BSgenome", "rtracklayer", "Hmisc")
 ## CAGEfightR
 BiocManager::install("CAGEfightR")
+```
 
-# 4. Install devtools
+4. Install devtools
+```r
 if (!requireNamespace("devtools", quietly = TRUE))
   install.packages("devtools")
+```
 
-# 5. Install bcp from github
+5. Install bcp from github
+```r
 devtools::install_github("swang87/bcp")
+```
 
-# 6. Install PRIME
+6. Install PRIME
+```r
 ## Install from .tar.gz (model will be set up at PRIME inst directory),
 devtools::install_github("anderssonlab/PRIME")
 ```
