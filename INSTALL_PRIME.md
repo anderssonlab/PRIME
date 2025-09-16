@@ -30,7 +30,9 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 3. Install required Bioconductor packages
 ```r
 ## General principle: Installing `CAGEfightR` with:
+
 BiocManager::install("CAGEfightR")
+
 ## will automatically pull in dependencies.
 ## You do NOT need to install these manually unless an error occurs.**
 ```
@@ -38,10 +40,13 @@ If errors occur, install in layers:
 ```r
 ## core:
 BiocManager::install("S4Vectors", "IRanges", "GenomeInfoDb")
+
 ## data structures:
 BiocManager::install("SummarizedExperiment", "GenomicRanges")
+
 ## utilities
 BiocManager::install("BiocParallel", "BSgenome", "rtracklayer", "Hmisc")
+
 ## CAGEfightR
 BiocManager::install("CAGEfightR")
 ```
@@ -59,7 +64,6 @@ devtools::install_github("swang87/bcp")
 
 6. Install PRIME
 ```r
-## Install from .tar.gz (model will be set up at PRIME inst directory),
 devtools::install_github("anderssonlab/PRIME")
 ```
 ---
