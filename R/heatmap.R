@@ -92,8 +92,9 @@ heatmapData <- function(regions,
   res
 }
 
-## Helper function, not exported.
-# Converts a list of sparse vectors to a sparse matrix.
+#' Helper function, export for PRIMEloci
+#' Converts a list of sparse vectors to a sparse matrix.
+#' @export
 vectorListToMatrix <- function(vl) {
   sm_i <- NULL
   sm_j <- NULL
