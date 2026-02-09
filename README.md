@@ -14,7 +14,7 @@
 
 ## Installation
 
-The `R` package `PRIME` depends on a mix of CRAN, Bioconductor, and GitHub packages. Please refer to [Installation instructions](https://github.com/anderssonlab/PRIME/blob/main/PRIME_INSTALLATION.md) for details.
+The `R` package `PRIME` depends on a mix of CRAN, Bioconductor, and GitHub packages. Please refer to [Installation instructions](https://github.com/anderssonlab/PRIME/blob/main/PRIME_installation.md) for details.
 
 ## Associated repos
 
