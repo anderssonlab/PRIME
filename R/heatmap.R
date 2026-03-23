@@ -92,8 +92,15 @@ heatmapData <- function(regions,
   res
 }
 
-#' Helper function, export for PRIMEloci
+#' Helper function, export for PRIME model
 #' Converts a list of sparse vectors to a sparse matrix.
+#' 
+#' @param vl A list of sparse vectors (of class "dsparseVector").
+#' 
+#' @return A sparse matrix (of class "dgCMatrix") where each row corresponds to a sparse vector from the input list.
+#' 
+#' @importFrom Matrix sparseMatrix
+#' 
 #' @export
 vectorListToMatrix <- function(vl) {
   sm_i <- NULL
@@ -104,7 +111,7 @@ vectorListToMatrix <- function(vl) {
     sm_j <- c(sm_j, vl[[k]]@i)
     sm_x <- c(sm_x, vl[[k]]@x)
   }
-  return(sparseMatrix(i = sm_i,
+  return(Matrix::sparseMatrix(i = sm_i,
                       j = sm_j,
                       x = sm_x,
                       dims = c(length(vl),

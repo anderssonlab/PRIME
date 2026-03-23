@@ -41,12 +41,18 @@ subsampleTarget <- function(object, inputAssay = "counts", target) {
   object
 }
 
+
+
 #' Subsample a \code{SummarizedExperiment} to a proportion of its sequencing 
 #' depth. Useful for saturation analyses.
 #' 
 #' @param object A \code{SummarizedExperiment} object.
 #' @param inputAssay The assay to use.
 #' @param proportion The proportion of the sequencing depth to subsample.
+#' 
+#' @importFrom assertthat assert_that
+#' @importFrom methods is
+#' @importFrom Matrix sparseMatrix
 #' 
 #' @return A \code{SummarizedExperiment} object with the subsampled counts.
 #' 
@@ -78,6 +84,10 @@ subsampleProportion <- function(object, inputAssay = "counts", proportion) {
 
 #' nonzero function from DAPAR package (https://github.com/edyp-lab/DAPAR)
 #' temporarily including a local version to avoid installation issues
+#' 
+#' @param x A sparse matrix of class "dgCMatrix".
+#' @return A two-column matrix containing the indices of the non-zero elements in the input matrix.
+#' 
 nonzero <- function(x) {
     ## function to get a two-column matrix containing the indices of the
     ### non-zero elements in a "dgCMatrix" class matrix

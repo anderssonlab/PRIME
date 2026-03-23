@@ -354,7 +354,7 @@ quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts",
 #' @import SummarizedExperiment
 #' @import IRanges
 #' @import CAGEfightR
-#' @import data.table
+#' @importFrom data.table data.table setorder
 #' @importFrom igraph graph_from_edgelist components
 #' @importFrom BiocParallel bplapply
 #' 

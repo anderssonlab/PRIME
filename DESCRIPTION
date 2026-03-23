@@ -22,6 +22,7 @@ Imports:
     SummarizedExperiment,
     data.table,
     Matrix,
+    foreach,
     BiocParallel,
     GenomeInfoDb,
     Hmisc,
@@ -30,4 +31,6 @@ Imports:
     igraph,
     methods,
     stats,
+    bcp,
+    rtracklayer,
     zoo
