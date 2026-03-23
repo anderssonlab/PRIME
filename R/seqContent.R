@@ -27,10 +27,10 @@ initiatorScore <- function(object, bsg) {
   }
   
   # Create promoters based on the class of object
-  if (class(object) == "GRanges") {
+  if (inherits(object) == "GRanges") {
     swapped_object <- swapRanges(object)
     x <- promoters(swapped_object, upstream = 1, downstream = 1)
-  } else if (class(object)== "StitchedGPos") {
+  } else if (inherits(object)== "StitchedGPos") {
     x <- promoters(object, upstream = 1, downstream = 1)
   }
     

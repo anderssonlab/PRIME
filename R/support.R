@@ -43,3 +43,25 @@ calcBatchSupport <- function(object, batch, inputAssay="counts",
   
   object
 }
+
+#' Remove singleton counts from a \code{SummarizedExperiment} object. 
+#' Singleton counts are those that have a value of 1 in the specified assay. 
+#' This function replaces those values with 0 and stores the modified assay in a new column.
+#' 
+#' @param rse A \code{SummarizedExperiment} object.
+#' @param inputAssay The name of the assay to use.
+#' @param outputAssay The name of the assay to store the modified counts. Default is "counts.noSingletons".
+#' 
+#' @return A \code{SummarizedExperiment} object with the modified assay.
+#' @export
+#' 
+rmSingletons <- function(rse, inputAssay = "counts", outputAssay = "counts.noSingletons") {
+  rmS <- assay(rse, inputAssay)
+  # Find the indices where values are equal to 1
+  idx <- which(rmS == 1, arr.ind = TRUE)
+  # Replace the values at those indices with 0
+  rmS[idx] <- 0
+  # Assign the modified assay back to the SummarizedExperiment object
+  assay(rse, outputAssay) <- rmS
+  rse
+}

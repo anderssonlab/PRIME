@@ -2,8 +2,7 @@
 % Please edit documentation in R/cumulative.R
 \name{cumulativeFractionAroundLoci}
 \alias{cumulativeFractionAroundLoci}
-\title{Calculate the auto correlation of CTSSs over tag clusters according to 
-pooled values and the cross correlation with opposite strand CTSSs}
+\title{Calculate the cumulative fraction of CTSSs around loci.}
 \usage{
 cumulativeFractionAroundLoci(loci, ctss, max_dist = 1000)
 }
@@ -19,6 +18,5 @@ A data frame containing the cumulative fraction of CTSSs around
 the loci, for each sample.
 }
 \description{
-Calculate the auto correlation of CTSSs over tag clusters according to 
-pooled values and the cross correlation with opposite strand CTSSs
+Calculate the cumulative fraction of CTSSs around loci.
 }

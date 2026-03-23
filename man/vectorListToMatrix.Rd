@@ -2,12 +2,18 @@
 % Please edit documentation in R/heatmap.R
 \name{vectorListToMatrix}
 \alias{vectorListToMatrix}
-\title{Helper function, export for PRIMEloci
+\title{Helper function, export for PRIME model
 Converts a list of sparse vectors to a sparse matrix.}
 \usage{
 vectorListToMatrix(vl)
 }
+\arguments{
+\item{vl}{A list of sparse vectors (of class "dsparseVector").}
+}
+\value{
+A sparse matrix (of class "dgCMatrix") where each row corresponds to a sparse vector from the input list.
+}
 \description{
-Helper function, export for PRIMEloci
+Helper function, export for PRIME model
 Converts a list of sparse vectors to a sparse matrix.
 }

@@ -7,6 +7,12 @@ temporarily including a local version to avoid installation issues}
 \usage{
 nonzero(x)
 }
+\arguments{
+\item{x}{A sparse matrix of class "dgCMatrix".}
+}
+\value{
+A two-column matrix containing the indices of the non-zero elements in the input matrix.
+}
 \description{
 nonzero function from DAPAR package (https://github.com/edyp-lab/DAPAR)
 temporarily including a local version to avoid installation issues

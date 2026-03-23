@@ -209,13 +209,18 @@ summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
 #' @param scale If TRUE, the assay values will be scaled before correlation 
 #' calculation.
 #' 
+#' @importFrom bcp bcp
+#' @importFrom S4Vectors unname
+#' @importFrom IRanges findOverlaps
+#' @importFrom SummarizedExperiment assay rowRanges
+#' 
 #' @return An \code{IRanges} object of decomposed tag clusters.
 #'
 #' @export
 corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE, 
                            scale=TRUE) {
   
-  splitAt <- function(x, pos) unname(split(x, cumsum(seq_along(x) %in% pos)))
+  splitAt <- function(x, pos) S4Vectors::unname(split(x, cumsum(seq_along(x) %in% pos)))
   
   if (length(rse)==0)
     return(IRanges())
