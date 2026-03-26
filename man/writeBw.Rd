@@ -2,22 +2,24 @@
 % Please edit documentation in R/visualize.r
 \name{writeBw}
 \alias{writeBw}
-\title{Export bigWig files for each replicate.}
+\title{Export bigWig files for each replicate, optionally merging strands.}
 \usage{
-writeBw(object, replicates, dir, inputAssay = "TMM")
+writeBw(object, replicates, dir, inputAssay = "TMM", splitByStrand = TRUE)
 }
 \arguments{
 \item{object}{A \code{RangedSummarizedExperiment} object containing the CTSSs.}
 
 \item{replicates}{A character vector of replicate names to export.}
 
-\item{dir}{A character string of the directory to export the bigWig files to.}
+\item{dir}{A character string of the directory to export the bigWig files to}
 
 \item{inputAssay}{A character string of the assay to use for the bigWig scores. Default is "TMM".}
+
+\item{splitByStrand}{A logical indicating whether to export strands separately. Default is FALSE.}
 }
 \value{
 No return value. The function exports bigWig files to the specified directory.
 }
 \description{
-Export bigWig files for each replicate.
+Export bigWig files for each replicate, optionally merging strands.
 }
