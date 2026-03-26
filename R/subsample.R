@@ -14,33 +14,66 @@
 #' @importFrom stats rbinom
 #' 
 subsampleTarget <- function(object, inputAssay = "counts", target) {
-  
-  assert_that(is(object, "SummarizedExperiment"),
-                          inputAssay %in% assayNames(object),
-                          is.numeric(target), target > 0)
-  
-  a <- assay(object,inputAssay)
-  n <- ncol(a)
-  # nz <- lapply(1:n, function(i) DAPAR::nonzero(a[,i,drop=FALSE])[,1])
-  nz <- lapply(1:n, function(i) nonzero(a[,i,drop=FALSE])[,1])
-  s <- Matrix::colSums(a)
-  d <- unlist(lapply(1:n, function(i) {
-    if (s[i]<=target)
-      a[nz[[i]],i]
-    else
-      rbinom(length(nz[[i]]),a[nz[[i]],i], target/s[i])
-  }))
-  keep <- which(sapply(nz,length)>0)
-  assay(object, inputAssay) <- 
-    Matrix::sparseMatrix(i=unlist(nz),
-                         j=unlist(lapply(keep, function(i) {
-                           rep(i,length(nz[[i]]))})),
-                         x=d, dimnames=list(rownames(a), 
-                                            colnames(a)[keep]))
-  
-  object
-}
 
+    assertthat::assert_that(
+        methods::is(object, "SummarizedExperiment"),
+        inputAssay %in% SummarizedExperiment::assayNames(object),
+        base::is.numeric(target),
+        target > 0
+      )
+    
+    a <- SummarizedExperiment::assay(object,inputAssay)
+    n <- base::ncol(a)
+    nz <- base::lapply(
+      X = 1:n,
+      FUN = function(i){
+          nonzero(a[,i,drop=FALSE])[,1]
+        }
+      )
+    s <- Matrix::colSums(a)
+    d <- base::unlist(
+      base::lapply(
+        X = 1:n,
+        FUN = function(i){
+        if (s[i]<=target){
+              a[nz[[i]],i]
+            } else {
+              stats::rbinom(base::length(nz[[i]]),a[nz[[i]],i], target/s[i])
+            }
+          }
+        )
+      )
+    keep <- base::which(
+        base::sapply(nz,length)>0
+      )
+    
+    # Create a matrix to store the subsampled counts, ensuring all rows are retained
+    new_matrix <- Matrix::sparseMatrix(
+      i = base::unlist(nz),
+      j = base::unlist(
+        base::lapply(
+          X = keep,
+          FUN = function(i){
+              base::rep(i, base::length(nz[[i]]))
+            }
+          )
+        ),
+      x = d, 
+      dims = base::dim(a),  # Preserve the original dimensions
+      dimnames = base::list(
+          base::rownames(a),
+          base::colnames(a)[keep]
+        )
+      )
+    
+    # Replace the original assay with the new matrix
+    SummarizedExperiment::assay(object, inputAssay) <- new_matrix
+    
+    # Recalculate the total count of reads for each sample
+    object <- CAGEfightR::calcTotalTags(object)
+    
+    return(object)
+  }
 
 
 #' Subsample a \code{SummarizedExperiment} to a proportion of its sequencing 
