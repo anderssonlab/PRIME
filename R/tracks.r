@@ -16,7 +16,7 @@
 #' @importFrom SummarizedExperiment rowRanges
 #' @export 
 #' 
-writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TRUE){
+writeBw <- function(object, replicates, dir, inputAssay="TPM",splitByStrand = TRUE){
   
   ## Check consistency of replicates
   assertthat::assert_that(
