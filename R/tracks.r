@@ -1,10 +1,10 @@
 #' Export bigWig files for each replicate, optionally merging strands.
 #' 
 #' @param object A \code{RangedSummarizedExperiment} object containing the CTSSs.
-#' @param replicates A character vector of replicate names to export.
-#' @param dir A character string of the directory to export the bigWig files to
-#' @param inputAssay A character string of the assay to use for the bigWig scores. Default is "TMM".
-#' @param splitByStrand A logical indicating whether to export strands separately. Default is FALSE.
+#' @param dir A character string of the directory to export the bigWig files to.
+#' @param replicates A character vector of replicate names to export. Default is "all".
+#' @param inputAssay A character string of the assay to use for the bigWig scores. Default is "TPM".
+#' @param splitByStrand A logical indicating whether to export strands separately. Default is TRUE.
 #' 
 #' @return No return value. The function exports bigWig files to the specified directory.
 #' 
@@ -16,8 +16,12 @@
 #' @importFrom SummarizedExperiment rowRanges
 #' @export 
 #' 
-writeBw <- function(object, replicates, dir, inputAssay="TPM",splitByStrand = TRUE){
+writeBw <- function(object, dir, replicates = "all", inputAssay="TPM",splitByStrand = TRUE){
   
+  if(replicates == "all"){
+      replicates <- base::rownames(SummarizedExperiment::colData(object))
+    }
+
   ## Check consistency of replicates
   assertthat::assert_that(
       base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object,inputAssay)),
