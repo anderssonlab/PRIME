@@ -19,7 +19,7 @@ The `R` package `PRIME` depends on a mix of CRAN, Bioconductor, and GitHub packa
 ## Associated repos
 
 * [PRIMEprep](https://github.com/anderssonlab/PRIMEprep) Preprocessing and mapping of CAGE sequencing data. Recommended to prepare data for `PRIME` analysis.
-* [PRIMEloci](https://github.com/anderssonlab/PRIMEloci) Prediction of regulatory elements from transcription initiation data.
+* [PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel) Prediction of regulatory elements from transcription initiation data.
 
 ## Contributors
 * [Robin Andersson](https://github.com/anderssonrobin)
