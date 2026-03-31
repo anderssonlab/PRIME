@@ -261,3 +261,54 @@ calcDivergentLociComplexity <- function(object, loci, step = 1e6,
   
   do.call("rbind", res)
 }
+
+#' Calculate the complexity of a CTSS dataset and generate data for a fingerprint plot.
+#' 
+#' This function calculates the complexity of a given CTSS dataset and generates a data 
+#' frame suitable for creating a fingerprint plot.
+#' @param object A \code{RangedSummarizedExperiment} resulting from
+#' \code{CAGEfightR::quantifyCTSSs()}.
+#' @param replicates A character vector of replicate names to include in the analysis.
+#' @param inputAssay A character string of the assay to use for the counts. Default is "counts".
+#' @param n The number of points to include in the fingerprint plot. Default is 100,000.
+#' 
+#' @return A data frame containing the sample names, raw counts, cumulative sums, 
+#' relative cumulative sums, and ranks for each sample.
+#' @export
+#' 
+#' @importFrom dplyr bind_rows
+#' @importFrom tibble tibble
+#' 
+fingerPrint <- function(object,replicates,inputAssay = "counts",n = 100000){
+      all <- base::data.frame()
+      for(i in 1:base::length(replicates)){
+          sam <- replicates[i]
+          col <- base::sort(
+              SummarizedExperiment::assay(object,)[,sam]
+            )
+          
+          ## Calculate cumSum as a function of CTSSs rank
+          csum <- base::cumsum(col)
+          totalLength <- base::length(csum)
+          totalCTSSs <- csum[totalLength]
+          csumRel <- csum / totalCTSSs
+          rank <- base::seq(1L,totalLength,1L) / totalLength
+          
+          ## Subset to memory-efficient 100k values
+          subset <- base::c(
+              base::seq(1,totalLength,base::floor(totalLength/n)),
+              totalLength
+            )
+          
+          df <- tibble::tibble(
+              sample = sam,
+              raw = col[subset],
+              csum = csum[subset],
+              csumRel = csumRel[subset],
+              rank = rank[subset]
+            )
+          ## Combine
+          all <- dplyr::bind_rows(all,df)
+        }
+    return(all)
+  }

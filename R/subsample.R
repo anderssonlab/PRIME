@@ -109,10 +109,15 @@ subsampleProportion <- function(object, inputAssay = "counts", proportion) {
     Matrix::sparseMatrix(i=unlist(nz),
                          j=unlist(lapply(keep, function(i) {
                            rep(i,length(nz[[i]]))})),
-                         x=d, dimnames=list(rownames(a), 
-                                            colnames(a)[keep]))
-  
-  object
+                         x=d, 
+                         dims = dim(a),  # Preserve the original dimensions
+                         dimnames=list(rownames(a), 
+                         colnames(a)[keep]))
+
+  # Recalculate the total count of reads for each sample
+  object <- calcTotalTags(object)
+                      
+  return(object)
 }
 
 #' nonzero function from DAPAR package (https://github.com/edyp-lab/DAPAR)
