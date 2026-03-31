@@ -4,18 +4,24 @@
 \alias{writeBw}
 \title{Export bigWig files for each replicate, optionally merging strands.}
 \usage{
-writeBw(object, replicates, dir, inputAssay = "TMM", splitByStrand = TRUE)
+writeBw(
+  object,
+  dir,
+  replicates = "all",
+  inputAssay = "TPM",
+  splitByStrand = TRUE
+)
 }
 \arguments{
 \item{object}{A \code{RangedSummarizedExperiment} object containing the CTSSs.}
 
-\item{replicates}{A character vector of replicate names to export.}
+\item{dir}{A character string of the directory to export the bigWig files to.}
 
-\item{dir}{A character string of the directory to export the bigWig files to}
+\item{replicates}{A character vector of replicate names to export. Default is "all".}
 
-\item{inputAssay}{A character string of the assay to use for the bigWig scores. Default is "TMM".}
+\item{inputAssay}{A character string of the assay to use for the bigWig scores. Default is "TPM".}
 
-\item{splitByStrand}{A logical indicating whether to export strands separately. Default is FALSE.}
+\item{splitByStrand}{A logical indicating whether to export strands separately. Default is TRUE.}
 }
 \value{
 No return value. The function exports bigWig files to the specified directory.
