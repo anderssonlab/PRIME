@@ -86,26 +86,29 @@ subsampleTarget <- function(object, inputAssay = "counts", target) {
 #' @importFrom assertthat assert_that
 #' @importFrom methods is
 #' @importFrom Matrix sparseMatrix
-#' 
-#' @return A \code{SummarizedExperiment} object with the subsampled counts.
-#' 
+#' @importFrom CAGEfightR calcTotalTags
+#' @importFrom stats rbinom
+#' @importFrom SummarizedExperiment assay assayNames
+#'
 #' @export
 subsampleProportion <- function(object, inputAssay = "counts", proportion) {
   
-  assert_that(is(object, "SummarizedExperiment"),
-                          inputAssay %in% assayNames(object),
-                          is.numeric(proportion), 
-                          proportion > 0 && proportion <=1)
+  assertthat::assert_that(
+    methods::is(object, "SummarizedExperiment"),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
+    is.numeric(proportion), 
+    proportion > 0 && proportion <=1
+  )
   
-  a <- assay(object,inputAssay)
+  a <- SummarizedExperiment::assay(object,inputAssay)
   n <- ncol(a)
   ##nz <- lapply(1:n, function(i) DAPAR::nonzero(a[,i,drop=FALSE])[,1])
   nz <- lapply(1:n, function(i) nonzero(a[,i,drop=FALSE])[,1])
   d <- unlist(lapply(1:n, function(i) {
-    rbinom(length(nz[[i]]),a[nz[[i]],i], proportion)
+    stats::rbinom(length(nz[[i]]),a[nz[[i]],i], proportion)
   }))
   keep <- which(sapply(nz,length)>0)
-  assay(object, inputAssay) <- 
+  SummarizedExperiment::assay(object, inputAssay) <- 
     Matrix::sparseMatrix(i=unlist(nz),
                          j=unlist(lapply(keep, function(i) {
                            rep(i,length(nz[[i]]))})),
@@ -115,7 +118,7 @@ subsampleProportion <- function(object, inputAssay = "counts", proportion) {
                          colnames(a)[keep]))
 
   # Recalculate the total count of reads for each sample
-  object <- calcTotalTags(object)
+  object <- CAGEfightR::calcTotalTags(object)
                       
   return(object)
 }

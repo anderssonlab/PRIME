@@ -10,7 +10,10 @@
 #' 
 #' @importFrom Matrix rowSums
 #' @importFrom assertthat assert_that
-#' @import SummarizedExperiment
+#' @importFrom SummarizedExperiment SummarizedExperiment assay rowRanges colData
+#' @importFrom S4Vectors SimpleList
+#' @importFrom CAGEfightR calcTotalTags
+#' @importFrom methods as
 #' 
 
 poolReplicates <- function(object, replicates, inputAssay="counts") {

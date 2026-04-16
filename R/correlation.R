@@ -13,11 +13,12 @@
 #'
 #' @export
 #'
-#' @import GenomicRanges
+#' @importFrom GenomicRanges start end `start<-` `end<-` strand length
 #' @importFrom stats acf ccf
 #' @importFrom assertthat assert_that is.numeric is.flag
 #' @importFrom S4Vectors mcols
 #' @importFrom SummarizedExperiment rowRanges
+#' @importFrom methods is as
 #'
 corrProfiles <- function(object, pooled, flank = 300, lag.max = 300) {
   assertthat::assert_that(
@@ -34,9 +35,9 @@ corrProfiles <- function(object, pooled, flank = 300, lag.max = 300) {
 
   ## retrieve data around regions
   message("Retrieving data")
-  data <- heatmapData(object, as(rowRanges(pooled), "GRanges"))
+  data <- heatmapData(object, methods::as(SummarizedExperiment::rowRanges(pooled), "GRanges"))
 
-  strand <- as.character(strand(object))
+  strand <- as.character(GenomicRanges::strand(object))
   sense_matrix <- matrix(0, ncol = 2 * flank + 1, nrow = length(object))
   antisense_matrix <- matrix(0, ncol = 2 * flank + 1, nrow = length(object))
 
@@ -52,7 +53,7 @@ corrProfiles <- function(object, pooled, flank = 300, lag.max = 300) {
 
   message("Calculating crosscorrelation profiles")
   cc_matrix <- t(sapply(1:length(object), function(i) {
-    ccf(sense_matrix[i, ], antisense_matrix[i, ],
+    stats::ccf(sense_matrix[i, ], antisense_matrix[i, ],
       plot = FALSE, lag.max = lag.max
     )$acf[, 1, 1]
   }))

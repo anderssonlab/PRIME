@@ -7,10 +7,11 @@
 #' @return A data frame containing the total tags for each annotation type.
 #' @export
 #'
-#' @import CAGEfightR
-#' @import SummarizedExperiment
+#' @importFrom CAGEfightR assignTxType calcTotalTags
+#' @importFrom SummarizedExperiment assay assayNames colData rowData
 #' @importFrom Matrix colSums
 #' @importFrom assertthat assert_that is.flag
+#' @importFrom methods is
 #'
 
 calcAnnoCTSS <- function(data, txModels, uniqueCTSS = FALSE) {
