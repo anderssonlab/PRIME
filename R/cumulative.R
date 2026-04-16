@@ -11,9 +11,22 @@
 #'
 #' @import GenomicRanges
 #' @import CAGEfightR
+#' @importFrom IRanges distance follow
+#' @importFrom SummarizedExperiment assay colData rowRanges
+#' @importFrom assertthat assert_that is.numeric is.flag
+#' @importFrom S4Vectors mcols
 #'
 #'
 cumulativeFractionAroundLoci <- function(loci, ctss, max_dist = 1000) {
+  
+  assertthat::assert_that(
+  methods::is(loci, "GRanges"),
+  "thick" %in% colnames(S4Vectors::mcols(loci)),
+  methods::is(ctss, "RangedSummarizedExperiment"),
+  is.numeric(max_dist), length(max_dist) == 1, max_dist >= 0,
+  "counts" %in% SummarizedExperiment::assayNames(ctss) 
+)
+
   p <- GRanges(seqnames = seqnames(loci), loci$thick, strand = "+")
   m <- GRanges(seqnames = seqnames(loci), loci$thick, strand = "-")
   t <- as(rowRanges(ctss), "GRanges")
@@ -71,9 +84,23 @@ cumulativeFractionAroundLoci <- function(loci, ctss, max_dist = 1000) {
 #' @export
 #' @import GenomicRanges
 #' @import CAGEfightR
+#' @importFrom IRanges distance follow
+#' @importFrom SummarizedExperiment assay colData rowRanges
+#' @importFrom assertthat assert_that is.numeric is.flag is.string
+#' @importFrom S4Vectors mcols
 #' 
 #' 
 cumulativeFractionsAroundLoci <- function(loci, ctss, max_dist = 1000, inputAssay = "counts") {
+   
+  assertthat::assert_that(
+  methods::is(loci, "GRanges"),
+  "thick" %in% colnames(S4Vectors::mcols(loci)),
+  methods::is(ctss, "RangedSummarizedExperiment"),
+  is.numeric(max_dist), length(max_dist) == 1, max_dist >= 0,
+  assertthat::is.string(inputAssay),
+  inputAssay %in% RangedSummarizedExperiment::assayNames(ctss)
+)
+
   g <- GenomicRanges::GRanges(
     seqnames = GenomeInfoDb::seqnames(loci),
     ranges = loci$thick,
