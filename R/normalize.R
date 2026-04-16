@@ -25,6 +25,7 @@
 #' @importFrom stats smooth.spline predict
 #' @importFrom assertthat assert_that
 #' @importFrom methods is
+#' @importFrom stats quantile
 #' 
 conditionalNormalize <- function(object, inputAssay="counts", 
                                  outputAssay="normalized", 
