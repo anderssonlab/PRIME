@@ -20,7 +20,7 @@
 #'
 #' @export
 #'
-#' @import CAGEfightR
+#' @importFrom CAGEfightR calcTotalTags assignGeneID subsetBySupport
 #' @importFrom assertthat assert_that is.flag
 #' @importFrom methods is
 #'
@@ -36,11 +36,11 @@ calcComplexity <- function(object, txModels, step = 1e6, CTSSunexpressed = 1,
     is.numeric(minCTSSsupport), length(minCTSSsupport) == 1, minCTSSsupport >= 1
   )
 
-  object <- suppressWarnings(calcTotalTags(object,
+  object <- suppressWarnings(CAGEfightR::calcTotalTags(object,
     inputAssay = "counts"
   ))
   object <- suppressMessages(suppressWarnings(
-    assignGeneID(object,
+    CAGEfightR::assignGeneID(object,
       geneModels = txModels,
       outputColumn = "geneID"
     )
@@ -58,9 +58,9 @@ calcComplexity <- function(object, txModels, step = 1e6, CTSSunexpressed = 1,
       message(t)
 
       x <- subsampleTarget(object, "counts", t)
-      x <- suppressWarnings(calcTotalTags(x, inputAssay = "counts"))
+      x <- suppressWarnings(CAGEfightR::calcTotalTags(x, inputAssay = "counts"))
       if (minCTSSsupport > 1) {
-        x <- suppressMessages(subsetBySupport(x,
+        x <- suppressMessages(CAGEfightR::subsetBySupport(x,
           unexpressed = CTSSunexpressed,
           minSamples = minCTSSsupport
         ))
@@ -124,7 +124,7 @@ calcCTSSComplexity <- function(object, step = 1e6, CTSSunexpressed = 1,
     is.numeric(CTSSunexpressed), length(CTSSunexpressed) == 1, CTSSunexpressed >= 0,
     is.numeric(minCTSSsupport), length(minCTSSsupport) == 1, minCTSSsupport >= 1
   )
-  object <- suppressWarnings(calcTotalTags(object,
+  object <- suppressWarnings(CAGEfightR::calcTotalTags(object,
     inputAssay = "counts"
   ))
 
@@ -140,10 +140,10 @@ calcCTSSComplexity <- function(object, step = 1e6, CTSSunexpressed = 1,
       message(t)
 
       x <- subsampleTarget(object, "counts", t)
-      x <- suppressWarnings(calcTotalTags(x, inputAssay = "counts"))
+      x <- suppressWarnings(CAGEfightR::calcTotalTags(x, inputAssay = "counts"))
       if (minCTSSsupport > 1) {
         x <- suppressMessages(
-          subsetBySupport(x,
+          CAGEfightR::subsetBySupport(x,
             unexpressed = CTSSunexpressed,
             minSamples = minCTSSsupport
           )
@@ -203,11 +203,11 @@ calcGeneComplexity <- function(object, txModels, step = 1e6,
     is.numeric(minCTSSsupport), length(minCTSSsupport) == 1, minCTSSsupport >= 1
   )
   object <- suppressWarnings(
-    calcTotalTags(object, inputAssay = "counts")
+    CAGEfightR::calcTotalTags(object, inputAssay = "counts")
   )
   object <- suppressMessages(
     suppressWarnings(
-      assignGeneID(object,
+      CAGEfightR::assignGeneID(object,
         geneModels = txModels,
         outputColumn = "geneID"
       )
@@ -227,11 +227,11 @@ calcGeneComplexity <- function(object, txModels, step = 1e6,
 
       x <- subsampleTarget(object, "counts", t)
       x <- suppressWarnings(
-        calcTotalTags(x, inputAssay = "counts")
+        CAGEfightR::calcTotalTags(x, inputAssay = "counts")
       )
       if (minCTSSsupport > 1) {
         x <- suppressMessages(
-          subsetBySupport(x,
+          CAGEfightR::subsetBySupport(x,
             unexpressed = CTSSunexpressed,
             minSamples = minCTSSsupport
           )
@@ -300,7 +300,7 @@ calcDivergentLociComplexity <- function(object, loci, step = 1e6,
     is.numeric(minCTSSsupport), length(minCTSSsupport) == 1, minCTSSsupport >= 1
   )
   object <- suppressWarnings(
-    calcTotalTags(object, inputAssay = "counts")
+    CAGEfightR::calcTotalTags(object, inputAssay = "counts")
   )
 
   targets <- seq(step, max(object$totalTags), by = step)
@@ -316,11 +316,11 @@ calcDivergentLociComplexity <- function(object, loci, step = 1e6,
 
       x <- subsampleTarget(object, "counts", t)
       x <- suppressWarnings(
-        calcTotalTags(x, inputAssay = "counts")
+        CAGEfightR::calcTotalTags(x, inputAssay = "counts")
       )
       if (minCTSSsupport > 1) {
         x <- suppressMessages(
-          subsetBySupport(x,
+          CAGEfightR::subsetBySupport(x,
             unexpressed = CTSSunexpressed,
             minSamples = minCTSSsupport
           )
@@ -364,8 +364,9 @@ calcDivergentLociComplexity <- function(object, loci, step = 1e6,
 #'
 #' @importFrom dplyr bind_rows
 #' @importFrom tibble tibble
-#' @importFrom assertthat assert_that is.string is.numeric is.character
+#' @importFrom assertthat assert_that is.string
 #' @importFrom methods is
+#' @importFrom SummarizedExperiment assay assayNames
 #'
 fingerPrint <- function(object, replicates, inputAssay = "counts", n = 100000) {
   assertthat::assert_that(
