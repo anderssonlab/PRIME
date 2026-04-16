@@ -13,6 +13,7 @@ Depends: R (>= 3.5.0)
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3
+URL: https://anderssonlab.github.io/PRIME, https://github.com/anderssonlab/PRIME
 Imports:
     BiocGenerics,
     BiocParallel,
