@@ -1,0 +1,169 @@
+---
+title: "Predicting Regulatory Elements with PRIMEmodel"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Predicting Regulatory Elements with PRIMEmodel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+[PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel) uses a LightGBM model
+trained on CAGE data to predict the locations of active regulatory elements
+(enhancers and promoters) genome-wide or in user-defined focal regions.
+
+PRIMEmodel takes a CTSS `RangedSummarizedExperiment` as input and outputs BED
+files with predicted regulatory element coordinates and scores.
+
+Two prediction modes are available:
+
+- **Genome-wide prediction** (`PRIMEmodel::predict()`) — scans the whole genome
+  using a sliding-window approach over tag clusters.
+- **Focal prediction** (`PRIMEmodel::predictFocal()`) — restricts prediction to
+  user-defined regions of interest (e.g., FANTOM5 enhancers or called divergent
+  loci).
+
+## Setup
+
+```{r libraries}
+library(PRIMEmodel)
+library(reticulate)
+```
+
+PRIMEmodel requires a Python environment (>= 3.9) with LightGBM. See the
+[installation guide](https://github.com/anderssonlab/PRIMEmodel/blob/main/install_PRIMEmodel.md)
+for details.
+
+## Obtaining CTSS input
+
+PRIMEmodel accepts CTSS data produced by either of two approaches:
+
+### Option A: PRIMEmodel convenience function
+
+```{r option-a}
+# bw_dir: directory containing BigWig files from PRIMEprep
+# design_matrix: data frame with columns Name, BigWigPlus, BigWigMinus
+ctss_rse <- PRIMEmodel::plc_get_ctss_from_bw(bw_dir, design_matrix)
+ctss_rse <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+```
+
+### Option B: Standard CAGEfightR / PRIME workflow
+
+```{r option-b}
+library(CAGEfightR)
+
+bw_plus  <- rtracklayer::BigWigFileList(design$bw_plus)
+bw_minus <- rtracklayer::BigWigFileList(design$bw_minus)
+names(bw_plus) <- names(bw_minus) <- rownames(design)
+
+ctss_rse <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                                      minusStrand = bw_minus,
+                                      design      = design)
+ctss_rse <- CAGEfightR::calcTotalTags(ctss_rse)
+ctss_rse <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+```
+
+Option B is useful when you have already performed CTSS QC steps with PRIME
+(e.g., replicate pooling, subsampling, singleton removal) before running
+PRIMEmodel. See `vignette("03-ctss-processing")` for the full CTSS workflow.
+
+## Genome-wide prediction
+
+`PRIMEmodel::predict()` runs the complete 6-step prediction pipeline:
+
+1. **Extract CTSS** — retrieve CTSS counts from the RSE object
+2. **Identify tag clusters (TCs)** — call unidirectional TCs genome-wide
+3. **Slide through TCs** — apply a sliding window over each TC
+4. **Normalized profiles** — normalize CTSS profiles within windows
+5. **Predict probabilities** — apply the LightGBM model
+6. **Post-processing** — merge windows, apply score threshold, write BED
+
+```{r genome-wide}
+result <- PRIMEmodel::predict(
+    ctss_rse        = ctss_rse,
+    python_path     = reticulate::py_config()$python,
+    score_threshold = 0.75,
+    score_diff      = 0.1,
+    num_cores       = NULL,   # NULL uses all available cores
+    keep_tmp        = FALSE
+)
+```
+
+The result is a `GRanges` object (and corresponding BED file) with predicted
+regulatory element coordinates and prediction scores.
+
+### Running via the bash script
+
+For very large datasets or for reproducibility on HPC clusters, the bash
+script interface is recommended:
+
+```bash
+# Genome-wide prediction
+cd PRIMEmodel/genomewide_prediction
+./PRIMEmodel.sh --config bash_config_predict.sh --predict
+
+# Run individual steps
+./PRIMEmodel.sh --config bash_config_predict.sh -1 -2 -3 -4 -5 -6
+```
+
+The individual step flags (`-1` through `-6`) correspond to the six pipeline
+steps described above, allowing re-runs from any intermediate checkpoint.
+
+## Focal prediction
+
+`PRIMEmodel::predictFocal()` restricts prediction to a set of pre-defined
+genomic regions (e.g., called divergent loci, candidate enhancers):
+
+```{r focal}
+# regions_gr: a GRanges object with regions of interest
+result_focal <- PRIMEmodel::predictFocal(
+    ctss_rse    = ctss_rse,
+    regions     = regions_gr,
+    python_path = reticulate::py_config()$python
+)
+```
+
+### Focal prediction via bash
+
+```bash
+cd PRIMEmodel/genomewide_prediction
+./PRIMEmodel.sh --config bash_config_predictFocal.sh --predictFocal
+```
+
+## Choosing between genome-wide and focal prediction
+
+| Mode | Use case |
+|---|---|
+| Genome-wide | Discovery of all active regulatory elements in the genome |
+| Focal | Scoring/classifying a specific set of candidate regions |
+
+Focal prediction is faster and is appropriate when you already have a set of
+candidate regions (e.g., from divergent loci calling or an external database).
+
+## Output
+
+Both `predict()` and `predictFocal()` return a `GRanges` object and write
+BED files to the specified output directory. Each predicted element has:
+
+- Genomic coordinates (chr, start, end, strand)
+- A prediction score (0–1; higher = more confident regulatory element)
+- Element type annotation (enhancer / promoter)
+
+## See also
+
+- `vignette("01-getting-started")` — installing PRIMEmodel
+- `vignette("03-ctss-processing")` — building CTSS input via CAGEfightR/PRIME
+- `vignette("04-divergent-loci")` — calling divergent loci for focal prediction
+- `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
+- [PRIMEmodel repository](https://github.com/anderssonlab/PRIMEmodel)
+- [PRIMEmodel installation guide](https://github.com/anderssonlab/PRIMEmodel/blob/main/install_PRIMEmodel.md)
+- [Paper analysis code — Genome-wide prediction](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/8.Genomewide_prediction)

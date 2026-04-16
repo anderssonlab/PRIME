@@ -1,0 +1,149 @@
+---
+title: "Getting Started with the PRIME Ecosystem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with the PRIME Ecosystem}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+The **PRIME ecosystem** consists of three interconnected tools for the analysis of
+transcription initiation data (e.g., CAGE-seq):
+
+| Tool | Type | Purpose |
+|---|---|---|
+| [PRIMEprep](https://github.com/anderssonlab/PRIMEprep) | Shell pipeline | Raw FASTQ → QC → trimming → mapping → BigWig |
+| [PRIME](https://github.com/anderssonlab/PRIME) | R package | CTSS quantification, divergent loci, normalization, noise estimation |
+| [PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel) | R + Python | Genome-wide prediction of regulatory elements |
+
+The tools form a linear pipeline, and **CAGEfightR** provides core CTSS data
+structures that PRIME extends:
+
+```
+FASTQ files
+    │
+    ▼
+┌──────────┐
+│ PRIMEprep │  Shell: QC → trim → rRNA filter → STAR map → G-correction → BigWig
+└────┬─────┘
+     │ BigWig files (plus/minus strand)
+     ▼
+┌──────────┐
+│  PRIME   │  R package (extends CAGEfightR)
+│          │  ● quantify CTSSs (via CAGEfightR)
+│          │  ● pool replicates, subsample, normalize
+│          │  ● call tag clusters & divergent loci
+│          │  ● estimate noise
+│          │  ● complexity & saturation analysis
+└────┬─────┘
+     │ CTSS RangedSummarizedExperiment objects
+     ▼
+┌────────────┐
+│ PRIMEmodel │  R + Python (LightGBM)
+│            │  ● genome-wide prediction of regulatory elements
+│            │  ● focal prediction on defined regions
+│            │  ● post-processing & BED output
+└────────────┘
+```
+
+The **dependency chain** is: CAGEfightR → PRIME → PRIMEmodel.
+
+## Installation
+
+### 1. Bioconductor dependencies (CAGEfightR)
+
+```{r install-bioc}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("CAGEfightR")
+```
+
+### 2. PRIME
+
+```{r install-prime}
+if (!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
+devtools::install_github("anderssonlab/PRIME")
+```
+
+### 3. PRIMEmodel (requires Python >= 3.9)
+
+```{r install-primemodel}
+devtools::install_github("anderssonlab/PRIMEmodel")
+```
+
+PRIMEmodel requires a Python environment (>= 3.9) with LightGBM and supporting
+packages. See the detailed installation guide at
+<https://github.com/anderssonlab/PRIMEmodel/blob/main/install_PRIMEmodel.md>.
+
+### 4. PRIMEprep
+
+PRIMEprep is a shell-based preprocessing pipeline. Clone the repository:
+
+```bash
+git clone https://github.com/anderssonlab/PRIMEprep.git
+```
+
+PRIMEprep depends on the following external tools (recommended versions):
+
+| Tool | Version |
+|---|---|
+| STAR | v2.7.3a |
+| fastp | v0.23.4 |
+| samtools | v1.20.0 |
+| rRNAdust | v1.02 |
+| bedGraphToBigWig | v4.0 |
+| preseq | v2.0 |
+| FastQC | v0.12.1 |
+| bedtools | v2.31.0 |
+| Perl | v5.38.0 |
+| openjdk | v20.0.0 |
+
+## Quick start
+
+Load the key libraries:
+
+```{r libraries}
+library(CAGEfightR)
+library(PRIME)
+```
+
+The PRIME package includes small example data for testing:
+
+```{r example-data}
+# Load example design matrix
+dir_design_matrix <- system.file("extdata", "design_matrix_k562_10pct.tsv",
+                                 package = "PRIME")
+design_matrix <- read.table(dir_design_matrix, header = TRUE, sep = "\t")
+rownames(design_matrix) <- design_matrix$Name
+
+# Load example BigWig files
+dir_bw <- system.file("extdata", "cage_bw", package = "PRIME")
+bw_plus  <- rtracklayer::BigWigFileList(file.path(dir_bw, design_matrix$BigWigPlus))
+bw_minus <- rtracklayer::BigWigFileList(file.path(dir_bw, design_matrix$BigWigMinus))
+names(bw_plus) <- names(bw_minus) <- design_matrix$Name
+
+# Quantify CTSSs
+ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                                  minusStrand = bw_minus,
+                                  design = design_matrix)
+```
+
+## See also
+
+- `vignette("02-preprocessing")` — preprocessing CAGE data with PRIMEprep
+- `vignette("03-ctss-processing")` — CTSS quantification and QC with PRIME
+- `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
+- [PRIMEprep repository](https://github.com/anderssonlab/PRIMEprep)
+- [PRIMEmodel repository](https://github.com/anderssonlab/PRIMEmodel)
+- [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)

@@ -1,0 +1,230 @@
+---
+title: "End-to-End Workflow: From FASTQ to Regulatory Elements"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{End-to-End Workflow: From FASTQ to Regulatory Elements}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+This vignette walks through the complete PRIME ecosystem pipeline, from raw
+CAGE sequencing reads to a genome-wide map of predicted regulatory elements.
+The pipeline involves three tools:
+
+```
+FASTQ files
+    │
+    ▼
+┌──────────┐
+│ PRIMEprep │  Shell: QC → trim → rRNA filter → STAR map → G-correction → BigWig
+└────┬─────┘
+     │ BigWig files (plus/minus strand)
+     ▼
+┌──────────┐
+│  PRIME   │  R package (extends CAGEfightR)
+│          │  ● quantify CTSSs (via CAGEfightR)
+│          │  ● pool replicates, subsample, normalize
+│          │  ● call tag clusters & divergent loci
+│          │  ● estimate noise
+│          │  ● complexity & saturation analysis
+└────┬─────┘
+     │ CTSS RangedSummarizedExperiment objects
+     ▼
+┌────────────┐
+│ PRIMEmodel │  R + Python (LightGBM)
+│            │  ● genome-wide prediction of regulatory elements
+│            │  ● focal prediction on defined regions
+│            │  ● post-processing & BED output
+└────────────┘
+```
+
+Each step is described in detail in the dedicated vignettes:
+
+- `vignette("02-preprocessing")` — PRIMEprep
+- `vignette("03-ctss-processing")` — CTSS quantification and QC
+- `vignette("04-divergent-loci")` — divergent loci calling
+- `vignette("05-normalization-batches")` — normalization and batch handling
+- `vignette("06-noise-estimation")` — genomic background noise
+- `vignette("07-prediction")` — regulatory element prediction
+
+This vignette provides a concise end-to-end example.
+
+## Step 1: Preprocess CAGE data with PRIMEprep
+
+Run the PRIMEprep shell pipeline on each FASTQ file:
+
+```bash
+cd PRIMEprep
+./PRIMEprep.sh \
+    -f /data/sample1.fastq.gz \
+    -g /ref/genome.fa \
+    -b /ref/STAR_index \
+    -d /ref/rRNAdust_db \
+    -t 16 \
+    -o /results/sample1
+```
+
+The key output is `bw_files/` containing strand-specific BigWig files:
+
+```
+/results/sample1/bw_files/sample1.plus.bw
+/results/sample1/bw_files/sample1.minus.bw
+```
+
+See `vignette("02-preprocessing")` for full details on PRIMEprep.
+
+## Step 2: Quantify CTSSs with CAGEfightR and PRIME
+
+```{r setup-libs}
+library(CAGEfightR)
+library(PRIME)
+library(SummarizedExperiment)
+library(GenomeInfoDb)
+```
+
+### Load the design matrix
+
+```{r design}
+design <- read.table("design_matrix.tsv", header = TRUE, sep = "\t")
+rownames(design) <- design$Name
+# Required columns: Name, BigWigPlus, BigWigMinus
+# Optional columns: CellLine, Type, Replicate, Batch, ...
+```
+
+### Build the CTSS object
+
+```{r ctss}
+bw_plus  <- rtracklayer::BigWigFileList(design$BigWigPlus)
+bw_minus <- rtracklayer::BigWigFileList(design$BigWigMinus)
+names(bw_plus) <- names(bw_minus) <- design$Name
+
+ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                                  minusStrand = bw_minus,
+                                  design      = design)
+ctss <- CAGEfightR::calcTotalTags(ctss)
+ctss <- CAGEfightR::calcTPM(ctss)
+ctss <- CAGEfightR::calcPooled(ctss)
+
+# Restrict to standard chromosomes
+ctss <- GenomeInfoDb::keepSeqlevels(ctss,
+                                    GenomeInfoDb::seqlevels(ctss)[1:23],
+                                    pruning.mode = "coarse")
+```
+
+### Pool replicates and subsample
+
+```{r pool-sub}
+# Pool biological replicates
+ctss_pooled <- PRIME::poolReplicates(
+    ctss,
+    replicates = paste(colData(ctss)$CellLine, colData(ctss)$Type, sep = "_")
+)
+ctss_pooled <- CAGEfightR::calcTPM(ctss_pooled)
+
+# Subsample to the minimum library depth for fair comparison
+min_depth <- min(colData(ctss)$totalTags)
+ctss_sub  <- PRIME::subsampleTarget(ctss, target = min_depth)
+ctss_sub  <- CAGEfightR::calcTPM(ctss_sub)
+
+# Remove singletons
+ctss_clean <- PRIME::rmSingletons(ctss_sub)
+```
+
+## Step 3: Call divergent loci and assess complexity
+
+### Call divergent loci
+
+```{r divergent-loci}
+CTSSs_by_chr <- split(ctss_clean, GenomicRanges::seqnames(ctss_clean))
+
+DLs <- lapply(names(CTSSs_by_chr), function(chr) {
+    PRIME::divergentLociTCsSummit(
+        ctss         = CTSSs_by_chr[[chr]],
+        callingAssay = "counts"
+    )
+})
+DLs <- do.call(c, DLs)
+```
+
+### Assess sequencing saturation
+
+```{r complexity}
+complexity <- PRIME::calcCTSSComplexity(ctss,
+                                        step           = 2e6,
+                                        minCTSSsupport = 1,
+                                        CTSSunexpressed = 0)
+```
+
+### Estimate genomic background noise
+
+```{r noise}
+# Requires mask (blacklist + hotspots + exons) and mappable regions
+# See vignette("06-noise-estimation") for full preparation steps
+noise <- PRIME::estimateNoise(
+    ctss_clean,
+    mask       = mask,
+    mappable   = mappable,
+    strand     = "*",
+    inputAssay = "counts",
+    quantiles  = seq(0, 1, 0.0001)
+)
+```
+
+## Step 4: Predict regulatory elements with PRIMEmodel
+
+```{r primemodel}
+library(PRIMEmodel)
+library(reticulate)
+
+# ctss_clean is the CTSS object from Steps 2-3
+result <- PRIMEmodel::predict(
+    ctss_rse        = ctss_clean,
+    python_path     = reticulate::py_config()$python,
+    score_threshold = 0.75,
+    score_diff      = 0.1,
+    num_cores       = NULL,
+    keep_tmp        = FALSE
+)
+```
+
+Alternatively, run focal prediction on the divergent loci identified in Step 3:
+
+```{r focal}
+result_focal <- PRIMEmodel::predictFocal(
+    ctss_rse    = ctss_clean,
+    regions     = DLs,
+    python_path = reticulate::py_config()$python
+)
+```
+
+## Full reproducibility
+
+The complete analysis code for the associated publication (Einarsson,
+Navamajiti, et al. 2026) is available at:
+<https://github.com/anderssonlab/nucCAGE_PRIME_paper>
+
+That repository contains step-by-step R Markdown notebooks for all analyses
+described in the paper.
+
+## See also
+
+- `vignette("01-getting-started")` — installation of all tools
+- `vignette("02-preprocessing")` — PRIMEprep in depth
+- `vignette("03-ctss-processing")` — CTSS quantification and QC
+- `vignette("04-divergent-loci")` — divergent loci calling
+- `vignette("05-normalization-batches")` — normalization and batch handling
+- `vignette("06-noise-estimation")` — noise estimation
+- `vignette("07-prediction")` — PRIMEmodel prediction in depth
+- [PRIMEprep repository](https://github.com/anderssonlab/PRIMEprep)
+- [PRIMEmodel repository](https://github.com/anderssonlab/PRIMEmodel)
+- [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)
