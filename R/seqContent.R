@@ -9,7 +9,7 @@
 #'
 #' @importFrom methods is
 #' @importFrom assertthat assert_that
-#' @importFrom GenomicRanges swapRanges promoters
+#' @importFrom GenomicRanges promoters
 #' @importFrom Biostrings getSeq
 #'
 

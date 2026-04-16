@@ -12,8 +12,8 @@
 #'
 #' @export
 #' 
-#' @importFrom GenomicRanges seqinfo `seqinfo<-` seqnames sort GRanges subsetByOverlaps
-#' @importFrom IRanges IRanges `IRangesList` Views viewApply start
+#' @importFrom GenomicRanges seqinfo `seqinfo<-` seqnames sort GRanges
+#' @importFrom IRanges IRanges `IRangesList` Views viewApply start subsetByOverlaps
 #' @importFrom SummarizedExperiment assay rowRanges
 #' @importFrom assertthat assert_that
 #' @importFrom methods is as

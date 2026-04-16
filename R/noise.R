@@ -13,7 +13,7 @@
 #' 
 #' @return A matrix with the quantiles for each sample.
 #' 
-#' @importFrom GenomicRanges tileGenome subsetByOverlaps findOverlaps `strand<-` seqinfo
+#' @importFrom GenomicRanges tileGenome findOverlaps `strand<-` seqinfo
 #' @importFrom CAGEfightR quantifyClusters
 #' @importFrom GenomeInfoDb seqinfo seqlengths
 #' @importFrom IRanges pintersect width
@@ -98,7 +98,7 @@ estimateNoise <- function(object, mask, mappable, map_frac=0.5, win_size=200,
 #' 
 #' @export
 #' 
-#' @importFrom GenomicRanges tileGenome subsetByOverlaps findOverlaps `strand<-` seqinfo start end `start<-` `end<-`
+#' @importFrom GenomicRanges tileGenome findOverlaps `strand<-` seqinfo start end `start<-` `end<-`
 #' @importFrom CAGEfightR quantifyClusters
 #' @importFrom GenomeInfoDb seqinfo
 #' @importFrom IRanges pintersect width
