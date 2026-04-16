@@ -1,0 +1,141 @@
+---
+title: "Preprocessing CAGE Data with PRIMEprep"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Preprocessing CAGE Data with PRIMEprep}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+[PRIMEprep](https://github.com/anderssonlab/PRIMEprep) is a shell-based pipeline
+that takes raw CAGE sequencing data (FASTQ) and produces strand-specific BigWig
+files ready for downstream analysis with PRIME.
+
+The pipeline consists of **10 steps**:
+
+1. **FastQC** — quality control of raw reads
+2. **fastp** — adapter trimming and quality filtering
+3. **rRNAdust** — ribosomal RNA filtering
+4. **FastQC** — quality control of trimmed reads
+5. **STAR** — genome mapping
+6. **VCF-aware mapping** *(optional)* — variant-aware re-mapping
+7. **samtools index** — BAM indexing
+8. **preseq** — library complexity estimation
+9. **samtools stats** — mapping statistics
+10. **G-correction** — removal of non-templated G additions at the 5′ end
+
+The key output is **strand-specific BigWig files** in `bw_files/`, which serve
+as direct input to PRIME.
+
+## Installation
+
+Clone the PRIMEprep repository and ensure all external tools are installed:
+
+```bash
+git clone https://github.com/anderssonlab/PRIMEprep.git
+```
+
+Required tools (recommended versions):
+
+| Tool | Version |
+|---|---|
+| STAR | v2.7.3a |
+| fastp | v0.23.4 |
+| samtools | v1.20.0 |
+| rRNAdust | v1.02 |
+| bedGraphToBigWig | v4.0 |
+| preseq | v2.0 |
+| FastQC | v0.12.1 |
+| bedtools | v2.31.0 |
+| Perl | v5.38.0 |
+| openjdk | v20.0.0 |
+
+## Parameters
+
+| Flag | Description |
+|---|---|
+| `-f` | Path to input FASTQ file(s) |
+| `-g` | Path to reference genome FASTA |
+| `-b` | Path to STAR genome index directory |
+| `-t` | Number of threads |
+| `-o` | Output directory |
+| `-d` | Path to rRNAdust database |
+| `-a` | Sequencing adapter sequence |
+| `-v` | Path to VCF file for variant-aware mapping (optional) |
+
+## Example commands
+
+### Single-end CAGE data
+
+```bash
+cd PRIMEprep
+./PRIMEprep.sh \
+    -f /path/to/sample.fastq.gz \
+    -g /path/to/genome.fa \
+    -b /path/to/STAR_index \
+    -d /path/to/rRNAdust_db \
+    -t 8 \
+    -o /path/to/output
+```
+
+### Paired-end CAGE data
+
+```bash
+cd PRIMEprep
+./PRIMEprep.sh \
+    -f "/path/to/sample_R1.fastq.gz /path/to/sample_R2.fastq.gz" \
+    -g /path/to/genome.fa \
+    -b /path/to/STAR_index \
+    -d /path/to/rRNAdust_db \
+    -t 8 \
+    -o /path/to/output
+```
+
+### With VCF variant-aware mapping
+
+```bash
+./PRIMEprep.sh \
+    -f /path/to/sample.fastq.gz \
+    -g /path/to/genome.fa \
+    -b /path/to/STAR_index \
+    -d /path/to/rRNAdust_db \
+    -v /path/to/variants.vcf \
+    -t 8 \
+    -o /path/to/output
+```
+
+## Output directories
+
+After a successful run, the output directory contains:
+
+| Directory | Contents |
+|---|---|
+| `QC/` | FastQC reports (pre- and post-trimming) |
+| `bam_files/` | STAR-aligned, indexed BAM files |
+| `bed_files/` | Genomic coverage BED files |
+| `bw_files/` | **Strand-specific BigWig files** (key output for PRIME) |
+
+The `bw_files/` directory contains two BigWig files per sample:
+
+- `<sample>.plus.bw` — 5′ coverage on the plus strand
+- `<sample>.minus.bw` — 5′ coverage on the minus strand
+
+These files are used directly as input to PRIME via `CAGEfightR::quantifyCTSSs()`.
+See `vignette("03-ctss-processing")` for the next step.
+
+## See also
+
+- `vignette("01-getting-started")` — installation and overview
+- `vignette("03-ctss-processing")` — loading BigWig files into PRIME
+- `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
+- [PRIMEprep repository](https://github.com/anderssonlab/PRIMEprep)

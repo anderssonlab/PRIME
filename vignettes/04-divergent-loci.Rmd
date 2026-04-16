@@ -1,0 +1,118 @@
+---
+title: "Calling Divergent Loci"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Calling Divergent Loci}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+Divergent loci are genomic regions with divergent transcription: sense and
+antisense transcription initiation events that originate close together and
+point away from each other. They are a hallmark of active enhancers and
+bidirectional promoters.
+
+PRIME provides two methods for calling divergent loci from CTSS data:
+
+1. **Summit-based** (`PRIME::divergentLociTCsSummit()`) — identifies summit
+   positions of tag clusters on each strand and pairs them into divergent loci.
+   This is the recommended native PRIME approach.
+
+2. **FANTOM5-style / TC-based** (`PRIME::divergentLoci()`) — first calls
+   unidirectional tag clusters with CAGEfightR and then pairs them into
+   divergent loci. This mirrors the approach used in FANTOM5.
+
+## Setup
+
+```{r libraries}
+library(CAGEfightR)
+library(PRIME)
+```
+
+Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available; see
+`vignette("03-ctss-processing")` for how to build one.
+
+## Method 1: Summit-based divergent loci (PRIME native)
+
+This approach directly uses CTSS counts to identify divergent loci via summit
+detection. For large datasets it is efficient to process per chromosome:
+
+```{r summit-method}
+CTSSs_by_chr <- split(ctss, GenomicRanges::seqnames(ctss))
+
+DLs <- lapply(names(CTSSs_by_chr), function(chr) {
+    PRIME::divergentLociTCsSummit(
+        ctss         = CTSSs_by_chr[[chr]],
+        callingAssay = "counts.noSingletons"
+    )
+})
+
+# Combine results across chromosomes
+DLs <- do.call(c, DLs)
+```
+
+`PRIME::divergentLociSummit()` is a related function that operates on a single
+chromosome without the TC-based pre-clustering step.
+
+## Method 2: FANTOM5-style divergent loci (TC-based)
+
+This approach first calls unidirectional tag clusters and then pairs them:
+
+```{r fantom-method}
+# Pool CTSSs and call unidirectional tag clusters
+ctss_pooled <- CAGEfightR::calcPooled(ctss, inputAssay = "counts.noSingletons")
+ctss_pooled <- subset(ctss_pooled, score > 0)
+TCs <- CAGEfightR::clusterUnidirectionally(ctss_pooled)
+
+# Call divergent loci per chromosome
+CTSSs_by_chr <- split(ctss, GenomicRanges::seqnames(ctss))
+
+DLs_fantom <- lapply(names(CTSSs_by_chr), function(chr) {
+    PRIME::divergentLoci(
+        object = TCs,
+        ctss   = CTSSs_by_chr[[chr]]
+    )
+})
+
+DLs_fantom <- do.call(c, DLs_fantom)
+```
+
+## Choosing between the two methods
+
+| Aspect | Summit-based | FANTOM5-style |
+|---|---|---|
+| Pre-requisite | CTSS object | CTSS + unidirectional TCs |
+| Speed | Generally faster | Requires TC calling first |
+| Sensitivity | Higher (uses raw CTSS signal) | Comparable |
+| Recommended for | New analyses | Comparisons with FANTOM5 data |
+
+## Quantifying divergent loci
+
+Once divergent loci have been called, expression can be quantified across
+all samples using:
+
+```{r quantify}
+DLs_quant <- PRIME::quantifyDivergentLoci(
+    object       = DLs,
+    ctss         = ctss,
+    inputAssay   = "counts",
+    outputColumn = "score"
+)
+```
+
+## See also
+
+- `vignette("03-ctss-processing")` — producing the CTSS object
+- `vignette("06-noise-estimation")` — estimating divergent background noise
+- `vignette("07-prediction")` — predicting enhancers and promoters with PRIMEmodel
+- [Paper analysis code — Divergent Loci](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/3.DivergentLoci)
