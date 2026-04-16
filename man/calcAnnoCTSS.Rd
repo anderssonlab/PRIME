@@ -9,7 +9,7 @@ calcAnnoCTSS(data, txModels, uniqueCTSS = FALSE)
 \arguments{
 \item{data}{A \code{RangedSummarizedExperiment} object containing the CTSSs.}
 
-\item{txModels}{A \code{GRangesList} object containing the transcript models for annotation.}
+\item{txModels}{A \code{TxDb} object containing the the transcript models for annotation.}
 
 \item{uniqueCTSS}{A \code{logical} indicating whether to count only unique CTSSs (TRUE) or to sum the total tags (FALSE).}
 }

@@ -22,7 +22,7 @@ calcBatchSupport(
 
 \item{outputColumn}{The name of the column to store the batch support.}
 
-\item{unexpressed}{The threshold below which a unit (CTSS, gene, etc.) 
+\item{unexpressed}{The threshold below which a unit (CTSS, gene, etc.)
 is considered unexpressed.}
 
 \item{minSamples}{The minimum number of samples in which a unit must be
