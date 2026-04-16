@@ -62,7 +62,7 @@ rmSingletons <- function(rse, inputAssay = "counts", outputAssay = "counts.noSin
   assertthat::assert_that(
     methods::is(rse, "RangedSummarizedExperiment"),
     assertthat::is.string(inputAssay),
-    inputAssay %in% RangedSummarizedExperiment::assayNames(rse),
+    inputAssay %in% SummarizedExperiment::assayNames(rse),
     assertthat::is.string(outputAssay)
   )
 

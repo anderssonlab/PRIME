@@ -371,7 +371,7 @@ fingerPrint <- function(object, replicates, inputAssay = "counts", n = 100000) {
   assertthat::assert_that(
     methods::is(object, "RangedSummarizedExperiment"),
     assertthat::is.string(inputAssay),
-    inputAssay %in% RangedSummarizedExperiment::assayNames(object),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
     is.character(replicates),
     length(replicates) >= 1,
     all(replicates %in% colnames(object)),
@@ -382,7 +382,7 @@ fingerPrint <- function(object, replicates, inputAssay = "counts", n = 100000) {
   for (i in 1:base::length(replicates)) {
     sam <- replicates[i]
     col <- base::sort(
-      RangedSummarizedExperiment::assay(object, inputAssay)[, sam]
+      SummarizedExperiment::assay(object, inputAssay)[, sam]
     )
 
     ## Calculate cumSum as a function of CTSSs rank
