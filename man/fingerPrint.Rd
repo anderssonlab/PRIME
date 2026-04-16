@@ -17,10 +17,10 @@ fingerPrint(object, replicates, inputAssay = "counts", n = 1e+05)
 \item{n}{The number of points to include in the fingerprint plot. Default is 100,000.}
 }
 \value{
-A data frame containing the sample names, raw counts, cumulative sums, 
+A data frame containing the sample names, raw counts, cumulative sums,
 relative cumulative sums, and ranks for each sample.
 }
 \description{
-This function calculates the complexity of a given CTSS dataset and generates a data 
+This function calculates the complexity of a given CTSS dataset and generates a data
 frame suitable for creating a fingerprint plot.
 }

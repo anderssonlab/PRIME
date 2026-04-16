@@ -31,7 +31,7 @@ unexpressed.}
 expressed in to be considered.}
 }
 \value{
-A data frame containing the number of genes (column "numberGenes") 
+A data frame containing the number of genes (column "numberGenes")
 for each sample and target (column "totalTags").
 }
 \description{

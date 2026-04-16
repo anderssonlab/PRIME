@@ -2,7 +2,7 @@
 % Please edit documentation in R/correlation.R
 \name{corrProfiles}
 \alias{corrProfiles}
-\title{Calculate the auto correlation of CTSSs over tag clusters according to 
+\title{Calculate the auto correlation of CTSSs over tag clusters according to
 pooled values and the cross correlation with opposite strand CTSSs}
 \usage{
 corrProfiles(object, pooled, flank = 300, lag.max = 300)
@@ -11,7 +11,7 @@ corrProfiles(object, pooled, flank = 300, lag.max = 300)
 \item{object}{A \code{GRanges} object of tag clusters.}
 
 \item{pooled}{A \code{RangedSummarizedExperiment} object containing the CTSSs and
-the pooled values in the score column (resulting from 
+the pooled values in the score column (resulting from
 \code{CAGEfightR::calcPooled()}).}
 
 \item{flank}{The number of base pairs to consider around each tag cluster.}
@@ -23,6 +23,6 @@ A \code{list} containing the auto correlation matrix and cross correlation
 matrix
 }
 \description{
-Calculate the auto correlation of CTSSs over tag clusters according to 
+Calculate the auto correlation of CTSSs over tag clusters according to
 pooled values and the cross correlation with opposite strand CTSSs
 }

@@ -14,9 +14,6 @@ subsampleProportion(object, inputAssay = "counts", proportion)
 
 \item{proportion}{The proportion of the sequencing depth to subsample.}
 }
-\value{
-A \code{SummarizedExperiment} object with the subsampled counts.
-}
 \description{
 Subsample a \code{SummarizedExperiment} to a proportion of its sequencing 
 depth. Useful for saturation analyses.

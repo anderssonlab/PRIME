@@ -2,8 +2,8 @@
 % Please edit documentation in R/support.R
 \name{rmSingletons}
 \alias{rmSingletons}
-\title{Remove singleton counts from a \code{SummarizedExperiment} object. 
-Singleton counts are those that have a value of 1 in the specified assay. 
+\title{Remove singleton counts from a \code{SummarizedExperiment} object.
+Singleton counts are those that have a value of 1 in the specified assay.
 This function replaces those values with 0 and stores the modified assay in a new column.}
 \usage{
 rmSingletons(rse, inputAssay = "counts", outputAssay = "counts.noSingletons")
@@ -19,7 +19,7 @@ rmSingletons(rse, inputAssay = "counts", outputAssay = "counts.noSingletons")
 A \code{SummarizedExperiment} object with the modified assay.
 }
 \description{
-Remove singleton counts from a \code{SummarizedExperiment} object. 
-Singleton counts are those that have a value of 1 in the specified assay. 
+Remove singleton counts from a \code{SummarizedExperiment} object.
+Singleton counts are those that have a value of 1 in the specified assay.
 This function replaces those values with 0 and stores the modified assay in a new column.
 }

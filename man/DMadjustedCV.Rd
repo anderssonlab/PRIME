@@ -2,7 +2,7 @@
 % Please edit documentation in R/dispersion.R
 \name{DMadjustedCV}
 \alias{DMadjustedCV}
-\title{Calculate the distance to the median (DM) adjusted CV2 for a given 
+\title{Calculate the distance to the median (DM) adjusted CV2 for a given
 \code{RangedSummarizedExperiment} object. Inspired by the method outlined in
 Kolodziejczyk et al., 2015, Cell Stem Cell.}
 \usage{
@@ -20,7 +20,7 @@ A \code{RangedSummarizedExperiment} object with the adjusted CV2
 in the metadata columns.
 }
 \description{
-Calculate the distance to the median (DM) adjusted CV2 for a given 
+Calculate the distance to the median (DM) adjusted CV2 for a given
 \code{RangedSummarizedExperiment} object. Inspired by the method outlined in
 Kolodziejczyk et al., 2015, Cell Stem Cell.
 }

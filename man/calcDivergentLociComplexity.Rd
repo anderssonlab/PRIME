@@ -18,7 +18,7 @@ calcDivergentLociComplexity(
 \item{object}{A \code{RangedSummarizedExperiment} resulting from
 CAGEfightR::quantifyCTSSs().}
 
-\item{loci}{A \code{GRanges} object containing the tag clusters from which 
+\item{loci}{A \code{GRanges} object containing the tag clusters from which
 divergent loci should be called.}
 
 \item{step}{The step size for the subsampling.}
@@ -29,14 +29,14 @@ unexpressed.}
 \item{lociunexpressed}{The count threshold for considering a tag cluster
 to be unexpressed.}
 
-\item{requirebidirectional}{Logical indicating whether to require 
+\item{requirebidirectional}{Logical indicating whether to require
 bidirectional transcription for a divergent locus from the same sample.}
 
 \item{minCTSSsupport}{The minimum number of samples a CTSS must be
 expressed in to be considered.}
 }
 \value{
-A data frame containing the number of divergent loci (column 
+A data frame containing the number of divergent loci (column
 "numberLoci") for each sample and target (column "totalTags").
 }
 \description{
