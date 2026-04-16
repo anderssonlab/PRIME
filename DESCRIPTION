@@ -45,3 +45,7 @@ Imports:
     tidyr,
     tidyselect,
     zoo
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
