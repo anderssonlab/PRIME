@@ -98,7 +98,7 @@ cumulativeFractionsAroundLoci <- function(loci, ctss, max_dist = 1000, inputAssa
   methods::is(ctss, "RangedSummarizedExperiment"),
   is.numeric(max_dist), length(max_dist) == 1, max_dist >= 0,
   assertthat::is.string(inputAssay),
-  inputAssay %in% RangedSummarizedExperiment::assayNames(ctss)
+  inputAssay %in% SummarizedExperiment::assayNames(ctss)
 )
 
   g <- GenomicRanges::GRanges(

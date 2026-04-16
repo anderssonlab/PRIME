@@ -21,7 +21,7 @@ DMadjustedCV <- function(object, inputAssay = "TPM", prefix = "") {
   assertthat::assert_that(
     methods::is(object, "RangedSummarizedExperiment"),
     assertthat::is.string(inputAssay),
-    inputAssay %in% RangedSummarizedExperiment::assayNames(object),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
     assertthat::is.string(prefix)
   )
 
@@ -64,7 +64,7 @@ calcCV <- function(object, inputAssay = "counts", outputColumn = "CV") {
   assertthat::assert_that(
     methods::is(object, "RangedSummarizedExperiment"),
     assertthat::is.string(inputAssay),
-    inputAssay %in% RangedSummarizedExperiment::assayNames(object),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
     assertthat::is.string(outputColumn)
   )
 
@@ -81,7 +81,7 @@ calcMean <- function(object, inputAssay = "counts", outputColumn = "mean") {
   assertthat::assert_that(
     methods::is(object, "RangedSummarizedExperiment"),
     assertthat::is.string(inputAssay),
-    inputAssay %in% RangedSummarizedExperiment::assayNames(object),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
     assertthat::is.string(outputColumn)
   )
 
@@ -113,7 +113,7 @@ calcMedian <- function(object, inputAssay = "counts", outputColumn = "median") {
   assertthat::assert_that(
     methods::is(object, "RangedSummarizedExperiment"),
     assertthat::is.string(inputAssay),
-    inputAssay %in% RangedSummarizedExperiment::assayNames(object),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
     assertthat::is.string(outputColumn)
   )
 
@@ -130,7 +130,7 @@ calcMax <- function(object, inputAssay = "counts", outputColumn = "median") {
   assertthat::assert_that(
     methods::is(object, "RangedSummarizedExperiment"),
     assertthat::is.string(inputAssay),
-    inputAssay %in% RangedSummarizedExperiment::assayNames(object),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
     assertthat::is.string(outputColumn)
   )
 
