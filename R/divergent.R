@@ -150,8 +150,8 @@ divergentLoci <- function(object, ctss, max_gap=400, win_size=200,
   message("Preparing output...")
   
   ## Build GRanges object
-  start(gr) <- GenomicRanges::start(gr)-win_size
-  end(gr) <- GenomicRanges::end(gr)+win_size
+  GenomicRanges::start(gr) <- GenomicRanges::start(gr)-win_size
+  GenomicRanges::end(gr) <- GenomicRanges::end(gr)+win_size
   gr$score <- M1+P2
   gr$thick <- IRanges::IRanges(start=div_mid,width=1)
   
@@ -273,12 +273,12 @@ quantifyClustersOlap <- function(object, clusters, inputAssay) {
 quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts", 
                                             requireDisjoint=TRUE) {
   win_1 <- loci
-  end(win_1) <- start(loci$thick) - 1
-  strand(win_1) <- "-"
+  GenomicRanges::end(win_1) <- GenomicRanges::start(loci$thick) - 1
+  GenomicRanges::strand(win_1) <- "-"
   
   win_2 <- loci
-  start(win_2) <- start(loci$thick) + 1
-  strand(win_2) <- "+"
+  GenomicRanges::start(win_2) <- GenomicRanges::start(loci$thick) + 1
+  GenomicRanges::strand(win_2) <- "+"
   
   m1 <- matrix()
   if (!requireDisjoint && !GenomicRanges::isDisjoint(win_1)) {
@@ -480,8 +480,8 @@ divergentLociSummit<- function(object, ctss, max_gap=400, win_size=200,
   message("Preparing output...")
   
   ## Build GRanges object
-  start(gr) <- GenomicRanges::start(gr)-win_size
-  end(gr) <- GenomicRanges::end(gr)+win_size
+  GenomicRanges::start(gr) <- GenomicRanges::start(gr)-win_size
+  GenomicRanges::end(gr) <- GenomicRanges::end(gr)+win_size
   gr$score <- M1+P2
   gr$thick <- IRanges::IRanges(start=mid,width=1)
   

@@ -138,8 +138,8 @@ assertthat::assert_that(
   ## Create strand specific windows
   win_minus <- genome_gr
   win_plus <- genome_gr
-  end(win_minus) <- GenomicRanges::start(win_minus) + win_size - 1
-  start(win_plus) <- GenomicRanges::end(win_plus) - win_size + 1
+  GenomicRanges::end(win_minus) <- GenomicRanges::start(win_minus) + win_size - 1
+  GenomicRanges::start(win_plus) <- GenomicRanges::end(win_plus) - win_size + 1
   GenomicRanges::strand(win_minus) <- "-"
   GenomicRanges::strand(win_plus) <- "+"
   
