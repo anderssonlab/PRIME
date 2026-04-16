@@ -21,6 +21,7 @@
 #' @importFrom methods is
 #' @importFrom assertthat assert_that is.string
 #' @importFrom SummarizedExperiment assay assayNames
+#' @importFrom stats quantile
 #' 
 #' @export
 estimateNoise <- function(object, mask, mappable, map_frac=0.5, win_size=200, 
@@ -106,6 +107,7 @@ estimateNoise <- function(object, mask, mappable, map_frac=0.5, win_size=200,
 #' @importFrom methods is
 #' @importFrom assertthat assert_that is.string
 #' @importFrom SummarizedExperiment assay assayNames
+#' @importFrom stats quantile
 #' 
 estimateDivergentNoise <- function(object, mask, mappable_minus, mappable_plus, 
                                    map_frac=0.5, win_size=200, num_win=1e6, 

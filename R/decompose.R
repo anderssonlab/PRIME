@@ -213,6 +213,7 @@ summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
 #' @importFrom IRanges findOverlaps start
 #' @importFrom SummarizedExperiment assay rowRanges
 #' @importFrom BiocParallel bplapply
+#' @importFrom stats cor
 #' 
 #' @return An \code{IRanges} object of decomposed tag clusters.
 #'

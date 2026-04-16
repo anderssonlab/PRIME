@@ -215,6 +215,8 @@ quantifyDivergentLoci <- function(loci, ctss, inputAssay="counts",
 #' @export
 #' 
 #' @importFrom BiocParallel bplapply
+#' @importFrom GenomicRanges shift
+#' 
 quantifyClustersOlap <- function(object, clusters, inputAssay) {
   
   revmap <- IRanges::reduce(clusters, with.revmap=TRUE)$revmap
@@ -232,7 +234,7 @@ quantifyClustersOlap <- function(object, clusters, inputAssay) {
     spec <- FALSE
     if (length(clu) == 1) {
       spec <- TRUE
-      clu <- c(clu, shift(clu,width(clu)))
+      clu <- c(clu, GenomicRanges::shift(clu,width(clu)))
     }
     
     suppressMessages(m_ <- CAGEfightR::quantifyClusters(
