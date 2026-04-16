@@ -21,7 +21,7 @@
 #' @export
 #' 
 #' @importFrom Hmisc cut2
-#' @import S4Vectors
+#' @importFrom S4Vectors mcols
 #' @importFrom stats smooth.spline predict
 #' @importFrom assertthat assert_that
 #' @importFrom methods is
@@ -32,16 +32,18 @@ conditionalNormalize <- function(object, inputAssay="counts",
                                  bins=200, sizeFactors=NULL, minCount=1, 
                                  minSamples=1,aggregate.fn=sum) {
   
-  assert_that(is(object, "SummarizedExperiment"),
-                          inputAssay %in% assayNames(object),
-                          conditionalColumn %in% colnames(mcols(object)))
+  assertthat::assert_that(
+    methods::is(object, "SummarizedExperiment"),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
+    conditionalColumn %in% colnames(S4Vectors::mcols(object))
+  )
   
   message("binning data according to conditional column...")
   
-  y <- assay(object,inputAssay)
+  y <- SummarizedExperiment::assay(object,inputAssay)
   keep <- which(Matrix::rowSums(y>minCount) >= minSamples)
   
-  x <- as.numeric(mcols(object)[,conditionalColumn])
+  x <- as.numeric(S4Vectors::mcols(object)[,conditionalColumn])
   b <- as.character(Hmisc::cut2(x, unique(quantile(x, seq(1/bins, 1, 1/bins)))))
   b.m <- aggregate(x, by=list(b), FUN=mean)
   b.m.keep <- aggregate(x[keep], by=list(b[keep]), FUN=mean)
@@ -92,9 +94,9 @@ conditionalNormalize <- function(object, inputAssay="counts",
   dimnames(y_normed) <- dimnames(y)
   dimnames(offset) <- dimnames(y)
   
-  assay(object, outputAssay) <- y_normed
+  SummarizedExperiment::assay(object, outputAssay) <- y_normed
   if (!is.null(offsetAssay))
-    assay(object, offsetAssay) <- offset
+    SummarizedExperiment::assay(object, offsetAssay) <- offset
   
   ## return
   object
@@ -115,16 +117,19 @@ conditionalNormalize <- function(object, inputAssay="counts",
 #' @importClassesFrom Matrix dgCMatrix
 #' @importFrom assertthat assert_that
 #' @importFrom methods is
+#' @importFrom SummarizedExperiment assay assayNames
 #' 
 normalizeBySizeFactors <- function(object, sizeFactors, inputAssay="counts", 
                                    outputAssay="normalized") {
   
-  assert_that(is(object, "SummarizedExperiment"),
-                          inputAssay %in% assayNames(object),
-                          length(sizeFactors) == ncol(object))
+  assertthat::assert_that(
+    methods::is(object, "SummarizedExperiment"),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
+    length(sizeFactors) == ncol(object)
+  )
   
-  assay(object, outputAssay) <- Matrix::t(Matrix::t(
-    assay(object, inputAssay)) / sizeFactors)
+  SummarizedExperiment::assay(object, outputAssay) <- Matrix::t(Matrix::t(
+    SummarizedExperiment::assay(object, inputAssay)) / sizeFactors)
   
   object
 }
@@ -142,18 +147,20 @@ normalizeBySizeFactors <- function(object, sizeFactors, inputAssay="counts",
 TPMnormalizeBySizeFactors <- function(object, sizeFactors, inputAssay="counts", 
                                       outputAssay="TPM") {
   
-  assert_that(is(object, "SummarizedExperiment"),
-                          inputAssay %in% assayNames(object),
-                          length(sizeFactors) == ncol(object))
+  assertthat::assert_that(
+    methods::is(object, "SummarizedExperiment"),
+    inputAssay %in% SummarizedExperiment::assayNames(object),
+    length(sizeFactors) == ncol(object)
+  )
   
   ## Centre size factors
   sf <- sizeFactors / mean(sizeFactors)
   
   ## Calculate scaling factors
-  a <- assay(object, inputAssay)
+  a <- SummarizedExperiment::assay(object, inputAssay)
   sf <- 1e6 / (sf * mean(Matrix::colSums(a)))
   
-  assay(object, outputAssay) <- Matrix::t(Matrix::t(a) * sf)
+  SummarizedExperiment::assay(object, outputAssay) <- Matrix::t(Matrix::t(a) * sf)
   
   object
 }

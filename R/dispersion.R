@@ -11,11 +11,13 @@
 #'
 #' @export
 #'
-#' @import SummarizedExperiment
-#' @importFrom Matrix rowMeans
+#' @importFrom SummarizedExperiment assay assayNames rowData
+#' @importFrom Matrix rowMeans rowSums
 #' @importFrom zoo rollapply
 #' @importFrom assertthat assert_that is.string
 #' @importFrom S4Vectors mcols
+#' @importFrom methods is
+#' @importFrom stats median
 #'
 DMadjustedCV <- function(object, inputAssay = "TPM", prefix = "") {
   assertthat::assert_that(
@@ -27,21 +29,21 @@ DMadjustedCV <- function(object, inputAssay = "TPM", prefix = "") {
 
   object <- calcCV(object, inputAssay, paste(prefix, "CV", sep = ""))
   object <- calcMean(object, inputAssay, paste(prefix, "mean", sep = ""))
-  mcols(object)[, paste(prefix, "log10_CV2", sep = "")] <-
-    log10(rowData(object)[, paste(prefix, "CV", sep = "")]^2)
+  S4Vectors::mcols(object)[, paste(prefix, "log10_CV2", sep = "")] <-
+    log10(SummarizedExperiment::rowData(object)[, paste(prefix, "CV", sep = "")]^2)
 
-  mean_order <- order(rowData(object)[, paste(prefix, "mean", sep = "")])
+  mean_order <- order(SummarizedExperiment::rowData(object)[, paste(prefix, "mean", sep = "")])
 
-  rolling_median <- rollapply(
-    mcols(object)[, paste(prefix, "log10_CV2", sep = "")][mean_order],
+  rolling_median <- zoo::rollapply(
+    S4Vectors::mcols(object)[, paste(prefix, "log10_CV2", sep = "")][mean_order],
     width = 50, by = 25, FUN = median,
     fill = list("extend", "extend", "NA")
   )
 
   nas <- which(is.na(rolling_median))
 
-  rolling_median[nas] <- median(
-    mcols(object)[, paste(prefix, "log10_CV2", sep = "")][mean_order][nas]
+  rolling_median[nas] <- stats::median(
+    S4Vectors::mcols(object)[, paste(prefix, "log10_CV2", sep = "")][mean_order][nas]
   )
 
   names(rolling_median) <- (1:length(object))[mean_order]
@@ -50,11 +52,11 @@ DMadjustedCV <- function(object, inputAssay = "TPM", prefix = "") {
 
   rolling_median <- rolling_median[reorder]
 
-  mcols(object)[, paste(prefix, "roll_median_log10_CV2", sep = "")] <-
+  S4Vectors::mcols(object)[, paste(prefix, "roll_median_log10_CV2", sep = "")] <-
     rolling_median
 
-  mcols(object)[, paste(prefix, "adjusted_log10_CV2", sep = "")] <-
-    mcols(object)[, paste(prefix, "log10_CV2", sep = "")] - rolling_median
+  S4Vectors::mcols(object)[, paste(prefix, "adjusted_log10_CV2", sep = "")] <-
+    S4Vectors::mcols(object)[, paste(prefix, "log10_CV2", sep = "")] - rolling_median
 
   object
 }
@@ -68,10 +70,10 @@ calcCV <- function(object, inputAssay = "counts", outputColumn = "CV") {
     assertthat::is.string(outputColumn)
   )
 
-  data <- assay(object, inputAssay)
+  data <- SummarizedExperiment::assay(object, inputAssay)
   value <- rowSds(data, na.rm = TRUE) / Matrix::rowMeans(data, na.rm = TRUE)
 
-  mcols(object)[, outputColumn] <- value
+  S4Vectors::mcols(object)[, outputColumn] <- value
 
   object
 }
@@ -85,10 +87,10 @@ calcMean <- function(object, inputAssay = "counts", outputColumn = "mean") {
     assertthat::is.string(outputColumn)
   )
 
-  data <- assay(object, inputAssay)
+  data <- SummarizedExperiment::assay(object, inputAssay)
   value <- Matrix::rowMeans(data, na.rm = TRUE)
 
-  mcols(object)[, outputColumn] <- value
+  S4Vectors::mcols(object)[, outputColumn] <- value
 
   object
 }
@@ -99,7 +101,7 @@ rowVars <- function(x, ...) {
   sqr <- function(x) x * x
   n <- Matrix::rowSums(!is.na(x))
   n[n <= 1] <- NA
-  return(rowSums(sqr(x - Matrix::rowMeans(x, ...)), ...) / (n - 1))
+  return(Matrix::rowSums(sqr(x - Matrix::rowMeans(x, ...)), ...) / (n - 1))
 }
 
 ## Helper function
@@ -117,10 +119,10 @@ calcMedian <- function(object, inputAssay = "counts", outputColumn = "median") {
     assertthat::is.string(outputColumn)
   )
 
-  data <- assay(object, inputAssay)
-  value <- apply(data, 1, median, na.rm = TRUE)
+  data <- SummarizedExperiment::assay(object, inputAssay)
+  value <- apply(data, 1, stats::median, na.rm = TRUE)
 
-  mcols(object)[, outputColumn] <- value
+  S4Vectors::mcols(object)[, outputColumn] <- value
 
   object
 }
@@ -134,10 +136,10 @@ calcMax <- function(object, inputAssay = "counts", outputColumn = "median") {
     assertthat::is.string(outputColumn)
   )
 
-  data <- assay(object, inputAssay)
+  data <- SummarizedExperiment::assay(object, inputAssay)
   value <- apply(data, 1, max, na.rm = TRUE)
 
-  mcols(object)[, outputColumn] <- value
+  S4Vectors::mcols(object)[, outputColumn] <- value
 
   object
 }
