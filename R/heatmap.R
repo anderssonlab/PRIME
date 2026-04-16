@@ -16,7 +16,7 @@
 #'
 #' @export
 #'
-#' @importFrom GenomicRanges seqnames seqlevels `seqlevels<-`
+#' @importFrom GenomicRanges seqnames
 #' @importFrom IRanges Views viewApply width coverage
 #' @importFrom assertthat assert_that
 #' @importFrom GenomeInfoDb seqlevels `seqlevels<-`

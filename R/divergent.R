@@ -14,9 +14,9 @@
 #' 
 #' @export
 #' 
-#' @importFrom GenomicRanges GRanges findOverlaps flank `seqlevels<-` seqinfo `seqinfo<-` seqlevels strand `strand<-` start end `start<-` `end<-` mcols `mcols<-` names `names<-` subsetByOverlaps isDisjoint swapRanges seqnames
+#' @importFrom GenomicRanges GRanges findOverlaps flank seqinfo `seqinfo<-` strand `strand<-` start end `start<-` `end<-` mcols `mcols<-` isDisjoint seqnames
 #' @importFrom SummarizedExperiment SummarizedExperiment assay assays assayNames `assayNames<-` rowRanges colData
-#' @importFrom IRanges IRanges reduce Views viewSums
+#' @importFrom IRanges IRanges reduce Views viewSums subsetByOverlaps
 #' @importFrom CAGEfightR quantifyClusters calcPooled
 #' @importFrom igraph graph_from_edgelist components
 #' @importFrom S4Vectors queryHits subjectHits
@@ -352,9 +352,9 @@ quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts",
 #' 
 #' @export
 #' 
-#' @importFrom GenomicRanges GRanges findOverlaps flank seqinfo `seqinfo<-` seqlevels `seqlevels<-` start end `start<-` `end<-` strand `strand<-` mcols `mcols<-` names `names<-` seqnames subsetByOverlaps swapRanges
+#' @importFrom GenomicRanges GRanges findOverlaps flank seqinfo `seqinfo<-` start end `start<-` `end<-` strand `strand<-` mcols `mcols<-` seqnames
 #' @importFrom SummarizedExperiment assay assays assayNames `assayNames<-` rowRanges colData
-#' @importFrom IRanges IRanges reduce Views viewSums
+#' @importFrom IRanges IRanges reduce Views viewSums subsetByOverlaps
 #' @importFrom CAGEfightR quantifyClusters calcPooled
 #' @importFrom data.table data.table setorder
 #' @importFrom igraph graph_from_edgelist components

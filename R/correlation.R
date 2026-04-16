@@ -13,9 +13,9 @@
 #'
 #' @export
 #'
-#' @importFrom GenomicRanges start end `start<-` `end<-` strand length
+#' @importFrom GenomicRanges start end `start<-` `end<-` strand
 #' @importFrom stats acf ccf
-#' @importFrom assertthat assert_that is.numeric is.flag
+#' @importFrom assertthat assert_that is.flag
 #' @importFrom S4Vectors mcols
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom methods is as

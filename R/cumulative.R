@@ -13,7 +13,7 @@
 #' @importFrom CAGEfightR calcTotalTags
 #' @importFrom IRanges distance follow
 #' @importFrom SummarizedExperiment assay colData rowRanges assayNames
-#' @importFrom assertthat assert_that is.numeric is.flag
+#' @importFrom assertthat assert_that is.flag
 #' @importFrom S4Vectors mcols
 #' @importFrom methods is as
 #'
@@ -87,7 +87,7 @@ cumulativeFractionAroundLoci <- function(loci, ctss, max_dist = 1000) {
 #' @importFrom CAGEfightR calcTotalTags
 #' @importFrom IRanges distance follow nearest distanceToNearest
 #' @importFrom SummarizedExperiment assay colData rowRanges assayNames
-#' @importFrom assertthat assert_that is.numeric is.flag is.string
+#' @importFrom assertthat assert_that is.flag is.string
 #' @importFrom S4Vectors mcols
 #' 
 #' 
