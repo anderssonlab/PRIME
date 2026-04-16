@@ -38,9 +38,9 @@ decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
   
   ## Create CTSS intersects
   ctss_plus <- lapply(grl_plus, function(gr) {
-    GenomicRanges::subsetByOverlaps(ctssByStrand$`+`, gr)})
+    IRanges::subsetByOverlaps(ctssByStrand$`+`, gr)})
   ctss_minus <- lapply(grl_minus, function(gr) {
-    GenomicRanges::subsetByOverlaps(ctssByStrand$`-`, gr)})
+    IRanges::subsetByOverlaps(ctssByStrand$`-`, gr)})
   
   message("Decomposing tag clusters")
   irl_plus <- methods::as(lapply(seq_along(ctss_plus), function(i) {

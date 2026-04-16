@@ -47,7 +47,7 @@ estimateNoise <- function(object, mask, mappable, map_frac=0.5, win_size=200,
   genome_gr <- GenomicRanges::tileGenome(GenomeInfoDb::seqinfo(object),tilewidth=win_size,
                           cut.last.tile.in.chrom=TRUE)
   ## Remove masked regions
-  genome_gr <- GenomicRanges::subsetByOverlaps(genome_gr, mask, maxgap=-1, type="any", 
+  genome_gr <- IRanges::subsetByOverlaps(genome_gr, mask, maxgap=-1, type="any", 
                                 invert=TRUE)
   
   message("Filtering windows based on mappability...")
@@ -132,7 +132,7 @@ assertthat::assert_that(
   genome_gr <- GenomicRanges::tileGenome(GenomeInfoDb::seqinfo(object),tilewidth=win_size*2+1,
                           cut.last.tile.in.chrom=TRUE)
   ## Remove masked regions
-  genome_gr <- GenomicRanges::subsetByOverlaps(genome_gr, mask, maxgap=-1, type="any", 
+  genome_gr <- IRanges::subsetByOverlaps(genome_gr, mask, maxgap=-1, type="any", 
                                 invert=TRUE)
   
   ## Create strand specific windows
