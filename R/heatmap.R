@@ -16,11 +16,12 @@
 #'
 #' @export
 #'
-#' @import GenomicRanges
-#' @import IRanges
-#' @import CAGEfightR
+#' @importFrom GenomicRanges seqnames seqlevels `seqlevels<-`
+#' @importFrom IRanges Views viewApply width coverage
 #' @importFrom assertthat assert_that
-#' @importFrom GenomeInfoDb seqlevels seqlevels<-
+#' @importFrom GenomeInfoDb seqlevels `seqlevels<-`
+#' @importFrom S4Vectors mcols
+#' @importFrom methods as
 #'
 heatmapData <- function(regions,
                         data,
@@ -29,11 +30,11 @@ heatmapData <- function(regions,
                         sparse = FALSE, ...) {
 
   ## Check regions
-  assert_that(length(unique(width(regions))) == 1,
-              column %in% colnames(mcols(data)))
+  assert_that(length(unique(IRanges::width(regions))) == 1,
+              column %in% colnames(S4Vectors::mcols(data)))
 
-  sl <- intersect(seqlevels(regions), seqlevels(data))
-  if (!all(seqlevels(regions) %in% sl) || !all(seqlevels(data) %in% sl)) {
+  sl <- intersect(GenomicRanges::seqlevels(regions), GenomicRanges::seqlevels(data))
+  if (!all(GenomicRanges::seqlevels(regions) %in% sl) || !all(GenomicRanges::seqlevels(data) %in% sl)) {
     warning(paste0("seqlevels differ between regions and data GRanges",
                    "objects, subsetting to intersection"))
     GenomeInfoDb::seqlevels(regions, pruning.mode = "coarse") <- sl
@@ -53,7 +54,7 @@ heatmapData <- function(regions,
 
     dat <- lapply(nd, function(d) {
       message("   ", d)
-      vl <- Views(dataByStrand[[d]], regionsByStrand[[r]])
+      vl <- IRanges::Views(dataByStrand[[d]], regionsByStrand[[r]])
       n <- paste0(unlist(lapply(names(vl), function(nv) {
         rep(nv, length(vl[[nv]]))})), ":",
         unlist(lapply(vl, start)), "-",
@@ -66,14 +67,14 @@ heatmapData <- function(regions,
         m <- do.call("rbind",
                      lapply(vl[vlen > 0], function(v) {
                        vectorListToMatrix(
-                         viewApply(v, function(x) {
-                           as(transform_fn(as.vector(x, mode = "numeric"), ...), "dsparseVector") # nolint: line_length_linter.
+                         IRanges::viewApply(v, function(x) {
+                           methods::as(transform_fn(as.vector(x, mode = "numeric"), ...), "dsparseVector") # nolint: line_length_linter.
                          })
                        )
                      }))
       } else {
         m <- do.call("rbind", lapply(vl[vlen > 0], function(v) {
-          t(viewApply(v, function(x) {
+          t(IRanges::viewApply(v, function(x) {
             transform_fn(as.vector(x, mode = "numeric"), ...)
           }))
         }))
@@ -126,7 +127,7 @@ splitPooledWeight <- function(object, weight = "score") {
   o <- CAGEfightR:::splitByStrand(object)
 
   ## Calculate coverage
-  o <- lapply(o, coverage, weight = weight)
+  o <- lapply(o, IRanges::coverage, weight = weight)
 
   ## Round to handle floating point errors
   o <- lapply(o, round, digits = 9)

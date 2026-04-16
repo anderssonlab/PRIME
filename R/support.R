@@ -15,19 +15,20 @@
 #'
 #' @importFrom Matrix rowSums
 #' @importFrom assertthat assert_that
-#' @import SummarizedExperiment
+#' @importFrom SummarizedExperiment assay assayNames rowData `assay<-`
+#' @importFrom S4Vectors mcols
 #'
 calcBatchSupport <- function(object, batch, inputAssay = "counts",
                              outputColumn = "batchSupport", unexpressed = 0,
                              minSamples = 1) {
   ## dimensions
-  assert_that(
+  assertthat::assert_that(
     ncol(object) == length(batch),
     length(unique(batch)) > 1,
     minSamples >= 1
   )
 
-  if (outputColumn %in% colnames(rowData(object))) {
+  if (outputColumn %in% colnames(SummarizedExperiment::rowData(object))) {
     warning(
       "object already has a column named ", outputColumn,
       " in rowData: It will be overwritten!"
@@ -37,12 +38,12 @@ calcBatchSupport <- function(object, batch, inputAssay = "counts",
   message("Calculating support per batch...")
   a <-
     do.call("cbind", lapply(unique(batch), function(b) {
-      Matrix::rowSums(assay(object, inputAssay)[, batch == b, drop = FALSE] >
+      Matrix::rowSums(SummarizedExperiment::assay(object, inputAssay)[, batch == b, drop = FALSE] >
         unexpressed)
     }))
 
   message("Calculating overall batch support...")
-  rowData(object)[, outputColumn] <- as.integer(Matrix::rowSums(a >= minSamples))
+  SummarizedExperiment::rowData(object)[, outputColumn] <- as.integer(Matrix::rowSums(a >= minSamples))
 
   object
 }
@@ -66,12 +67,12 @@ rmSingletons <- function(rse, inputAssay = "counts", outputAssay = "counts.noSin
     assertthat::is.string(outputAssay)
   )
 
-  rmS <- assay(rse, inputAssay)
+  rmS <- SummarizedExperiment::assay(rse, inputAssay)
   # Find the indices where values are equal to 1
   idx <- which(rmS == 1, arr.ind = TRUE)
   # Replace the values at those indices with 0
   rmS[idx] <- 0
   # Assign the modified assay back to the SummarizedExperiment object
-  assay(rse, outputAssay) <- rmS
+  SummarizedExperiment::assay(rse, outputAssay) <- rmS
   rse
 }

@@ -12,41 +12,40 @@
 #'
 #' @export
 #' 
-#' @import GenomicRanges
-#' @import IRanges
-#' @import CAGEfightR
-#' @import SummarizedExperiment
+#' @importFrom GenomicRanges seqinfo `seqinfo<-` seqnames sort GRanges subsetByOverlaps
+#' @importFrom IRanges IRanges `IRangesList` Views viewApply start
+#' @importFrom SummarizedExperiment assay rowRanges
 #' @importFrom assertthat assert_that
 #' @importFrom methods is as
 #' @importFrom GenomeInfoDb seqlengths
 #' 
 decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
   
-  assert_that(identical(seqlengths(object), seqlengths(ctss)))
+  assertthat::assert_that(identical(GenomeInfoDb::seqlengths(object), GenomeInfoDb::seqlengths(ctss)))
   
   ## Split by strand
   message("Splitting and intersecting data...")
   TCsByStrand <- CAGEfightR:::splitByStrand(object)
-  covByStrand <- CAGEfightR:::splitPooled(as(rowRanges(ctss),
+  covByStrand <- CAGEfightR:::splitPooled(methods::as(SummarizedExperiment::rowRanges(ctss),
                                                       "GRanges"))
   ctssByStrand <- CAGEfightR:::splitByStrand(ctss)
   
   ## Convert TCs to GRangesList split by chromosome
-  grl_plus <- as(split(TCsByStrand$`+`, 
-                                seqnames(TCsByStrand$`+`)),'GRangesList')
-  grl_minus <- as(split(TCsByStrand$`-`, 
-                                 seqnames(TCsByStrand$`-`)),'GRangesList')
+  grl_plus <- methods::as(split(TCsByStrand$`+`, 
+                                GenomicRanges::seqnames(TCsByStrand$`+`)),'GRangesList')
+  grl_minus <- methods::as(split(TCsByStrand$`-`, 
+                                 GenomicRanges::seqnames(TCsByStrand$`-`)),'GRangesList')
   
   ## Create CTSS intersects
   ctss_plus <- lapply(grl_plus, function(gr) {
-    subsetByOverlaps(ctssByStrand$`+`, gr)})
+    GenomicRanges::subsetByOverlaps(ctssByStrand$`+`, gr)})
   ctss_minus <- lapply(grl_minus, function(gr) {
-    subsetByOverlaps(ctssByStrand$`-`, gr)})
+    GenomicRanges::subsetByOverlaps(ctssByStrand$`-`, gr)})
   
   message("Decomposing tag clusters")
-  irl_plus <- as(lapply(seq_along(ctss_plus), function(i) {
+  irl_plus <- methods::as(lapply(seq_along(ctss_plus), function(i) {
     fn(ctss_plus[[i]], grl_plus[[i]], ...)}),"IRangesList")
-  irl_minus <- as(lapply(seq_along(ctss_minus), function(i) {
+  irl_minus <- methods::as(lapply(seq_along(ctss_minus), function(i) {
     fn(ctss_minus[[i]], grl_minus[[i]], ...)}),"IRangesList")
   
   names(irl_plus) <- names(grl_plus)
@@ -56,16 +55,16 @@ decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
   decomposedTCs <- CAGEfightR:::TCstats(coverage_plus = covByStrand$`+`,
                                         coverage_minus = covByStrand$`-`,
                                         tcs_plus = 
-                                          as(irl_plus,
+                                          methods::as(irl_plus,
                                                       "CompressedIRangesList"),
                                         tcs_minus = 
-                                          as(irl_minus,
+                                          methods::as(irl_minus,
                                                       "CompressedIRangesList"))
   
   ## Carry over seqinfo and sort
   message("Preparing output...")
-  seqinfo(decomposedTCs) <- seqinfo(object)
-  decomposedTCs <- sort(decomposedTCs)
+  GenomicRanges::seqinfo(decomposedTCs) <- GenomicRanges::seqinfo(object)
+  decomposedTCs <- GenomicRanges::sort(decomposedTCs)
   
   ## Print some basic stats
   message("Tag clustering summary:")
@@ -92,9 +91,9 @@ decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
 #' @export
 decompose <- function(object, pooled, fn=summit_decompose, ...) {
   
-  pooled <- as(rowRanges(pooled),"GRanges")
+  pooled <- methods::as(SummarizedExperiment::rowRanges(pooled),"GRanges")
   
-  assert_that(identical(seqlengths(object), seqlengths(pooled)))
+  assertthat::assert_that(identical(GenomeInfoDb::seqlengths(object), GenomeInfoDb::seqlengths(pooled)))
   
   ## Split by strand
   message("Splitting by strand...")
@@ -102,18 +101,18 @@ decompose <- function(object, pooled, fn=summit_decompose, ...) {
   covByStrand <- CAGEfightR:::splitPooled(pooled)
   
   ## Convert to IRangesList
-  irl_plus <- as(TCsByStrand$`+`,'IRangesList')
-  irl_minus <- as(TCsByStrand$`-`,'IRangesList')
+  irl_plus <- methods::as(TCsByStrand$`+`,'IRangesList')
+  irl_minus <- methods::as(TCsByStrand$`-`,'IRangesList')
   
   ## Views
-  views_plus <- Views(covByStrand$`+`, irl_plus)
-  views_minus <- Views(covByStrand$`-`, irl_minus)
+  views_plus <- IRanges::Views(covByStrand$`+`, irl_plus)
+  views_minus <- IRanges::Views(covByStrand$`-`, irl_minus)
   
   message("Decomposing tag clusters")
-  irl_plus <- as(lapply(views_plus, 
+  irl_plus <- methods::as(lapply(views_plus, 
                                  function(views) fn(views, ...)),
                           "IRangesList")
-  irl_minus <- as(lapply(views_minus, 
+  irl_minus <- methods::as(lapply(views_minus, 
                                   function(views) fn(views, ...)),
                            "IRangesList")
   
@@ -121,16 +120,16 @@ decompose <- function(object, pooled, fn=summit_decompose, ...) {
   decomposedTCs <- CAGEfightR:::TCstats(coverage_plus = covByStrand$`+`,
                                         coverage_minus = covByStrand$`-`,
                                         tcs_plus = 
-                                          as(irl_plus,
+                                          methods::as(irl_plus,
                                                       "CompressedIRangesList"),
                                         tcs_minus = 
-                                          as(irl_minus,
+                                          methods::as(irl_minus,
                                                       "CompressedIRangesList"))
   
   ## Carry over seqinfo and sort
   message("Preparing output...")
-  seqinfo(decomposedTCs) <- seqinfo(object)
-  decomposedTCs <- sort(decomposedTCs)
+  GenomicRanges::seqinfo(decomposedTCs) <- GenomicRanges::seqinfo(object)
+  decomposedTCs <- GenomicRanges::sort(decomposedTCs)
   
   ## Print some basic stats
   message("Tag clustering summary:")
@@ -155,9 +154,9 @@ decompose <- function(object, pooled, fn=summit_decompose, ...) {
 summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
   
   if (length(views)==0)
-    return(IRanges())
+    return(IRanges::IRanges())
   
-  pos <- viewApply(views, function(rle) {
+  pos <- IRanges::viewApply(views, function(rle) {
     
     ## most common case: 1bp TC
     if (length(rle) == 1)
@@ -192,10 +191,10 @@ summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
     lapply(seq(1,length(x),by=2), function(j) c(i,x[j],x[j+1]))
   })),ncol=3,byrow=TRUE)
   
-  s <- start(views)[pos[,1]]
+  s <- IRanges::start(views)[pos[,1]]
   
   ## return IRanges object
-  IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
+  IRanges::IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
 }
 
 #' Decompose tag cluster into subclusters according to CTSS expression
@@ -210,9 +209,10 @@ summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
 #' calculation.
 #' 
 #' @importFrom bcp bcp
-#' @importFrom S4Vectors unname
-#' @importFrom IRanges findOverlaps
+#' @importFrom S4Vectors unname subjectHits queryHits
+#' @importFrom IRanges findOverlaps start
 #' @importFrom SummarizedExperiment assay rowRanges
+#' @importFrom BiocParallel bplapply
 #' 
 #' @return An \code{IRanges} object of decomposed tag clusters.
 #'
@@ -223,16 +223,16 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
   splitAt <- function(x, pos) S4Vectors::unname(split(x, cumsum(seq_along(x) %in% pos)))
   
   if (length(rse)==0)
-    return(IRanges())
+    return(IRanges::IRanges())
   
-  fo <- findOverlaps(rse, gr)
-  hits <- sort(unique(subjectHits(fo)))
+  fo <- IRanges::findOverlaps(rse, gr)
+  hits <- sort(unique(S4Vectors::subjectHits(fo)))
   
-  assert_that(length(hits) == length(gr))
+  assertthat::assert_that(length(hits) == length(gr))
   
-  pos <- bplapply(hits, function(i) {
+  pos <- BiocParallel::bplapply(hits, function(i) {
     
-    q <- queryHits(fo)[which(subjectHits(fo) == i)]
+    q <- S4Vectors::queryHits(fo)[which(S4Vectors::subjectHits(fo) == i)]
     
     ## most common case: 1bp TC
     if (length(q) == 1)
@@ -241,7 +241,7 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
     g <- gr[i]
     r <- rse[q]
     
-    mat <- as.matrix(t(assay(r,assay)))
+    mat <- as.matrix(t(SummarizedExperiment::assay(r,assay)))
     if (scale)
       mat <- as.matrix(apply(mat,2,scale))
     corr <- cor(mat,method="pearson")
@@ -249,7 +249,7 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
     bcp_eig <- bcp::bcp(eig)
     
     bp <- which(bcp_eig$posterior.prob > thres)
-    rel.pos <- start(rowRanges(r)) - start(rowRanges(r))[1] + 1
+    rel.pos <- IRanges::start(SummarizedExperiment::rowRanges(r)) - IRanges::start(SummarizedExperiment::rowRanges(r))[1] + 1
     
     if (length(bp) == 0)
       return(c(1,rel.pos[length(q)]))
@@ -287,10 +287,10 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
     lapply(seq(1,length(x),by=2), function(j) c(i,x[j],x[j+1]))
   })),ncol=3,byrow=TRUE)
   
-  s <- start(gr)[pos[,1]]
+  s <- IRanges::start(gr)[pos[,1]]
   
   ## return IRanges object
-  IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
+  IRanges::IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
 }
 
 
@@ -324,9 +324,9 @@ local_maxima_decompose <- function(views, fraction = 0.1, maximaDist=20,
                                    smoothPad=0) {
   
   if (length(views)==0)
-    return(IRanges())
+    return(IRanges::IRanges())
   
-  pos <- viewApply(views, function(rle) {
+  pos <- IRanges::viewApply(views, function(rle) {
     
     ## most common case: 1bp TC
     if (length(rle) == 1)
@@ -335,7 +335,7 @@ local_maxima_decompose <- function(views, fraction = 0.1, maximaDist=20,
     r <- as.vector(rle)
     
     ## Local maxima
-    m <- which(apply(cbind(r,runmax(r,maximaDist)),1,
+    m <- which(apply(cbind(r,caTools::runmax(r,maximaDist)),1,
                      function(x) x[1]==x[2]))
     m <- m[order(r[m], decreasing=TRUE)]
     
@@ -416,8 +416,8 @@ local_maxima_decompose <- function(views, fraction = 0.1, maximaDist=20,
     lapply(seq(1,length(x),by=2), function(j) c(i,x[j],x[j+1]))})),
     ncol=3,byrow=TRUE)
   
-  s <- start(views)[pos[,1]]
+  s <- IRanges::start(views)[pos[,1]]
   
   ## return IRanges object
-  IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
+  IRanges::IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
 }

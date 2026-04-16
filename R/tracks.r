@@ -12,8 +12,12 @@
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
 #' @importFrom rtracklayer export
-#' @importFrom SummarizedExperiment assay
-#' @importFrom SummarizedExperiment rowRanges
+#' @importFrom SummarizedExperiment assay rowRanges colData
+#' @importFrom GenomicRanges GRanges
+#' @importFrom BiocGenerics strand start end
+#' @importFrom IRanges reduce
+#' @importFrom S4Vectors mcols aggregate
+#' @importFrom magrittr %>%
 #' @export
 #'
 writeBw <- function(object, dir, replicates = "all", inputAssay = "TPM", splitByStrand = TRUE) {
@@ -24,7 +28,7 @@ writeBw <- function(object, dir, replicates = "all", inputAssay = "TPM", splitBy
   ## Check consistency of replicates
   assertthat::assert_that(
     base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object, inputAssay)),
-    base::all(replicates %in% rownames(SummarizedExperiment::colData(object)))
+    base::all(replicates %in% base::rownames(SummarizedExperiment::colData(object)))
   )
   base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
 
@@ -84,11 +88,12 @@ writeBw <- function(object, dir, replicates = "all", inputAssay = "TPM", splitBy
 #' @importFrom rtracklayer BigWigSelection
 #' @importFrom rtracklayer import
 #' @importFrom purrr map
-#' @importFrom dplyr bind_rows
-#' @importFrom dplyr mutate
-#' @importFrom dplyr case_when
+#' @importFrom dplyr bind_rows mutate case_when
 #' @importFrom stringr str_replace
 #' @importFrom assertthat assert_that
+#' @importFrom tibble as_tibble
+#' @importFrom magrittr %>%
+#' @importFrom methods is
 #'
 #' @export
 #'
@@ -147,13 +152,10 @@ readRange <- function(files, range) {
 #'
 #' @return A tibble with missing scores filled in with zeros.
 #'
-#' @importFrom dplyr distinct
-#' @importFrom dplyr pull
-#' @importFrom tidyr pivot_wider
-#' @importFrom dplyr mutate
-#' @importFrom tidyr replace_na
-#' @importFrom tidyr pivot_longer
+#' @importFrom dplyr distinct pull across
+#' @importFrom tidyr pivot_wider replace_na pivot_longer
 #' @importFrom stringr str_replace
+#' @importFrom tidyselect all_of
 #'
 fillGaps <- function(data) {
   assertthat::assert_that(
@@ -198,18 +200,10 @@ fillGaps <- function(data) {
 #'
 #' @return A ggplot object representing the tracks for the specified genomic range.
 #'
-#' @importFrom ggplot2 ggplot
-#' @importFrom ggplot2 aes
-#' @importFrom ggplot2 geom_bar
-#' @importFrom ggplot2 scale_x_continuous
-#' @importFrom ggplot2 scale_color_manual
-#' @importFrom ggplot2 scale_linetype_manual
-#' @importFrom ggplot2 facet_wrap
-#' @importFrom ggplot2 theme_bw
-#' @importFrom ggplot2 theme
-#' @importFrom ggplot2 element_blank
-#' @importFrom ggplot2 element_text
+#' @importFrom ggplot2 ggplot aes geom_bar scale_x_continuous scale_color_manual scale_linetype_manual facet_wrap theme_bw theme element_blank element_text
 #' @importFrom grid unit
+#' @importFrom BiocGenerics start end
+#' @importFrom methods is
 #'
 #' @export
 #'
@@ -226,7 +220,7 @@ plotTracks <- function(data, range) {
 
   plot <- ggplot2::ggplot(
     data = data,
-    mapping = aes(
+    mapping = ggplot2::aes(
       x = start,
       y = score,
       colour = strand,
@@ -258,9 +252,9 @@ plotTracks <- function(data, range) {
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.position = "none",
-      axis.title.x = element_blank(),
+      axis.title.x = ggplot2::element_blank(),
       panel.spacing = grid::unit(0.05, "lines"),
-      panel.grid.minor = element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
       plot.margin = grid::unit(base::c(0, 0, 0, 0), "cm")
     )
   return(plot)
