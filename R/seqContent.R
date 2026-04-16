@@ -11,6 +11,8 @@
 #' @importFrom assertthat assert_that
 #' @importFrom GenomicRanges promoters
 #' @importFrom Biostrings getSeq
+#' @importFrom CAGEfightR swapRanges
+#' @importFrom BSgenome getSeq
 #'
 
 initiatorScore <- function(object, bsg) {
@@ -27,14 +29,14 @@ initiatorScore <- function(object, bsg) {
 
   # Create promoters based on the class of object
   if (inherits(object, "GRanges")) {
-    swapped_object <- swapRanges(object)
+    swapped_object <- CAGEfightR::swapRanges(object)
     x <- promoters(swapped_object, upstream = 1, downstream = 1)
   } else if (inherits(object, "StitchedGPos")) {
     x <- promoters(object, upstream = 1, downstream = 1)
   }
 
   # Get sequences
-  x$seq <- getSeq(bsg, x, as.character = TRUE)
+  x$seq <- BSgenome::getSeq(bsg, x, as.character = TRUE)
 
   # Define INR categories
   YC <- c("CC", "TC")

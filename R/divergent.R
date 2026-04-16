@@ -104,7 +104,7 @@ divergentLoci <- function(object, ctss, max_gap=400, win_size=200,
   
 
   gr <- GenomicRanges::GRanges(seqnames=div_chr,IRanges::IRanges(start=div_mid,end=div_mid))
-  GenomicRanges::seqlevels(ctss,pruning.mode="coarse") <- GenomicRanges::seqlevels(gr)
+  GenomeInfoDb::seqlevels(ctss,pruning.mode="coarse") <- GenomeInfoDb::seqlevels(gr)
   GenomicRanges::seqinfo(gr) <- GenomicRanges::seqinfo(ctss)
 
   covByStrand <- CAGEfightR:::splitPooled(methods::as(SummarizedExperiment::rowRanges(ctss),
@@ -355,7 +355,7 @@ quantifyStrandwiseDivergentLoci <- function(loci, ctss, inputAssay = "counts",
 #' @importFrom GenomicRanges GRanges findOverlaps flank seqinfo `seqinfo<-` start end `start<-` `end<-` strand `strand<-` mcols `mcols<-` seqnames
 #' @importFrom SummarizedExperiment assay assays assayNames `assayNames<-` rowRanges colData
 #' @importFrom IRanges IRanges reduce Views viewSums subsetByOverlaps
-#' @importFrom CAGEfightR quantifyClusters calcPooled
+#' @importFrom CAGEfightR quantifyClusters calcPooled swapRanges
 #' @importFrom data.table data.table setorder
 #' @importFrom igraph graph_from_edgelist components
 #' @importFrom BiocParallel bplapply
@@ -370,7 +370,7 @@ divergentLociSummit<- function(object, ctss, max_gap=400, win_size=200,
   ctss <- suppressWarnings(CAGEfightR::calcPooled(ctss,inputAssay=inputAssay))
   
   message("Removing overlapping TCs by strand...")
-  object <- GenomicRanges::swapRanges(object) #Summit focused
+  object <- CAGEfightR::swapRanges(object) #Summit focused
   TCsByStrand <- CAGEfightR:::splitByStrand(object)
   
   ## Find overlapping and book-ended summits between strands
@@ -443,7 +443,7 @@ divergentLociSummit<- function(object, ctss, max_gap=400, win_size=200,
   
   
   gr <- GenomicRanges::GRanges(seqnames=div_chr,IRanges::IRanges(start=mid,end=mid))
-  GenomicRanges::seqlevels(ctss,pruning.mode="coarse") <- GenomicRanges::seqlevels(gr)
+  GenomeInfoDb::seqlevels(ctss,pruning.mode="coarse") <- GenomeInfoDb::seqlevels(gr)
   GenomicRanges::seqinfo(gr) <- GenomicRanges::seqinfo(ctss)
   
   cat("\r")

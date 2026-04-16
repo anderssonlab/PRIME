@@ -33,8 +33,8 @@ heatmapData <- function(regions,
   assert_that(length(unique(IRanges::width(regions))) == 1,
               column %in% colnames(S4Vectors::mcols(data)))
 
-  sl <- intersect(GenomicRanges::seqlevels(regions), GenomicRanges::seqlevels(data))
-  if (!all(GenomicRanges::seqlevels(regions) %in% sl) || !all(GenomicRanges::seqlevels(data) %in% sl)) {
+  sl <- intersect(GenomeInfoDb::seqlevels(regions), GenomeInfoDb::seqlevels(data))
+  if (!all(GenomeInfoDb::seqlevels(regions) %in% sl) || !all(GenomeInfoDb::seqlevels(data) %in% sl)) {
     warning(paste0("seqlevels differ between regions and data GRanges",
                    "objects, subsetting to intersection"))
     GenomeInfoDb::seqlevels(regions, pruning.mode = "coarse") <- sl
