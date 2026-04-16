@@ -13,11 +13,29 @@
 #' 
 #' @return A matrix with the quantiles for each sample.
 #' 
+#' @importFrom methods is
+#' @importFrom assertthat assert_that is.numeric is.flag is.string
+#' 
 #' @export
 estimateNoise <- function(object, mask, mappable, map_frac=0.5, win_size=200, 
                           num_win=1e6, strand="+", inputAssay="counts", 
                           quantiles=c(0.9,0.95,0.99,0.999,0.9999,0.99999)) {
   
+  assertthat::assert_that(
+  methods::is(object, "RangedSummarizedExperiment"),
+  methods::is(mask, "GRanges"),
+  methods::is(mappable, "GRanges"),
+  is.numeric(map_frac), length(map_frac) == 1, map_frac > 0, map_frac <= 1,
+  is.numeric(win_size), length(win_size) == 1, win_size > 0,
+  is.numeric(num_win), length(num_win) == 1, num_win > 0,
+  assertthat::is.string(strand),
+  strand %in% c("+", "-"),
+  assertthat::is.string(inputAssay),
+  inputAssay %in% SummarizedExperiment::assayNames(object),
+  is.numeric(quantiles),
+  all(quantiles > 0 & quantiles < 1)
+)
+
   message("Creating unmasked windows...")
   ## Create tiling windows
   genome_gr <- tileGenome(seqinfo(object),tilewidth=win_size,
@@ -76,6 +94,9 @@ estimateNoise <- function(object, mask, mappable, map_frac=0.5, win_size=200,
 #' 
 #' @import GenomicRanges
 #' @import CAGEfightR
+#' @importFrom IRanges pintersect
+#' @importFrom methods is
+#' @importFrom assertthat assert_that is.numeric is.flag is.string
 #' 
 estimateDivergentNoise <- function(object, mask, mappable_minus, mappable_plus, 
                                    map_frac=0.5, win_size=200, num_win=1e6, 
@@ -83,6 +104,20 @@ estimateDivergentNoise <- function(object, mask, mappable_minus, mappable_plus,
                                    quantiles=c(0.9,0.95,0.99,0.999,0.9999,
                                                0.99999)) {
   
+assertthat::assert_that(
+  methods::is(object, "RangedSummarizedExperiment"),
+  methods::is(mask, "GRanges"),
+  methods::is(mappable_minus, "GRanges"),
+  methods::is(mappable_plus, "GRanges"),
+  is.numeric(map_frac), length(map_frac) == 1, map_frac > 0, map_frac <= 1,
+  is.numeric(win_size), length(win_size) == 1, win_size > 0,
+  is.numeric(num_win), length(num_win) == 1, num_win > 0,
+  assertthat::is.string(inputAssay),
+  inputAssay %in% SummarizedExperiment::assayNames(object),
+  is.numeric(quantiles),
+  all(quantiles > 0 & quantiles < 1)
+)
+
   message("Creating unmasked mappable windows...")
   ## Create tiling windows
   genome_gr <- tileGenome(seqinfo(object),tilewidth=win_size*2+1,

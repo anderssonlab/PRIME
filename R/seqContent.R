@@ -1,31 +1,30 @@
 #' Initiator classification of \code{GRanges} into YR, YC and other.
-#' 
+#'
 #' @param object A \code{GRanges} or \code{StitchedGPos} object.
-#' @param bsg The \code{BSgenome} reference to use. 
-#' 
+#' @param bsg The \code{BSgenome} reference to use.
+#'
 #' @return A \code{GRanges} object initiator classification.
-#' 
+#'
 #' @export
-#' 
-#' @import SummarizedExperiment
-#' @import IRanges
-#' @import CAGEfightR
-#' @import BSgenome
-#' 
-#' 
+#'
+#' @importFrom methods is
+#' @importFrom assertthat assert_that
+#' @importFrom GenomicRanges swapRanges promoters
+#' @importFrom Biostrings getSeq
+#'
 
 initiatorScore <- function(object, bsg) {
-  # Ensure the input is of class GRanges or StitchedGPos
-  if (!inherits(object, c("GRanges", "StitchedGPos"))) {
-    stop("object must be of class GRanges or StitchedGPos")
-  }
-  
+  assertthat::assert_that(
+    methods::is(object, "GRanges") || methods::is(object, "StitchedGPos"),
+    methods::is(bsg, "BSgenome")
+  )
+
   # Remove out-of-bound indices
   idx <- GenomicRanges:::get_out_of_bound_index(object)
   if (length(idx) > 0) {
     object <- object[-idx]
   }
-  
+
   # Create promoters based on the class of object
   if (inherits(object, "GRanges")) {
     swapped_object <- swapRanges(object)
@@ -33,18 +32,18 @@ initiatorScore <- function(object, bsg) {
   } else if (inherits(object, "StitchedGPos")) {
     x <- promoters(object, upstream = 1, downstream = 1)
   }
-    
+
   # Get sequences
   x$seq <- getSeq(bsg, x, as.character = TRUE)
-  
+
   # Define INR categories
   YC <- c("CC", "TC")
   YR <- c("CA", "TA", "CG", "TG")
-  
+
   # Assign INR category
   x$INR <- "other"
   x$INR[x$seq %in% YC] <- "YC"
   x$INR[x$seq %in% YR] <- "YR"
-  
+
   return(x)
 }
