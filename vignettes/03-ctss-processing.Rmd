@@ -1,0 +1,168 @@
+---
+title: "CTSS Quantification and Quality Control"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CTSS Quantification and Quality Control}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+This vignette covers the quantification of CAGE transcription start sites (CTSSs)
+from BigWig files produced by PRIMEprep, followed by quality control,
+replicate pooling, subsampling, and complexity analysis.
+
+CTSSs are single-base-pair positions with associated 5' end read counts. The
+`CAGEfightR::quantifyCTSSs()` function reads strand-specific BigWig files and
+produces a `RangedSummarizedExperiment` object that serves as the primary data
+structure throughout the PRIME workflow.
+
+The PRIME package includes small example data for testing basic functionality.
+
+## Setup
+
+```{r libraries}
+library(CAGEfightR)
+library(PRIME)
+library(SummarizedExperiment)
+library(GenomeInfoDb)
+```
+
+## Design matrix
+
+The design matrix is a tab-separated file with one row per sample. Required
+columns are `Name`, `BigWigPlus`, and `BigWigMinus`. Additional columns (e.g.,
+`CellLine`, `Type`, `Replicate`) can be used for downstream grouping.
+
+```{r design}
+design <- read.table("design_matrix.tsv", header = TRUE, sep = "\t")
+rownames(design) <- design$Name
+```
+
+Using the bundled example data:
+
+```{r design-example, eval=TRUE}
+dir_design <- system.file("extdata", "design_matrix_k562_10pct.tsv",
+                          package = "PRIME")
+design <- read.table(dir_design, header = TRUE, sep = "\t")
+rownames(design) <- design$Name
+```
+
+## Load BigWig files
+
+```{r load-bw}
+bw_plus  <- rtracklayer::BigWigFileList(design$BigWigPlus)
+bw_minus <- rtracklayer::BigWigFileList(design$BigWigMinus)
+names(bw_plus) <- names(bw_minus) <- design$Name
+```
+
+Using the bundled example data:
+
+```{r load-bw-example, eval=TRUE}
+dir_bw <- system.file("extdata", "cage_bw", package = "PRIME")
+bw_plus  <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigPlus))
+bw_minus <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigMinus))
+names(bw_plus) <- names(bw_minus) <- design$Name
+```
+
+## Quantify CTSSs
+
+```{r quantify}
+ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                                  minusStrand = bw_minus,
+                                  design = design)
+ctss <- CAGEfightR::calcTotalTags(ctss)
+ctss <- CAGEfightR::calcTPM(ctss)
+ctss <- CAGEfightR::calcPooled(ctss)
+```
+
+Inspect the object:
+
+```{r inspect}
+ctss
+head(assay(ctss, "counts"))
+colData(ctss)
+```
+
+## Keep standard chromosomes
+
+For large datasets it is recommended to restrict to the standard chromosomes
+before further processing:
+
+```{r seqlevels}
+keep <- GenomeInfoDb::seqlevels(ctss)[1:23]
+ctss <- GenomeInfoDb::keepSeqlevels(ctss, keep, pruning.mode = "coarse")
+```
+
+## Pool biological replicates
+
+`PRIME::poolReplicates()` sums counts across replicates to produce a pooled
+CTSS object. The `replicates` argument should be a character vector of group
+labels (one per column in `ctss`).
+
+```{r pool}
+ctss_pooled <- PRIME::poolReplicates(
+    ctss,
+    replicates = paste(colData(ctss)$CellLine, colData(ctss)$Type, sep = "_")
+)
+ctss_pooled <- CAGEfightR::calcTPM(ctss_pooled)
+```
+
+## Subsample to common sequencing depth
+
+Subsampling equalizes library sizes before comparative analyses.
+
+```{r subsample}
+min_depth <- min(colData(ctss)$totalTags)
+ctss_sub  <- PRIME::subsampleTarget(ctss, target = min_depth)
+ctss_sub  <- CAGEfightR::calcTPM(ctss_sub)
+```
+
+## Remove singletons
+
+Singletons (CTSSs observed only once across all samples) are typically removed
+to reduce noise before calling tag clusters or divergent loci.
+
+```{r rm-singletons}
+ctss_clean <- PRIME::rmSingletons(ctss_sub)
+```
+
+## Complexity and saturation analysis
+
+PRIME provides several functions for assessing library complexity and sequencing
+saturation. These are particularly useful for deciding whether additional
+sequencing depth is needed.
+
+```{r complexity}
+# CTSS-level complexity: how many unique CTSS positions are detected?
+complexity <- PRIME::calcCTSSComplexity(ctss,
+                                        step         = 2e6,
+                                        minCTSSsupport = 1,
+                                        CTSSunexpressed  = 0)
+
+# Gene-level complexity (requires a TxDb object)
+# gene_complexity <- PRIME::calcGeneComplexity(ctss, txModels = txdb, step = 2e6)
+
+# Divergent loci complexity (requires called divergent loci)
+# dl_complexity <- PRIME::calcDivergentLociComplexity(ctss, loci = dl, step = 2e6)
+
+# General complexity helper
+# PRIME::calcComplexity(...)
+```
+
+## See also
+
+- `vignette("01-getting-started")` — installation and overview
+- `vignette("02-preprocessing")` — generating BigWig files with PRIMEprep
+- `vignette("04-divergent-loci")` — calling divergent loci from CTSSs
+- `vignette("05-normalization-batches")` — normalization and batch handling
+- [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)

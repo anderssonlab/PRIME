@@ -1,0 +1,30 @@
+url: https://anderssonlab.github.io/PRIME
+navbar:
+  structure:
+    left: [intro, articles, reference]
+  components:
+    articles:
+      text: Guides
+      menu:
+      - text: "Getting Started"
+        href: articles/01-getting-started.html
+      - text: "---"
+      - text: "PRIMEprep: Preprocessing"
+        href: articles/02-preprocessing.html
+      - text: "---"
+      - text: "PRIME"
+      - text: "CTSS Processing & QC"
+        href: articles/03-ctss-processing.html
+      - text: "Divergent Loci"
+        href: articles/04-divergent-loci.html
+      - text: "Normalization & Batches"
+        href: articles/05-normalization-batches.html
+      - text: "Noise Estimation"
+        href: articles/06-noise-estimation.html
+      - text: "---"
+      - text: "PRIMEmodel"
+      - text: "Regulatory Element Prediction"
+        href: articles/07-prediction.html
+      - text: "---"
+      - text: "End-to-End Workflow"
+        href: articles/08-end-to-end-workflow.html

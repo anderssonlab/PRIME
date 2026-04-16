@@ -1,0 +1,137 @@
+---
+title: "Estimating Genomic Background Noise"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Estimating Genomic Background Noise}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+Accurate noise estimation is essential for distinguishing real transcription
+initiation events from random background signal. PRIME estimates genomic
+background noise by sampling random uniquely-mappable windows that fall
+outside known functional regions (e.g., exons, known active loci, blacklisted
+regions) and computing the empirical distribution of CTSS expression levels
+within those windows.
+
+Two main functions are provided:
+
+- `PRIME::estimateNoise()` — estimates genome-wide background from random windows
+- `PRIME::estimateDivergentNoise()` — estimates background specifically for
+  divergent transcription patterns
+
+## Setup
+
+```{r libraries}
+library(PRIME)
+library(rtracklayer)
+library(GenomicRanges)
+library(GenomicFeatures)
+library(GenomeInfoDb)
+```
+
+Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available;
+see `vignette("03-ctss-processing")` for how to build one.
+
+## Prepare mask regions
+
+The mask excludes known functional regions from the random window sampling.
+A typical mask combines a genomic blacklist, transcription hotspots, and
+flanked exons:
+
+```{r mask}
+# ENCODE blacklist regions
+blacklist <- rtracklayer::import.bed("ENCFF356LFX.bed")
+
+# Transcription hotspot regions (e.g., merged and extended)
+hotspots <- rtracklayer::import.bed("hotspots_merged_ext_300.bed")
+
+# Flanked exons from a TxDb object (e.g., TxDb.Hsapiens.UCSC.hg38.knownGene)
+exons <- GenomicRanges::flank(
+    unlist(GenomicFeatures::exonsBy(txdb, "tx")),
+    width = 50,
+    both  = TRUE
+)
+
+# Combine and reduce to a single non-overlapping mask
+mask <- GenomicRanges::reduce(c(blacklist, hotspots, exons))
+```
+
+## Import uniquely mappable regions
+
+Noise estimation is restricted to uniquely mappable genomic positions:
+
+```{r mappable}
+map.gr.plus  <- rtracklayer::import.bed("uniquely.mappable.plus.bed")
+map.gr.minus <- rtracklayer::import.bed("uniquely.mappable.minus.bed")
+mappable     <- GenomicRanges::reduce(c(map.gr.plus, map.gr.minus))
+```
+
+## Synchronize sequence information
+
+The mask and mappable regions must share sequence levels and info with the
+CTSS object:
+
+```{r seqinfo}
+GenomeInfoDb::seqlevels(mask, pruning.mode = "coarse")     <- GenomeInfoDb::seqlevels(ctss)
+GenomeInfoDb::seqlevels(mappable, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(ctss)
+GenomeInfoDb::seqinfo(mask)     <- GenomeInfoDb::seqinfo(ctss)
+GenomeInfoDb::seqinfo(mappable) <- GenomeInfoDb::seqinfo(ctss)
+```
+
+## Estimate genomic background noise
+
+```{r estimate-noise}
+noise <- PRIME::estimateNoise(
+    ctss,
+    mask        = mask,
+    mappable    = mappable,
+    strand      = "*",
+    inputAssay  = "counts",
+    quantiles   = seq(0, 1, 0.0001)
+)
+```
+
+The result is a matrix of CTSS expression quantiles estimated from random
+background windows. These quantiles can be used to set noise thresholds for
+downstream analyses (e.g., filtering low-expressed CTSSs).
+
+## Estimate divergent background noise
+
+For analyses focusing on divergent transcription, `estimateDivergentNoise()`
+estimates background using strand-specific mappable regions:
+
+```{r estimate-div-noise}
+div_noise <- PRIME::estimateDivergentNoise(
+    ctss,
+    mask,
+    map.gr.minus,
+    map.gr.plus
+)
+```
+
+## Interpretation
+
+- The noise quantiles represent the empirical distribution of background CTSS
+  expression levels in non-functional regions.
+- A common threshold is the 99th percentile of the noise distribution: CTSSs
+  with expression above this level are unlikely to be background noise.
+- This threshold is used in divergent loci calling and regulatory element
+  prediction to distinguish signal from noise.
+
+## See also
+
+- `vignette("03-ctss-processing")` — building the CTSS object
+- `vignette("04-divergent-loci")` — calling divergent loci
+- `vignette("07-prediction")` — predicting regulatory elements with PRIMEmodel
+- [Paper analysis code — Noise Estimation](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/9.Noise)
