@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      RENV_CONFIG_REPOS_OVERRIDE: https://cloud.r-project.org
     steps:
       - uses: actions/checkout@v5
 
@@ -23,6 +25,13 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
+          r-version: "release"
+          bioc-version: "release"
+
+      - name: Configure CRAN repo fallback
+        run: |
+          cat('options(repos = c(CRAN = "https://cloud.r-project.org"))\n', file = "~/.Rprofile", append = TRUE)
+        shell: bash
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
