@@ -1,4 +1,8 @@
 url: https://anderssonlab.github.io/PRIME
+
+template:
+  bootstrap: 5
+
 navbar:
   structure:
     left: [intro, articles, reference]
