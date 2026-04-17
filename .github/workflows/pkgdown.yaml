@@ -56,7 +56,9 @@ jobs:
         shell: Rscript {0}
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown
+          extra-packages: |
+            any::pkgdown
+            url::https://cran.r-project.org/src/contrib/Archive/pryr/pryr_0.1.6.tar.gz
           needs: website
 
       - name: Build pkgdown site
