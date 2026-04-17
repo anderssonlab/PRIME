@@ -2,6 +2,9 @@ url: https://anderssonlab.github.io/PRIME
 
 template:
   bootstrap: 5
+  bootswatch: yeti
+  bslib:
+    font_scale: 0.9
 
 navbar:
   structure:
