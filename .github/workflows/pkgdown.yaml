@@ -34,10 +34,16 @@ jobs:
           BiocManager::install(version = "3.16", ask = FALSE, update = FALSE)
 
           repos <- BiocManager::repositories()
-          cat("Writing repos to ~/.Rprofile\n")
-          cat("options(repos = ", dput(repos), ")\n", file = "~/.Rprofile", append = TRUE)
 
-          # optional: print for debugging
+          cat("Writing repos to ~/.Rprofile\n")
+          cat(
+            "options(repos = ",
+            deparse(repos),
+            ")\n",
+            file = path.expand("~/.Rprofile"),
+            append = TRUE
+          )
+
           print(repos)
         shell: Rscript {0}
       - name: Install pryr from CRAN archive (removed from CRAN 2026-01-30)
