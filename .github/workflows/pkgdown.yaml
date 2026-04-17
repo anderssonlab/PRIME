@@ -10,13 +10,14 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
-      RENV_CONFIG_REPOS_OVERRIDE: https://cloud.r-project.org
     steps:
       - uses: actions/checkout@v5
 
@@ -26,12 +27,7 @@ jobs:
         with:
           use-public-rspm: true
           r-version: "release"
-          bioc-version: "release"
-
-      - name: Configure CRAN repo fallback
-        run: |
-          cat('options(repos = c(CRAN = "https://cloud.r-project.org"))\n', file = "~/.Rprofile", append = TRUE)
-        shell: bash
+          extra-repositories: bioc
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
