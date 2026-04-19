@@ -1,8 +1,8 @@
 ---
-title: "Getting Started with the PRIME Ecosystem"
+title: "Getting Started with the PRIME Toolkit"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting Started with the PRIME Ecosystem}
+  %\VignetteIndexEntry{Getting Started with the PRIME Toolkit}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -17,25 +17,25 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-The **PRIME ecosystem** consists of three interconnected tools for the analysis of
-transcription initiation data (e.g., CAGE-seq):
+The **PRIME toolkit** consists of three interconnected tools for the analysis of
+transcription initiation data (e.g., CAGE):
 
 | Tool | Type | Purpose |
 |---|---|---|
-| [PRIMEprep](https://github.com/anderssonlab/PRIMEprep) | Shell pipeline | Raw FASTQ → QC → trimming → mapping → BigWig |
-| [PRIME](https://github.com/anderssonlab/PRIME) | R package | CTSS quantification, divergent loci, normalization, noise estimation |
-| [PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel) | R + Python | Genome-wide prediction of regulatory elements |
+| [PRIMEprep](https://github.com/anderssonlab/PRIMEprep) | Bash pipeline | Raw FASTQ → QC → trimming → mapping → BigWig |
+| [PRIME](https://github.com/anderssonlab/PRIME) | R package | CTSS quantification, divergent loci, promoter decomposition, normalization, noise estimation |
+| [PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel) | R package + Python | Genome-wide prediction of regulatory elements |
 
-The tools form a linear pipeline, and **CAGEfightR** provides core CTSS data
+The tools form a linear pipeline, and [CAGEfightR](https://github.com/MalteThodberg/CAGEfightR) provides core CTSS data
 structures that PRIME extends:
 
 ```
 FASTQ files
     │
     ▼
-┌──────────┐
+┌───────────┐
 │ PRIMEprep │  Shell: QC → trim → rRNA filter → STAR map → G-correction → BigWig
-└────┬─────┘
+└────┬──────┘
      │ BigWig files (plus/minus strand)
      ▼
 ┌──────────┐
@@ -43,20 +43,19 @@ FASTQ files
 │          │  ● quantify CTSSs (via CAGEfightR)
 │          │  ● pool replicates, subsample, normalize
 │          │  ● call tag clusters & divergent loci
+│          │  ● decompose promoters
 │          │  ● estimate noise
 │          │  ● complexity & saturation analysis
 └────┬─────┘
      │ CTSS RangedSummarizedExperiment objects
      ▼
 ┌────────────┐
-│ PRIMEmodel │  R + Python (LightGBM)
+│ PRIMEmodel │  R package + Python (LightGBM)
 │            │  ● genome-wide prediction of regulatory elements
 │            │  ● focal prediction on defined regions
 │            │  ● post-processing & BED output
 └────────────┘
 ```
-
-The **dependency chain** is: CAGEfightR → PRIME → PRIMEmodel.
 
 ## Installation
 
@@ -75,6 +74,10 @@ if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("anderssonlab/PRIME")
 ```
+
+PRIME depends on a mix of CRAN, Bioconductor, and GitHub packages. 
+See the detailed installation guide at 
+<https://github.com/anderssonlab/PRIME/blob/main/INSTALL.md>.
 
 ### 3. PRIMEmodel (requires Python >= 3.9)
 
@@ -108,36 +111,6 @@ PRIMEprep depends on the following external tools (recommended versions):
 | bedtools | v2.31.0 |
 | Perl | v5.38.0 |
 | openjdk | v20.0.0 |
-
-## Quick start
-
-Load the key libraries:
-
-```{r libraries}
-library(CAGEfightR)
-library(PRIME)
-```
-
-The PRIME package includes small example data for testing:
-
-```{r example-data}
-# Load example design matrix
-dir_design_matrix <- system.file("extdata", "design_matrix_k562_10pct.tsv",
-                                 package = "PRIME")
-design_matrix <- read.table(dir_design_matrix, header = TRUE, sep = "\t")
-rownames(design_matrix) <- design_matrix$Name
-
-# Load example BigWig files
-dir_bw <- system.file("extdata", "cage_bw", package = "PRIME")
-bw_plus  <- rtracklayer::BigWigFileList(file.path(dir_bw, design_matrix$BigWigPlus))
-bw_minus <- rtracklayer::BigWigFileList(file.path(dir_bw, design_matrix$BigWigMinus))
-names(bw_plus) <- names(bw_minus) <- design_matrix$Name
-
-# Quantify CTSSs
-ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
-                                  minusStrand = bw_minus,
-                                  design = design_matrix)
-```
 
 ## See also
 
