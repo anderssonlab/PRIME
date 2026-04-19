@@ -55,7 +55,7 @@ DLs <- PRIME::divergentLociTCsSummit(
 
 For large datasets it is efficient to process per chromosome:
 
-```{r summit-method}
+```{r summit-method-split}
 CTSSs_by_chr <- split(ctss, GenomicRanges::seqnames(ctss))
 
 DLs <- lapply(names(CTSSs_by_chr), function(chr) {
