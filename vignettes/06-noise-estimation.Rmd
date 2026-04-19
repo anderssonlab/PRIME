@@ -28,7 +28,7 @@ Two main functions are provided:
 
 - `PRIME::estimateNoise()` — estimates genome-wide background from random windows
 - `PRIME::estimateDivergentNoise()` — estimates background specifically for
-  divergent transcription patterns
+  divergent transcription
 
 ## Setup
 
@@ -53,7 +53,7 @@ flanked exons:
 # ENCODE blacklist regions
 blacklist <- rtracklayer::import.bed("ENCFF356LFX.bed")
 
-# Transcription hotspot regions (e.g., merged and extended)
+# Transcription hotspot regions (e.g., extended and merged)
 hotspots <- rtracklayer::import.bed("hotspots_merged_ext_300.bed")
 
 # Flanked exons from a TxDb object (e.g., TxDb.Hsapiens.UCSC.hg38.knownGene)

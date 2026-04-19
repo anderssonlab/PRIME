@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-This vignette walks through the complete PRIME ecosystem pipeline, from raw
+This vignette walks through the complete PRIME toolkit pipeline, from raw
 CAGE sequencing reads to a genome-wide map of predicted regulatory elements.
 The pipeline involves three tools:
 

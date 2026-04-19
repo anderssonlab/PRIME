@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 [PRIMEprep](https://github.com/anderssonlab/PRIMEprep) is a shell-based pipeline
 that takes raw CAGE sequencing data (FASTQ) and produces strand-specific BigWig
-files ready for downstream analysis with PRIME.
+files ready for downstream analysis with CAGEfightR and PRIME.
 
 The pipeline consists of **10 steps**:
 

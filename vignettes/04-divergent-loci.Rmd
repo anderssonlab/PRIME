@@ -17,10 +17,9 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-Divergent loci are genomic regions with divergent transcription: sense and
-antisense transcription initiation events that originate close together and
-point away from each other. They are a hallmark of active enhancers and
-bidirectional promoters.
+Divergent loci are genomic regions with divergent transcription: plus and
+minus strand transcription initiation events that originate close together and
+point away from each other. They are a hallmark of active enhancers and promoters.
 
 PRIME provides two methods for calling divergent loci from CTSS data:
 
@@ -45,7 +44,16 @@ Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available; see
 ## Method 1: Summit-based divergent loci (PRIME native)
 
 This approach directly uses CTSS counts to identify divergent loci via summit
-detection. For large datasets it is efficient to process per chromosome:
+detection. 
+
+```{r summit-method}
+DLs <- PRIME::divergentLociTCsSummit(
+        ctss         = ctss,
+        callingAssay = "counts.noSingletons"
+    )
+```
+
+For large datasets it is efficient to process per chromosome:
 
 ```{r summit-method}
 CTSSs_by_chr <- split(ctss, GenomicRanges::seqnames(ctss))
@@ -61,10 +69,7 @@ DLs <- lapply(names(CTSSs_by_chr), function(chr) {
 DLs <- do.call(c, DLs)
 ```
 
-`PRIME::divergentLociSummit()` is a related function that operates on a single
-chromosome without the TC-based pre-clustering step.
-
-## Method 2: FANTOM5-style divergent loci (TC-based)
+## Method 2: FANTOM5-style divergent loci
 
 This approach first calls unidirectional tag clusters and then pairs them:
 
@@ -74,27 +79,12 @@ ctss_pooled <- CAGEfightR::calcPooled(ctss, inputAssay = "counts.noSingletons")
 ctss_pooled <- subset(ctss_pooled, score > 0)
 TCs <- CAGEfightR::clusterUnidirectionally(ctss_pooled)
 
-# Call divergent loci per chromosome
-CTSSs_by_chr <- split(ctss, GenomicRanges::seqnames(ctss))
-
-DLs_fantom <- lapply(names(CTSSs_by_chr), function(chr) {
-    PRIME::divergentLoci(
-        object = TCs,
-        ctss   = CTSSs_by_chr[[chr]]
-    )
-})
-
-DLs_fantom <- do.call(c, DLs_fantom)
+# Call divergent loci
+DLs_fantom <- PRIME::divergentLoci(
+    object = TCs,
+    ctss   = ctss_pooled
+)
 ```
-
-## Choosing between the two methods
-
-| Aspect | Summit-based | FANTOM5-style |
-|---|---|---|
-| Pre-requisite | CTSS object | CTSS + unidirectional TCs |
-| Speed | Generally faster | Requires TC calling first |
-| Sensitivity | Higher (uses raw CTSS signal) | Comparable |
-| Recommended for | New analyses | Comparisons with FANTOM5 data |
 
 ## Quantifying divergent loci
 

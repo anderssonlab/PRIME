@@ -32,6 +32,7 @@ The PRIME package includes small example data for testing basic functionality.
 
 ```{r libraries}
 library(CAGEfightR)
+library(rtracklayer)
 library(PRIME)
 library(SummarizedExperiment)
 library(GenomeInfoDb)
@@ -154,9 +155,6 @@ complexity <- PRIME::calcCTSSComplexity(ctss,
 
 # Divergent loci complexity (requires called divergent loci)
 # dl_complexity <- PRIME::calcDivergentLociComplexity(ctss, loci = dl, step = 2e6)
-
-# General complexity helper
-# PRIME::calcComplexity(...)
 ```
 
 ## See also
