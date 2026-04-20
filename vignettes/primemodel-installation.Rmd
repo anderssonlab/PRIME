@@ -1,0 +1,307 @@
+---
+title: "Installing PRIMEmodel"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Installing PRIMEmodel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+This guide explains how to set up the required **R** and **Python** environments to use the `PRIMEmodel` R package.
+
+Clone the PRIMEmodel repository:
+
+```bash
+git clone https://github.com/anderssonlab/PRIMEmodel.git
+```
+
+---
+
+## macOS note: libomp required for LightGBM
+
+For macOS users: `libomp` is required for LightGBM to enable OpenMP (multithreading). Without `libomp`, LightGBM may fail to use multithreading properly and can produce silent errors or crashes during training without clear messages. Xcode Command Line Tools and Homebrew are required.
+
+Check whether `libomp` is already installed:
+
+```bash
+# Apple Silicon (M1/M2/M3/...)
+ls /opt/homebrew/opt/libomp/lib/libomp.dylib
+
+# Intel macOS (x86_64)
+ls /usr/local/opt/libomp/lib/libomp.dylib
+```
+
+If it is not present, install it:
+
+```bash
+brew install libomp
+```
+
+On macOS, R (via homebrew libomp) and Python environments (via conda or virtualenv libomp) can conflict when used together through `reticulate`, potentially causing crashes. If this occurs, managing environment variables or aligning libomp paths may be necessary.
+
+---
+
+## R installation for PRIMEmodel
+
+The R package `PRIMEmodel` depends on a mix of CRAN and Bioconductor packages, and a custom GitHub version of `PRIME`.
+
+We recommend using **R 4.4 or higher**. While R versions >= 4.2 can also be used, they may require additional setup steps. For example, on macOS with R 4.2.x, you may need to install system libraries:
+
+```bash
+# Core build tools for R packages
+brew install gcc pkg-config
+
+# Libraries for graphics, fonts, and rendering
+brew install freetype harfbuzz fribidi libpng cairo
+
+# Libraries for image support
+brew install jpeg libpng libtiff
+
+# Version control and Git support
+brew install libgit2
+```
+
+Optional (recommended for macOS users on R 4.2.x): install
+[XQuartz](https://www.xquartz.org/) to avoid X11-related warnings and enable
+`x11()` graphics.
+
+### Full R setup
+
+Start an R session:
+
+```bash
+R
+```
+
+**Step 1.** Install required CRAN packages:
+
+```{r install-cran}
+install.packages(c(
+  "R.utils",
+  "assertthat",
+  "data.table",
+  "future",
+  "future.apply",
+  "future.callr",
+  "foreach",
+  "argparse",
+  "doParallel",
+  "reticulate",
+  "arrow",
+  "stringr",
+  "magrittr"
+))
+```
+
+**Step 2.** Install BiocManager (if not already installed):
+
+```{r install-biocmanager}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+```
+
+**Step 3.** Install devtools (if not already installed):
+
+```{r install-devtools}
+if (!requireNamespace("devtools", quietly = TRUE))
+  install.packages("devtools")
+```
+
+**Step 4.** Install CAGEfightR and PRIME:
+
+If errors occur from prerequisite packages, see `vignette("installation")` for
+the full PRIME installation guide.
+
+```{r install-prime}
+BiocManager::install("CAGEfightR")
+devtools::install_github("anderssonlab/PRIME")
+```
+
+**Step 5.** Install additional Bioconductor packages not installed with PRIME:
+
+```{r install-bioc-extra}
+BiocManager::install("sparseMatrixStats")
+```
+
+**Step 6.** Install PRIMEmodel:
+
+```{r install-primemodel}
+devtools::install_github("anderssonlab/PRIMEmodel")
+```
+
+Alternatively, install from a local `.tar.gz` (the model will be set up in the
+PRIME installation directory):
+
+```{r install-primemodel-local}
+install.packages("/PATH/TO/PRIMEmodel/PRIMEmodel_1.0.tar.gz")
+```
+
+The published PRIMEmodel model can be found at:
+<https://doi.org/10.5281/zenodo.17142494>
+
+---
+
+## Python environment setup
+
+PRIMEmodel requires a Python environment (>= 3.9) with LightGBM and supporting
+packages. You can prepare this environment in several ways; choose the option
+that best fits your workflow.
+
+---
+
+### Option 1: Use an existing Python installation (pip)
+
+If you already have a working Python installation and want to use it directly:
+
+```bash
+cd PRIMEmodel
+
+# Install the required packages
+pip3 install -r inst/envfile/environment.txt
+
+# Check the path to Python — use this path in PRIMEmodel functions
+which python3
+```
+
+Verify the installation in R:
+
+```{r verify-pip}
+library(GenomicRanges)
+library(PRIMEmodel)
+
+plc_focal_example <- PRIMEmodel::predictFocalExample(python_path = "/PATH/TO/YOUR/PYTHON")
+plc_example       <- PRIMEmodel::predictExample(python_path = "/PATH/TO/YOUR/PYTHON")
+```
+
+---
+
+### Option 2: Virtualenv via `reticulate` in R
+
+This is the recommended method for R-focused workflows that do not need external
+software. Note that `use_virtualenv()` must be called at the start of each R
+session, and this approach is not ideal for command-line (CLI) use.
+
+```bash
+cd PRIMEmodel
+R
+```
+
+```{r setup-reticulate-venv}
+library(reticulate)
+
+# Define the environment name
+env_name <- "prime-env"
+
+# Create the virtual environment if it does not exist
+virtualenv_create(envname = env_name)
+
+# Use and configure it
+use_virtualenv(env_name, required = TRUE)
+
+# Install Python packages
+required_pkgs <- readLines(system.file("envfile", "environment.txt", package = "PRIMEmodel"))
+reticulate::py_install(packages = required_pkgs, envname = env_name, method = "virtualenv")
+
+# Confirm active Python path
+py_config()$python
+```
+
+Verify the installation in R:
+
+```{r verify-reticulate-venv}
+library(GenomicRanges)
+library(PRIMEmodel)
+
+plc_focal_example <- PRIMEmodel::predictFocalExample(python_path = py_config()$python)
+plc_example       <- PRIMEmodel::predictExample(python_path = py_config()$python)
+```
+
+---
+
+### Option 3: Conda
+
+An `environment.yml` file is included in the `inst/envfile` folder of the
+PRIMEmodel repository.
+
+```bash
+cd PRIMEmodel
+
+conda env create -f inst/envfile/environment.yml
+
+# Activate the environment
+conda activate prime-env
+
+which python3
+# Copy this path to use as python_path in R
+
+conda deactivate
+```
+
+Verify the installation in R:
+
+```{r verify-conda}
+library(GenomicRanges)
+library(PRIMEmodel)
+
+plc_focal_example <- PRIMEmodel::predictFocalExample(python_path = "~/.conda/envs/prime-env/bin/python3")
+plc_example       <- PRIMEmodel::predictExample(python_path = "~/.conda/envs/prime-env/bin/python3")
+```
+
+---
+
+### Option 4: Manual virtualenv (shell)
+
+This is an advanced option for managing the environment outside of R, useful
+when working from the shell or with external tools.
+
+```bash
+cd PRIMEmodel
+
+# Set up a Python virtual environment
+python3 -m venv ~/prime_env
+source ~/prime_env/bin/activate
+pip3 install -r inst/envfile/environment.txt
+
+which python3
+# Copy this path to use as python_path in R
+
+deactivate
+```
+
+Verify the installation in R:
+
+```{r verify-manual-venv}
+library(GenomicRanges)
+library(PRIMEmodel)
+
+plc_focal_example <- PRIMEmodel::predictFocalExample(python_path = "~/prime_env/bin/python3")
+plc_example       <- PRIMEmodel::predictExample(python_path = "~/prime_env/bin/python3")
+```
+
+---
+
+## Tips
+
+- If you do not have full control over your R and Python environments, errors may
+  occur when they try to communicate. We recommend setting up a dedicated virtual
+  environment such as a conda environment.
+- Always check the current Python path with `which python3` **after** activating
+  your environment.
+- Use that full path in the `python_path` argument in R.
+
+---
+
+## See also
+
+- `vignette("01-getting-started")` — overview of the PRIME toolkit
+- `vignette("installation")` — installing PRIME (R package)
+- `vignette("07-prediction")` — genome-wide regulatory element prediction with PRIMEmodel
+- [PRIMEmodel repository](https://github.com/anderssonlab/PRIMEmodel)
