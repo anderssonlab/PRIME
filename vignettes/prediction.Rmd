@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-[PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel) uses a LightGBM model
+[PRIMEmodel](https://anderssonlab.github.io/PRIMEmodel/) uses a LightGBM model
 trained on CAGE data to predict the locations of active regulatory elements
 (enhancers and promoters) genome-wide or in user-defined focal regions.
 
@@ -40,8 +40,9 @@ library(reticulate)
 ```
 
 PRIMEmodel requires a Python environment (>= 3.9) with LightGBM. See the
-[installation guide](https://github.com/anderssonlab/PRIMEmodel/blob/main/install_PRIMEmodel.md)
-for details.
+[installation guide](https://anderssonlab.github.io/PRIMEmodel/articles/installation.html)
+for details. Full function documentation is available on the
+[PRIMEmodel pkgdown site](https://anderssonlab.github.io/PRIMEmodel/reference/).
 
 ## Obtaining CTSS input
 
@@ -164,6 +165,7 @@ BED files to the specified output directory. Each predicted element has:
 - `vignette("03-ctss-processing")` — building CTSS input via CAGEfightR/PRIME
 - `vignette("04-divergent-loci")` — calling divergent loci for focal prediction
 - `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
-- [PRIMEmodel repository](https://github.com/anderssonlab/PRIMEmodel)
-- [PRIMEmodel installation guide](https://github.com/anderssonlab/PRIMEmodel/blob/main/install_PRIMEmodel.md)
+- [PRIMEmodel website](https://anderssonlab.github.io/PRIMEmodel/)
+- [PRIMEmodel reference](https://anderssonlab.github.io/PRIMEmodel/reference/)
+- [PRIMEmodel installation guide](https://anderssonlab.github.io/PRIMEmodel/articles/installation.html)
 - [Paper analysis code — Genome-wide prediction](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/8.Genomewide_prediction)
