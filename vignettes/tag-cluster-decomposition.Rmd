@@ -1,0 +1,246 @@
+---
+title: "Tag cluster decomposition"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tag cluster decomposition}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+A tag cluster (TC) can span tens to hundreds of base pairs and may contain
+several distinct transcription initiation peaks — each corresponding to an
+individual core promoter. PRIME provides two strategies to **decompose** a
+broad TC into finer sub-clusters:
+
+| Method | Function | When to use |
+|--------|----------|-------------|
+| **Shape-based** | `PRIME::decompose()` with `fn = PRIME::local_maxima_decompose` | Single-sample or pooled data; fast; no replicates needed |
+| **Correlation-based** | `PRIME::decomposeCorr()` with `fn = PRIME::corr_decompose` | Multi-sample data; leverages sample-to-sample variation to detect distinct regulatory elements |
+
+Both functions return a `GRanges` object of decomposed sub-clusters annotated
+with the same CAGEfightR-style statistics as ordinary tag clusters (`score`,
+`thick`, `tpm.dominant_ctss`, etc.), so they slot directly into downstream
+CAGEfightR/PRIME workflows.
+
+## Packages
+
+```{r libraries}
+library(CAGEfightR)
+library(PRIME)
+library(GenomicRanges)
+library(SummarizedExperiment)
+```
+
+## Inputs: CTSSs and tag clusters
+
+The starting point is a `RangedSummarizedExperiment` of CTSSs (from
+`CAGEfightR::quantifyCTSSs()`) with pooled signal computed, plus a set of
+tag clusters produced by `CAGEfightR::clusterUnidirectionally()`.
+
+### Quantify CTSSs and compute pooled signal
+
+```{r ctss}
+ctss <- CAGEfightR::quantifyCTSSs(
+  plusStrand  = bw_plus,
+  minusStrand = bw_minus,
+  design      = design
+)
+ctss <- CAGEfightR::calcTotalTags(ctss)
+ctss <- CAGEfightR::calcTPM(ctss)
+ctss <- CAGEfightR::calcPooled(ctss)
+```
+
+`calcPooled()` adds a `score` column to the CTSS row-ranges. This pooled
+signal is what `PRIME::decompose()` uses as the shape profile for
+decomposition — it is required even if you later run the
+correlation-based method.
+
+### Call unidirectional tag clusters
+
+```{r tcs}
+TCs <- CAGEfightR::clusterUnidirectionally(
+  object       = ctss,
+  pooledCutoff = 0,
+  mergeDist    = 60
+)
+TCs <- CAGEfightR::quantifyClusters(ctss, TCs)
+TCs <- CAGEfightR::calcTPM(TCs)
+```
+
+### Optional: restrict to promoter-proximal clusters
+
+If you have a `TxDb` annotation object, you can filter for promoter-associated
+clusters before decomposing:
+
+```{r promoter-filter}
+# txdb <- AnnotationDbi::loadDb("path/to/annotation.sqlite")
+TCs <- CAGEfightR::assignTxType(TCs, txModels = txdb)
+TCs_prom <- subset(TCs, txType %in% c("promoter", "proximal", "fiveUTR"))
+
+# Keep only robustly supported clusters
+TCs_prom <- CAGEfightR::subsetBySupport(
+  TCs_prom,
+  inputAssay  = "counts",
+  unexpressed = 10,
+  minSamples  = 10
+)
+```
+
+## Shape-based decomposition
+
+`PRIME::decompose()` identifies local maxima in the pooled CTSS profile of
+each TC and assigns each base pair to the nearest local maximum according
+to a coverage-fraction criterion.
+
+```{r shape-decompose}
+decomposed_shape <- PRIME::decompose(
+  object = rowRanges(TCs_prom),
+  pooled = ctss,
+  fn     = PRIME::local_maxima_decompose,
+  fraction   = 0.1,
+  maximaDist = 20,
+  maxGap     = 20,
+  mergeDist  = -1,
+  smoothPad  = 0
+)
+```
+
+The `object` argument must be a `GRanges`; pass `rowRanges(TCs_prom)` when
+`TCs_prom` is a `RangedSummarizedExperiment`, or pass a bare `GRanges`
+directly. `pooled` is the full CTSS `RangedSummarizedExperiment` (must have
+`seqlengths` matching `object`).
+
+### Parameter guidance for `local_maxima_decompose`
+
+| Parameter | Default | Effect |
+|-----------|---------|--------|
+| `fraction` | `0.1` | Minimum coverage relative to a local maximum to be included. Increase (e.g. `0.2`) for more conservative, narrower sub-clusters. |
+| `maximaDist` | `20` | Window (bp) used to identify local maxima via a running maximum. Increase for broader promoters; decrease for sharper, better-resolved peaks. |
+| `maxGap` | `maximaDist` | Maximum gap (bp) allowed within a sub-cluster. Increase to bridge gapped coverage. |
+| `mergeDist` | `-1` | Sub-clusters within this distance are merged. `-1` disables final merging. |
+| `smoothPad` | `0` | Extends each sub-cluster by including non-zero CTSSs within this many bp. Useful for noisy signal. |
+
+## Correlation-based decomposition
+
+`PRIME::decomposeCorr()` uses Bayesian change-point analysis on the first
+eigenvector of the per-base Pearson correlation matrix across samples. This
+leverages differences in expression patterns between samples to identify
+boundaries between co-regulated initiation sites.
+
+This method requires multiple samples (replicates or conditions) and the
+assay values to be in `ctss` (e.g. `"TPM"`). It is more computationally
+intensive than the shape-based approach.
+
+```{r corr-decompose}
+decomposed_corr <- PRIME::decomposeCorr(
+  object = rowRanges(TCs_prom),
+  ctss   = ctss,
+  fn     = PRIME::corr_decompose,
+  assay  = "TPM",
+  thres  = 0.25,
+  merge  = TRUE,
+  scale  = TRUE
+)
+```
+
+### Parameter guidance for `corr_decompose`
+
+| Parameter | Default | Effect |
+|-----------|---------|--------|
+| `assay` | `"TPM"` | Assay used for correlation. `"TPM"` is recommended; raw `"counts"` can be used but may be noisier. |
+| `thres` | `0.25` | Posterior probability threshold for Bayesian change-point detection. Lower values detect more change points (more splits); higher values are more conservative. |
+| `merge` | `TRUE` | After splitting, merge adjacent sub-clusters whose cross-boundary correlation is positive. Reduces over-splitting. |
+| `scale` | `TRUE` | Scale assay values (z-score) before correlation. Recommended to remove library-size effects. |
+
+## Re-quantify decomposed clusters
+
+After decomposition, re-quantify the resulting sub-clusters to get expression
+estimates:
+
+```{r requantify}
+decomposed_expr <- CAGEfightR::quantifyClusters(ctss, decomposed_shape)
+decomposed_expr <- CAGEfightR::calcTPM(decomposed_expr)
+```
+
+The output `decomposed_expr` is a `RangedSummarizedExperiment` with the same
+structure as a regular tag-cluster RSE, and can be used in all downstream
+PRIME/CAGEfightR functions.
+
+## QC: comparing original and decomposed clusters
+
+### Width distributions
+
+```{r qc-widths}
+# Width of original TCs
+summary(width(rowRanges(TCs_prom)))
+
+# Width of decomposed sub-clusters
+summary(width(decomposed_shape))
+```
+
+Decomposed sub-clusters should be narrower on average than the parent TCs.
+If widths are similar, try decreasing `fraction` or `maximaDist`.
+
+### Number of decomposed clusters vs. original
+
+```{r qc-counts}
+n_original   <- length(rowRanges(TCs_prom))
+n_decomposed <- length(decomposed_shape)
+
+cat("Original TCs:   ", n_original, "\n")
+cat("Decomposed TCs: ", n_decomposed, "\n")
+cat("Ratio:          ", round(n_decomposed / n_original, 2), "\n")
+```
+
+A ratio close to 1.0 suggests most TCs were not split (possibly good if the
+clusters are already narrow). Ratios of 1.2–2.0 are common for broad promoter
+regions.
+
+### Width histogram
+
+```{r qc-histogram}
+library(ggplot2)
+
+df <- data.frame(
+  width  = c(width(rowRanges(TCs_prom)), width(decomposed_shape)),
+  source = rep(c("Original TCs", "Decomposed TCs"),
+               c(length(rowRanges(TCs_prom)), length(decomposed_shape)))
+)
+
+ggplot(df, aes(x = width, fill = source)) +
+  geom_histogram(binwidth = 10, position = "identity", alpha = 0.6) +
+  scale_x_continuous(limits = c(0, 500)) +
+  labs(x = "Width (bp)", y = "Count", fill = NULL,
+       title = "TC width before and after decomposition") +
+  theme_bw()
+```
+
+## Save results
+
+```{r save}
+save(
+  ctss,
+  TCs,
+  TCs_prom,
+  decomposed_shape,
+  decomposed_expr,
+  file = "tag_cluster_decomposition.RData"
+)
+```
+
+## See also
+
+- `vignette("ctss-processing")` — CTSS quantification and tag clustering
+- `vignette("divergent-loci")` — divergent transcription analysis
+- `vignette("normalization-batches")` — normalization across samples
+- [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)
