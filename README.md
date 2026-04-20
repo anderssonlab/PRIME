@@ -26,7 +26,7 @@ transcription initiation data (e.g., CAGE):
 
 ## Installation
 
-The `R` package `PRIME` depends on a mix of CRAN, Bioconductor, and GitHub packages. Please refer to [Installation instructions](https://github.com/anderssonlab/PRIME/blob/main/INSTALL.md) for details.
+The `R` package `PRIME` depends on a mix of CRAN, Bioconductor, and GitHub packages. Please refer to [Installation instructions](https://anderssonlab.github.io/PRIME/articles/installation.html) for details.
 
 ## Developers
 
