@@ -31,6 +31,8 @@ navbar:
       - text: "PRIME"
       - text: "CTSS Processing & QC"
         href: articles/ctss-processing.html
+      - text: "Tag cluster decomposition"
+        href: articles/tag-cluster-decomposition.html
       - text: "Divergent Loci"
         href: articles/divergent-loci.html
       - text: "Normalization & Batches"
