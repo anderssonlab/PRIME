@@ -3,12 +3,8 @@ url: https://anderssonlab.github.io/PRIME
 template:
   bootstrap: 5
   bootswatch: flatly
-  footer:
-    structure:
-      left: custom
-      right: built_with
-    components:
-      custom: "Andersson Lab • University of Copenhagen"
+    includes:
+    in_header: pkgdown/header.html
 
 navbar:
   structure:
