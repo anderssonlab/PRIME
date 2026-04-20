@@ -12,8 +12,17 @@ template:
 
 navbar:
   structure:
-    left: [intro, articles, reference]
+    left: [intro, articles, reference, primemodel]
   components:
+    primemodel:
+      text: PRIMEmodel
+      menu:
+      - text: "Website"
+        href: https://anderssonlab.github.io/PRIMEmodel/
+      - text: "Installation"
+        href: https://anderssonlab.github.io/PRIMEmodel/articles/installation.html
+      - text: "Reference"
+        href: https://anderssonlab.github.io/PRIMEmodel/reference/
     articles:
       text: Guides
       menu:
