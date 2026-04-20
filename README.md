@@ -1,5 +1,7 @@
 # PRIME
 
+[![R-CMD-check](https://github.com/anderssonlab/PRIME/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/anderssonlab/PRIME/actions/workflows/R-CMD-check.yaml)
+
 ## Regulatory element analysis using transcription start site data
 
 `PRIME` gathers a suite of `R` functions for:
