@@ -3,7 +3,7 @@ url: https://anderssonlab.github.io/PRIME
 template:
   bootstrap: 5
   bootswatch: flatly
-    includes:
+  includes:
     in_header: pkgdown/header.html
 
 navbar:
