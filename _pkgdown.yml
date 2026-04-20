@@ -20,6 +20,11 @@ navbar:
       - text: "Getting Started"
         href: articles/01-getting-started.html
       - text: "---"
+      - text: "Installation"
+        href: articles/installation.html
+      - text: "Installing PRIMEmodel"
+        href: articles/primemodel-installation.html
+      - text: "---"
       - text: "PRIMEprep: Preprocessing"
         href: articles/02-preprocessing.html
       - text: "---"

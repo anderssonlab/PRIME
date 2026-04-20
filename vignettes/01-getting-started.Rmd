@@ -75,9 +75,9 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("anderssonlab/PRIME")
 ```
 
-PRIME depends on a mix of CRAN, Bioconductor, and GitHub packages. 
-See the detailed installation guide at 
-<https://github.com/anderssonlab/PRIME/blob/main/INSTALL.md>.
+PRIME depends on a mix of CRAN, Bioconductor, and GitHub packages.
+See the detailed installation guide: `vignette("installation")` or
+[articles/installation.html](../articles/installation.html).
 
 ### 3. PRIMEmodel (requires Python >= 3.9)
 
@@ -86,8 +86,8 @@ devtools::install_github("anderssonlab/PRIMEmodel")
 ```
 
 PRIMEmodel requires a Python environment (>= 3.9) with LightGBM and supporting
-packages. See the detailed installation guide at
-<https://github.com/anderssonlab/PRIMEmodel/blob/main/install_PRIMEmodel.md>.
+packages. See the detailed installation guide: `vignette("primemodel-installation")` or
+[articles/primemodel-installation.html](../articles/primemodel-installation.html).
 
 ### 4. PRIMEprep
 
