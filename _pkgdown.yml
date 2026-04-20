@@ -8,7 +8,7 @@ template:
 
 navbar:
   structure:
-    left: [intro, reference, toolkit]
+    left: [intro, articles, reference, toolkit]
   components:
     toolkit:
       text: "PRIME toolkit"
