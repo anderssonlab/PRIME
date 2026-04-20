@@ -3,9 +3,6 @@ url: https://anderssonlab.github.io/PRIME
 template:
   bootstrap: 5
   bootswatch: flatly
-  bslib:
-    base_font:
-      scale: 0.8
   footer:
     structure:
       left: custom
