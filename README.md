@@ -4,14 +4,14 @@
 
 ## Quantitative analysis of transcription initiation data
 
-**PRIME** is an R package for **quantitative analysis of transcription initiation data** from **CAGE** and related **TSS/CTSS assays**. It extends **[CAGEfightR](https://github.com/MalteThodberg/CAGEfightR)** with tools for **regulatory element characterization**, including transcription initiation **complexity**, **signal saturation**, **background noise**, **divergent transcription**, and **core promoter architecture**. PRIME also provides an interface to a **LightGBM model** for data-driven regulatory element scoring (via **[PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel)**).
+**PRIME** is an R package for **quantitative analysis of transcription initiation data** from **CAGE** and related **TSS assays**. It extends **[CAGEfightR](https://github.com/MalteThodberg/CAGEfightR)** with tools for **regulatory element characterization**, including transcription initiation **complexity**, **signal saturation**, **background noise**, **divergent transcription**, and **core promoter architecture**. PRIME also provides an interface to a **LightGBM model** for data-driven regulatory element scoring (via **[PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel)**).
 
 PRIME is designed to work alongside **CAGEfightR** and uses the same Bioconductor data structures (**SummarizedExperiment** / **RangedSummarizedExperiment** and **GRanges**). PRIME adds additional quantitative and modeling utilities while staying fully compatible with Bioconductor genomic infrastructure.
 
 ## Core functionality
 
-### CTSS-level quantification & processing
-- CTSS-level quantification (via `CAGEfightR::quantifyCTSSs()`)
+### TSS-level quantification & processing
+- TSS-level quantification (via `CAGEfightR::quantifyCTSSs()`)
 - expression summary, normalization, subsampling
 - transcription initiation metrics
   - complexity (e.g., dispersion/entropy-style summaries depending on analysis)
@@ -42,14 +42,14 @@ The **PRIME toolkit** consists of three interconnected tools for the analysis of
 | Tool | Type | Purpose |
 |---|---|---|
 | [PRIMEprep](https://github.com/anderssonlab/PRIMEprep) | Bash pipeline | Raw FASTQ → QC → trimming → mapping → BigWig |
-| [PRIME](https://github.com/anderssonlab/PRIME) | R package | CTSS quantification, divergent loci, promoter decomposition, normalization, noise estimation |
+| [PRIME](https://github.com/anderssonlab/PRIME) | R package | TSS quantification, divergent loci, promoter decomposition, normalization, noise estimation |
 | [PRIMEmodel](https://github.com/anderssonlab/PRIMEmodel) | R package + Python | Genome-wide prediction / scoring of regulatory elements |
 
 ## Input data
 
 PRIME works with standard Bioconductor genomic data structures:
 
-- **CTSS-level data**: typically a `RangedSummarizedExperiment` produced by CAGEfightR (row ranges are CTSS positions; assays contain counts/TPM).
+- **TSS-level data**: typically a `RangedSummarizedExperiment` produced by CAGEfightR (row ranges are TSS positions; assays contain counts/TPM).
 - **Tag clusters / loci / regions**: typically `GRanges` (or `RangedSummarizedExperiment` objects where `rowRanges()` are regions).
 - PRIME functions are generally compatible with `SummarizedExperiment` + `GRanges` workflows and integrate with the Bioconductor ecosystem.
 
@@ -59,7 +59,7 @@ PRIME is a toolbox (not a single rigid pipeline). The fastest way to get started
 
 - Articles index: https://anderssonlab.org/PRIME/articles/
 - Installing PRIME: https://anderssonlab.org/PRIME/articles/installation.html
-- CTSS processing & QC: https://anderssonlab.org/PRIME/articles/ctss-processing.html
+- TSS processing & QC: https://anderssonlab.org/PRIME/articles/ctss-processing.html
 - Tag cluster decomposition: https://anderssonlab.org/PRIME/articles/tag-cluster-decomposition.html
 - Divergent loci: https://anderssonlab.org/PRIME/articles/divergent-loci.html
 - Normalization & batches: https://anderssonlab.org/PRIME/articles/normalization-batches.html
@@ -75,8 +75,8 @@ CAGEfightR repository: https://github.com/MalteThodberg/CAGEfightR
 
 ## PRIME model (PRIMEmodel)
 
-- **PRIME (this package)** is the analysis toolkit (CTSS QC, quantification helpers, complexity/noise utilities, tag cluster and promoter analysis helpers).
-- **PRIMEmodel** distributes the trained LightGBM model and provides genome-wide (or focal) scoring of candidate regulatory elements from CTSS profiles.
+- **PRIME (this package)** is the analysis toolkit (TSS QC, quantification helpers, complexity/noise utilities, tag cluster and promoter analysis).
+- **PRIMEmodel** distributes the trained LightGBM model and provides genome-wide (or focal) scoring of candidate regulatory elements from TSS signal profiles.
 
 PRIMEmodel repository: https://github.com/anderssonlab/PRIMEmodel  
 PRIMEmodel website: https://anderssonlab.org/PRIMEmodel/
