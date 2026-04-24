@@ -53,7 +53,7 @@ PRIME works with standard Bioconductor genomic data structures:
 - **Tag clusters / loci / regions**: typically `GRanges` (or `RangedSummarizedExperiment` objects where `rowRanges()` are regions).
 - PRIME functions are generally compatible with `SummarizedExperiment` + `GRanges` workflows and integrate with the Bioconductor ecosystem.
 
-## Getting started (recommended)
+## Getting started
 
 PRIME is a toolbox (not a single rigid pipeline). The fastest way to get started is to follow the vignettes on the PRIME website:
 
