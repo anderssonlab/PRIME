@@ -14,13 +14,16 @@ jobs:
     permissions:
       contents: read
 
+# NOTE: Pinned to R 4.5.3 temporarily because Bioconductor CAGEfightR currently
+# depends on pryr, and pryr is archived and does not compile on R >= 4.6.
+# Remove pin once Bioconductor CAGEfightR drops pryr / is updated.
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest, r: 'release'}
-          - {os: macos-latest,  r: 'release'}
-          - {os: windows-latest, r: 'release'}
+          - {os: ubuntu-latest, r: '4.5.3'}
+          - {os: macos-latest,  r: '4.5.3'}
+          - {os: windows-latest, r: '4.5.3'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
