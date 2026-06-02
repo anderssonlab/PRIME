@@ -39,6 +39,7 @@ library(CAGEfightR)
 library(PRIME)
 library(GenomicRanges)
 library(SummarizedExperiment)
+library(ggplot2)
 ```
 
 ## Inputs: CTSSs and tag clusters
@@ -67,6 +68,8 @@ correlation-based method.
 
 ### Call unidirectional tag clusters
 
+Note that the ctss object used here may be other ctss object (e.g. pooled),
+depending on the upstream CTSS calling workflow.
 ```{r tcs}
 TCs <- CAGEfightR::clusterUnidirectionally(
   object       = ctss,
@@ -81,9 +84,18 @@ TCs <- CAGEfightR::calcTPM(TCs)
 
 If you have a `TxDb` annotation object, you can filter for promoter-associated
 clusters before decomposing:
+```{r txdb-object}
+# Option 1: Load from file
+txdb <- AnnotationDbi::loadDb("path/to/annotation.sqlite")
+
+# Option 2: Load from R library
+BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
 
 ```{r promoter-filter}
-# txdb <- AnnotationDbi::loadDb("path/to/annotation.sqlite")
 TCs <- CAGEfightR::assignTxType(TCs, txModels = txdb)
 TCs_prom <- subset(TCs, txType %in% c("promoter", "proximal", "fiveUTR"))
 
@@ -92,7 +104,7 @@ TCs_prom <- CAGEfightR::subsetBySupport(
   TCs_prom,
   inputAssay  = "counts",
   unexpressed = 10,
-  minSamples  = 10
+  minSamples  = 2
 )
 ```
 
@@ -209,8 +221,6 @@ regions.
 ### Width histogram
 
 ```{r qc-histogram}
-library(ggplot2)
-
 df <- data.frame(
   width  = c(width(rowRanges(TCs_prom)), width(decomposed_shape)),
   source = rep(c("Original TCs", "Decomposed TCs"),
