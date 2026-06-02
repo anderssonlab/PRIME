@@ -1,0 +1,9 @@
+ID	CellLine	Type	Name	BigWigPlus	BigWigMinus
+1	K562	C	K562_C1	K562_C1_STAR_first10pct.plus.bw	K562_C1_STAR_first10pct.minus.bw
+2	K562	C	K562_C2	K562_C2_STAR_first10pct.plus.bw	K562_C2_STAR_first10pct.minus.bw
+3	A549	C	A549_C1	A549_C1_STAR_first10pct.plus.bw	A549_C1_STAR_first10pct.minus.bw
+4	A549	C	A549_C2	A549_C2_STAR_first10pct.plus.bw	A549_C2_STAR_first10pct.minus.bw
+5	K562	N	K562_N4	K562_N4_STAR_first10pct.plus.bw	K562_N4_STAR_first10pct.minus.bw
+6	K562	N	K562_N5	K562_N5_STAR_first10pct.plus.bw	K562_N5_STAR_first10pct.minus.bw
+7	A549	N	A549_N4	A549_N4_STAR_first10pct.plus.bw	A549_N4_STAR_first10pct.minus.bw
+8	A549	N	A549_N5	A549_N5_STAR_first10pct.plus.bw	A549_N5_STAR_first10pct.minus.bw
