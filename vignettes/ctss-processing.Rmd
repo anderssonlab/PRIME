@@ -36,6 +36,7 @@ library(rtracklayer)
 library(PRIME)
 library(SummarizedExperiment)
 library(GenomeInfoDb)
+library(ggplot2)
 ```
 
 ## Design matrix
@@ -52,7 +53,7 @@ rownames(design) <- design$Name
 Using the bundled example data:
 
 ```{r design-example, eval=TRUE}
-dir_design <- system.file("extdata", "design_matrix_k562_10pct.tsv",
+dir_design <- system.file("extdata", "design_matrix_first10pct.tsv",
                           package = "PRIME")
 design <- read.table(dir_design, header = TRUE, sep = "\t")
 rownames(design) <- design$Name
@@ -100,8 +101,52 @@ For large datasets it is recommended to restrict to the standard chromosomes
 before further processing:
 
 ```{r seqlevels}
-keep <- GenomeInfoDb::seqlevels(ctss)[1:23]
-ctss <- GenomeInfoDb::keepSeqlevels(ctss, keep, pruning.mode = "coarse")
+ctss <- GenomeInfoDb::keepStandardChromosomes(ctss, pruning.mode = "coarse")
+```
+
+## Complexity and saturation analysis
+
+PRIME provides several functions for assessing library complexity and sequencing
+saturation. These are particularly useful for deciding whether additional
+sequencing depth is needed.
+
+```{r complexity}
+# CTSS-level complexity: how many unique CTSS positions are detected?
+complexity <- PRIME::calcCTSSComplexity(ctss,
+                                        step         = 2e6,
+                                        minCTSSsupport = 1,
+                                        CTSSunexpressed  = 0)
+
+# Gene-level complexity (requires a TxDb object)
+# gene_complexity <- PRIME::calcGeneComplexity(ctss, txModels = txdb, step = 2e6)
+
+# Divergent loci complexity (requires called divergent loci)
+# dl_complexity <- PRIME::calcDivergentLociComplexity(ctss, loci = dl, step = 2e6)
+```
+
+```{r complexity-plot}
+# Set up the dataframe for plotting
+df_complexity <- data.frame(
+  totalTags   = complexity$totalTags,
+  numberCTSSs = complexity$numberCTSSs,
+  sample      = complexity$sample
+)
+
+# Remove the missing points
+df_complexity <- na.omit(df_complexity)
+
+# Plot
+ggplot(df_complexity, aes(x = totalTags,
+                          y = numberCTSSs,
+                          color = sample,
+                          group = sample)) +
+  geom_line(linewidth = 0.8, alpha = 0.8) +
+  geom_point(size = 1.2) +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Total Tags", y = "Number of CTSSs", color = NULL,
+       title = "Library complexity saturation curves") +
+  theme_bw()
 ```
 
 ## Pool biological replicates
@@ -113,7 +158,9 @@ labels (one per column in `ctss`).
 ```{r pool}
 ctss_pooled <- PRIME::poolReplicates(
     ctss,
-    replicates = paste(colData(ctss)$CellLine, colData(ctss)$Type, sep = "_")
+    replicates = paste(colData(ctss)$CellLine,
+                       colData(ctss)$Type,
+                       sep = "_")
 )
 ctss_pooled <- CAGEfightR::calcTPM(ctss_pooled)
 ```
@@ -135,26 +182,6 @@ to reduce noise before calling tag clusters or divergent loci.
 
 ```{r rm-singletons}
 ctss_clean <- PRIME::rmSingletons(ctss_sub)
-```
-
-## Complexity and saturation analysis
-
-PRIME provides several functions for assessing library complexity and sequencing
-saturation. These are particularly useful for deciding whether additional
-sequencing depth is needed.
-
-```{r complexity}
-# CTSS-level complexity: how many unique CTSS positions are detected?
-complexity <- PRIME::calcCTSSComplexity(ctss,
-                                        step         = 2e6,
-                                        minCTSSsupport = 1,
-                                        CTSSunexpressed  = 0)
-
-# Gene-level complexity (requires a TxDb object)
-# gene_complexity <- PRIME::calcGeneComplexity(ctss, txModels = txdb, step = 2e6)
-
-# Divergent loci complexity (requires called divergent loci)
-# dl_complexity <- PRIME::calcDivergentLociComplexity(ctss, loci = dl, step = 2e6)
 ```
 
 ## See also
