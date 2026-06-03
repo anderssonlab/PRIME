@@ -21,22 +21,47 @@ knitr::opts_chunk$set(
 trained on CAGE data to predict the locations of active regulatory elements
 (enhancers and promoters) genome-wide or in user-defined focal regions.
 
-PRIMEmodel takes a CTSS `RangedSummarizedExperiment` as input and outputs BED
-files with predicted regulatory element coordinates and scores.
+PRIMEmodel takes a CTSS `RangedSummarizedExperiment` as input 
+and outputs the `GRangesList` with predicted regulatory element coordinates and scores.
 
 Two prediction modes are available:
 
 - **Genome-wide prediction** (`PRIMEmodel::predict()`) — scans the whole genome
   using a sliding-window approach over tag clusters.
 - **Focal prediction** (`PRIMEmodel::predictFocal()`) — restricts prediction to
-  user-defined regions of interest (e.g., FANTOM5 enhancers or called divergent
-  loci).
+  user-defined regions of interest (e.g. FANTOM5 enhancers or called divergent
+  loci, pooled prediction from PRIMEmodel).
 
 ## Setup
 
+Setup a PRIME-Compatible Virtual Environment
+
+```{r virtual-env}
+txt_file <- file.path(find.package("PRIMEmodel"), "envfile", "environment.txt")
+txt_content <- readLines(txt_file)
+
+library(reticulate)
+
+# Install Python locally
+reticulate::install_python(version = "3.9.22")
+
+# Create a new virtual environment for running PRIMEmodel
+virtualenv_create("PRIMEmodel", python = "3.9.22")
+
+# Activate the environment and install dependencies
+use_virtualenv("PRIMEmodel")
+virtualenv_install(envname = "PRIMEmodel", packages = txt_content)
+
+# Optional (if not already covered by environment.txt)
+virtualenv_install(envname = "PRIMEmodel", packages = "matplotlib")
+```
+
 ```{r libraries}
 library(PRIMEmodel)
-library(reticulate)
+library(GenomicRanges)
+
+# Activate virtual environment
+use_virtualenv("PRIMEmodel", required = TRUE)
 ```
 
 PRIMEmodel requires a Python environment (>= 3.9) with LightGBM. See the
@@ -46,36 +71,59 @@ for details. Full function documentation is available on the
 
 ## Obtaining CTSS input
 
-PRIMEmodel accepts CTSS data produced by either of two approaches:
+```{r path-PRIME}
+# dir_bw: directory containing BigWig files from PRIMEprep
+# e.g. from PRIME
+dir_bw <- system.file("extdata", "cage_bw", package = "PRIME")
 
+# design_matrix: data frame with columns Name, BigWigPlus, BigWigMinus
+# e.g. from PRIME
+dir_design <- system.file("extdata", "design_matrix_k562_10pct.tsv", package = "PRIMEmodel")
+design <- read.table(dir_design, header = TRUE, sep = "\t")
+rownames(design) <- design$Name
+```
+
+PRIMEmodel accepts CTSS data produced by either of two approaches:
 ### Option A: PRIMEmodel convenience function
 
 ```{r option-a}
-# bw_dir: directory containing BigWig files from PRIMEprep
-# design_matrix: data frame with columns Name, BigWigPlus, BigWigMinus
-ctss_rse <- PRIMEmodel::plc_get_ctss_from_bw(bw_dir, design_matrix)
-ctss_rse <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+ctss <- PRIMEmodel::plc_get_ctss_from_bw(dir_bw, design)
+ctss <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
 ```
 
-### Option B: Standard CAGEfightR / PRIME workflow
+### Option B: Standard CAGEfightR / PRIME workflow.
 
 ```{r option-b}
 library(CAGEfightR)
 
-bw_plus  <- rtracklayer::BigWigFileList(design$bw_plus)
-bw_minus <- rtracklayer::BigWigFileList(design$bw_minus)
+bw_plus  <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigPlus))
+bw_minus <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigMinus))
 names(bw_plus) <- names(bw_minus) <- rownames(design)
 
-ctss_rse <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
-                                      minusStrand = bw_minus,
-                                      design      = design)
-ctss_rse <- CAGEfightR::calcTotalTags(ctss_rse)
-ctss_rse <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                                  minusStrand = bw_minus,
+                                  design      = design)
+ctss <- CAGEfightR::calcTotalTags(ctss)
+ctss <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
 ```
 
 Option B is useful when you have already performed CTSS QC steps with PRIME
 (e.g., replicate pooling, subsampling, singleton removal) before running
 PRIMEmodel. See `vignette("03-ctss-processing")` for the full CTSS workflow.
+
+Due to the computationally heavy nature of these processing pipelines,
+we highly recommend running this function on a server.
+By default, it utilizes half of the available CPU cores for parallelization.
+If parallelization is unavailable, the function will automatically fall back to sequential processing,
+which will significantly increase the execution time.
+
+If you are running this example on a personal or local computer,
+we highly recommend using the pre-prepared .rds object,
+which contains only data for chromosomes 16 and 17 to test the function time-efficiently.
+
+```{r rds-ctss}
+ctss <- readRDS(system.file("extdata", "ctss_rse_chr16to17.rds", package = "PRIMEmodel"))
+```
 
 ## Genome-wide prediction
 
@@ -90,17 +138,17 @@ PRIMEmodel. See `vignette("03-ctss-processing")` for the full CTSS workflow.
 
 ```{r genome-wide}
 result <- PRIMEmodel::predict(
-    ctss_rse        = ctss_rse,
+    ctss,
     python_path     = reticulate::py_config()$python,
     score_threshold = 0.75,
     score_diff      = 0.1,
-    num_cores       = NULL,   # NULL uses all available cores
+    num_cores       = NULL,   # NULL uses half of available cores (max 25 cores)
     keep_tmp        = FALSE
 )
 ```
 
-The result is a `GRanges` object (and corresponding BED file) with predicted
-regulatory element coordinates and prediction scores.
+The result is a `GRangesList` object with predictedregulatory element coordinates 
+and prediction scores.
 
 ### Running via the bash script
 
@@ -122,13 +170,21 @@ steps described above, allowing re-runs from any intermediate checkpoint.
 ## Focal prediction
 
 `PRIMEmodel::predictFocal()` restricts prediction to a set of pre-defined
-genomic regions (e.g., called divergent loci, candidate enhancers):
+genomic regions (e.g., called divergent loci, candidate enhancers, pooled prediction from PRIMEmodel)
+
+The `regions` object is a GRanges object containing the regions of interest. 
+These should either have a uniform width of 401 bp 
+or include a 'thick' column to allow internal resizing/extension within the function.
+
+```{r rds-ctss}
+# regions: a GRanges object with regions of interest
+regions <- readRDS(system.file("extdata", "predicted_regions_gr.rds", package = "PRIMEmodel"))
+```
 
 ```{r focal}
-# regions_gr: a GRanges object with regions of interest
 result_focal <- PRIMEmodel::predictFocal(
-    ctss_rse    = ctss_rse,
-    regions     = regions_gr,
+    ctss,
+    regions,
     python_path = reticulate::py_config()$python
 )
 ```
