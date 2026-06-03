@@ -48,7 +48,7 @@ detection.
 
 ```{r summit-method}
 DLs <- PRIME::divergentLociTCsSummit(
-        ctss         = ctss,
+        ctss         = ctss_clean,
         callingAssay = "counts.noSingletons"
     )
 ```
@@ -56,7 +56,7 @@ DLs <- PRIME::divergentLociTCsSummit(
 For large datasets it is efficient to process per chromosome:
 
 ```{r summit-method-split}
-CTSSs_by_chr <- split(ctss, GenomicRanges::seqnames(ctss))
+CTSSs_by_chr <- split(ctss_clean, GenomicRanges::seqnames(ctss_clean))
 
 DLs <- lapply(names(CTSSs_by_chr), function(chr) {
     PRIME::divergentLociTCsSummit(
@@ -67,6 +67,8 @@ DLs <- lapply(names(CTSSs_by_chr), function(chr) {
 
 # Combine results across chromosomes
 DLs <- do.call(c, DLs)
+# Unlist to Granges if needed
+DLs <- unlist(as(DLs, "GRangesList"))
 ```
 
 ## Method 2: FANTOM5-style divergent loci
@@ -75,14 +77,14 @@ This approach first calls unidirectional tag clusters and then pairs them:
 
 ```{r fantom-method}
 # Pool CTSSs and call unidirectional tag clusters
-ctss_pooled <- CAGEfightR::calcPooled(ctss, inputAssay = "counts.noSingletons")
-ctss_pooled <- subset(ctss_pooled, score > 0)
-TCs <- CAGEfightR::clusterUnidirectionally(ctss_pooled)
+ctss_clean_pooled <- CAGEfightR::calcPooled(ctss_clean, inputAssay = "counts.noSingletons")
+ctss_clean_pooled <- subset(ctss_clean_pooled, score > 0)
+TCs <- CAGEfightR::clusterUnidirectionally(ctss_clean_pooled)
 
 # Call divergent loci
 DLs_fantom <- PRIME::divergentLoci(
     object = TCs,
-    ctss   = ctss_pooled
+    ctss   = ctss_clean_pooled
 )
 ```
 
@@ -93,10 +95,9 @@ all samples using:
 
 ```{r quantify}
 DLs_quant <- PRIME::quantifyDivergentLoci(
-    object       = DLs,
-    ctss         = ctss,
-    inputAssay   = "counts",
-    outputColumn = "score"
+    DLs_fantom,
+    ctss,
+    inputAssay = "counts"
 )
 ```
 
