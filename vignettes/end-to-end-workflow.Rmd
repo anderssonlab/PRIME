@@ -92,11 +92,20 @@ library(SummarizedExperiment)
 library(GenomeInfoDb)
 ```
 
-### Load the design matrix
+### Bundled example data path
 
-```{r design}
-design <- read.table("design_matrix.tsv", header = TRUE, sep = "\t")
+```{r data-paths}
+dir_design <- system.file("extdata", "design_matrix_first10pct.tsv",
+                          package = "PRIME")
+dir_bw <- system.file("extdata", "cage_bw", package = "PRIME")
+```
+
+### Load the design matrix using :
+
+```{r load-bw}
+design <- read.table(dir_design, header = TRUE, sep = "\t")
 rownames(design) <- design$Name
+
 # Required columns: Name, BigWigPlus, BigWigMinus
 # Optional columns: CellLine, Type, Replicate, Batch, ...
 ```
@@ -104,8 +113,8 @@ rownames(design) <- design$Name
 ### Build the CTSS object
 
 ```{r ctss}
-bw_plus  <- rtracklayer::BigWigFileList(design$BigWigPlus)
-bw_minus <- rtracklayer::BigWigFileList(design$BigWigMinus)
+bw_plus  <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigPlus))
+bw_minus <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigMinus))
 names(bw_plus) <- names(bw_minus) <- design$Name
 
 ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
@@ -116,9 +125,7 @@ ctss <- CAGEfightR::calcTPM(ctss)
 ctss <- CAGEfightR::calcPooled(ctss)
 
 # Restrict to standard chromosomes
-ctss <- GenomeInfoDb::keepSeqlevels(ctss,
-                                    GenomeInfoDb::seqlevels(ctss)[1:23],
-                                    pruning.mode = "coarse")
+ctss <- GenomeInfoDb::keepStandardChromosomes(ctss, pruning.mode = "coarse")
 ```
 
 ### Pool replicates and subsample
@@ -127,37 +134,26 @@ ctss <- GenomeInfoDb::keepSeqlevels(ctss,
 # Pool biological replicates
 ctss_pooled <- PRIME::poolReplicates(
     ctss,
-    replicates = paste(colData(ctss)$CellLine, colData(ctss)$Type, sep = "_")
+    replicates = paste(colData(ctss)$CellLine,
+                       colData(ctss)$Type,
+                       sep = "_")
 )
 ctss_pooled <- CAGEfightR::calcTPM(ctss_pooled)
 
 # Subsample to the minimum library depth for fair comparison
-min_depth <- min(colData(ctss)$totalTags)
-ctss_sub  <- PRIME::subsampleTarget(ctss, target = min_depth)
-ctss_sub  <- CAGEfightR::calcTPM(ctss_sub)
+min_depth <- min(colData(ctss_pooled)$totalTags)
+ctss_pooled_sub  <- PRIME::subsampleTarget(ctss_pooled, target = min_depth)
+ctss_pooled_sub  <- CAGEfightR::calcTPM(ctss_pooled_sub)
 
 # Remove singletons
-ctss_clean <- PRIME::rmSingletons(ctss_sub)
+ctss_clean <- PRIME::rmSingletons(ctss_pooled_sub)
 ```
 
-## Step 3: Call divergent loci and assess complexity
 
-### Call divergent loci
+## Step 3: Assess complxity and noises
+See `vignette("03-ctss-processing.Rmd")` and `vignette("06-noise-estimation")` for full details.
 
-```{r divergent-loci}
-CTSSs_by_chr <- split(ctss_clean, GenomicRanges::seqnames(ctss_clean))
-
-DLs <- lapply(names(CTSSs_by_chr), function(chr) {
-    PRIME::divergentLociTCsSummit(
-        ctss         = CTSSs_by_chr[[chr]],
-        callingAssay = "counts"
-    )
-})
-DLs <- do.call(c, DLs)
-```
-
-### Assess sequencing saturation
-
+### Assess complexity on the replicated data (before pooling)
 ```{r complexity}
 complexity <- PRIME::calcCTSSComplexity(ctss,
                                         step           = 2e6,
@@ -166,7 +162,6 @@ complexity <- PRIME::calcCTSSComplexity(ctss,
 ```
 
 ### Estimate genomic background noise
-
 ```{r noise}
 # Requires mask (blacklist + hotspots + exons) and mappable regions
 # See vignette("06-noise-estimation") for full preparation steps
@@ -180,15 +175,62 @@ noise <- PRIME::estimateNoise(
 )
 ```
 
+## Step 3: Call divergent loci
+
+### Call divergent loci
+
+```{r divergent-loci}
+CTSSs_by_chr <- split(ctss_clean, GenomicRanges::seqnames(ctss_clean))
+
+DLs <- lapply(names(CTSSs_by_chr), function(chr) {
+    PRIME::divergentLociTCsSummit(
+        ctss         = CTSSs_by_chr[[chr]],
+        callingAssay = "counts.noSingletons"
+    )
+})
+
+# Combine results across chromosomes
+DLs <- do.call(c, DLs)
+# Unlist to Granges if needed
+DLs <- unlist(as(DLs, "GRangesList"))
+```
+
 ## Step 4: Predict regulatory elements with PRIMEmodel
+
+Typically, you can run PRIMEmodel::predict() on replicated CTSS data "without any prior filtering."
+However, this depends entirely on the specific downstream analysis steps you want the PRIMEmodel to predict.
+
+As an example continuing from the previous steps, 
+the ctss_pooled_sub object will be passed through the model to predict the regions of interest 
+between the subsampled pooled replicates of K562 whole-cell CAGE with the singleton removed (ctss_clean) from step 2-3. 
+
+Then, those prediction results will be used by PRIMEmodel::predictFocal()
+to call each individual replicate within the predicted regions.
+
+This is a downsized version of the analysis performed with pooled samples on the FANTOM5 dataset. 
+Further details can be found in the manuscript.
+
+To ensure the process remains computationally efficient,
+only chromosomes 16 and 17 will be selected as an example.
+
+```{r subset-the-data}
+pool_target_samples <- c("K562")
+ctss_clean_slt <- ctss_clean[, pool_target_samples]
+ctss_clean_slt <- GenomeInfoDb::keepSeqlevels(ctss_clean_slt,
+                                              c("chr16", "chr17"),
+                                              pruning.mode = "coarse")
+```
+
+The full setup for reticulate python environment, See `vignette("07-prediction")`
+Run the full PRIMEmodel prediction on this example data.
 
 ```{r primemodel}
 library(PRIMEmodel)
+library(GenomicRanges)
 library(reticulate)
 
-# ctss_clean is the CTSS object from Steps 2-3
-result <- PRIMEmodel::predict(
-    ctss_rse        = ctss_clean,
+regions_result <- PRIMEmodel::predict(
+    ctss,
     python_path     = reticulate::py_config()$python,
     score_threshold = 0.75,
     score_diff      = 0.1,
@@ -197,12 +239,14 @@ result <- PRIMEmodel::predict(
 )
 ```
 
-Alternatively, run focal prediction on the divergent loci identified in Step 3:
+Run focal prediction on the predicted region for each K562 whole-cell CAGE :
 
 ```{r focal}
+target_samples <- c("K562_C1", "K562_C2")
+
 result_focal <- PRIMEmodel::predictFocal(
-    ctss_rse    = ctss_clean,
-    regions     = DLs,
+    ctss[, target_samples],
+    regions_result,
     python_path = reticulate::py_config()$python
 )
 ```
