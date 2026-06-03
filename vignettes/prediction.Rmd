@@ -72,15 +72,15 @@ for details. Full function documentation is available on the
 ## Obtaining CTSS input
 
 ```{r path-PRIME}
+# design_matrix: data frame with columns Name, BigWigPlus, BigWigMinus
+# e.g. from PRIME
+dir_design <- system.file("extdata", "design_matrix_first10pct.tsv", package = "PRIME")
+design <- read.table(dir_design, header = TRUE, sep = "\t")
+rownames(design) <- design$Name
+
 # dir_bw: directory containing BigWig files from PRIMEprep
 # e.g. from PRIME
 dir_bw <- system.file("extdata", "cage_bw", package = "PRIME")
-
-# design_matrix: data frame with columns Name, BigWigPlus, BigWigMinus
-# e.g. from PRIME
-dir_design <- system.file("extdata", "design_matrix_k562_10pct.tsv", package = "PRIMEmodel")
-design <- read.table(dir_design, header = TRUE, sep = "\t")
-rownames(design) <- design$Name
 ```
 
 PRIMEmodel accepts CTSS data produced by either of two approaches:
@@ -88,7 +88,7 @@ PRIMEmodel accepts CTSS data produced by either of two approaches:
 
 ```{r option-a}
 ctss <- PRIMEmodel::plc_get_ctss_from_bw(dir_bw, design)
-ctss <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+ctss <- GenomeInfoDb::keepStandardChromosomes(ctss, pruning.mode = "coarse")
 ```
 
 ### Option B: Standard CAGEfightR / PRIME workflow.
@@ -104,7 +104,7 @@ ctss <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
                                   minusStrand = bw_minus,
                                   design      = design)
 ctss <- CAGEfightR::calcTotalTags(ctss)
-ctss <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+ctss <- GenomeInfoDb::keepStandardChromosomes(ctss, pruning.mode = "coarse")
 ```
 
 Option B is useful when you have already performed CTSS QC steps with PRIME

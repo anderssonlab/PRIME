@@ -103,9 +103,14 @@ After normalization, export per-sample BigWig files for visualization or
 downstream tools:
 
 ```{r write-bw}
+# Create the directory if it doesn't already exist
+if (!dir.exists("bw_output")) {
+  dir.create("bw_output", recursive = TRUE)
+}
+
 PRIME::writeBw(
     ctss,
-    replicates = colnames(ctss),
+    replicates = "all",
     dir        = "bw_output/"
 )
 ```

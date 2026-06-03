@@ -161,18 +161,43 @@ complexity <- PRIME::calcCTSSComplexity(ctss,
                                         CTSSunexpressed = 0)
 ```
 
+```{r complexity-plot}
+# Set up the dataframe for plotting
+df_complexity <- data.frame(
+  totalTags   = complexity$totalTags,
+  numberCTSSs = complexity$numberCTSSs,
+  sample      = complexity$sample
+)
+
+# Remove the missing points
+df_complexity <- na.omit(df_complexity)
+
+# Plot
+ggplot(df_complexity, aes(x = totalTags,
+                          y = numberCTSSs,
+                          color = sample,
+                          group = sample)) +
+  geom_line(linewidth = 0.8, alpha = 0.8) +
+  geom_point(size = 1.2) +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Total Tags", y = "Number of CTSSs", color = NULL,
+       title = "Library complexity saturation curves") +
+  theme_bw()
+```
+
 ### Estimate genomic background noise
 ```{r noise}
 # Requires mask (blacklist + hotspots + exons) and mappable regions
 # See vignette("06-noise-estimation") for full preparation steps
-noise <- PRIME::estimateNoise(
-    ctss_clean,
-    mask       = mask,
-    mappable   = mappable,
-    strand     = "*",
-    inputAssay = "counts",
-    quantiles  = seq(0, 1, 0.0001)
-)
+#noise <- PRIME::estimateNoise(
+#    ctss_clean,
+#    mask       = mask,
+#    mappable   = mappable,
+#    strand     = "*",
+#    inputAssay = "counts",
+#    quantiles  = seq(0, 1, 0.0001)
+#)
 ```
 
 ## Step 3: Call divergent loci
@@ -191,8 +216,6 @@ DLs <- lapply(names(CTSSs_by_chr), function(chr) {
 
 # Combine results across chromosomes
 DLs <- do.call(c, DLs)
-# Unlist to Granges if needed
-DLs <- unlist(as(DLs, "GRangesList"))
 ```
 
 ## Step 4: Predict regulatory elements with PRIMEmodel
@@ -214,7 +237,7 @@ To ensure the process remains computationally efficient,
 only chromosomes 16 and 17 will be selected as an example.
 
 ```{r subset-the-data}
-pool_target_samples <- c("K562")
+pool_target_samples <- c("K562_C")
 ctss_clean_slt <- ctss_clean[, pool_target_samples]
 ctss_clean_slt <- GenomeInfoDb::keepSeqlevels(ctss_clean_slt,
                                               c("chr16", "chr17"),
@@ -225,12 +248,12 @@ The full setup for reticulate python environment, See `vignette("07-prediction")
 Run the full PRIMEmodel prediction on this example data.
 
 ```{r primemodel}
+library(reticulate)
 library(PRIMEmodel)
 library(GenomicRanges)
-library(reticulate)
 
-regions_result <- PRIMEmodel::predict(
-    ctss,
+region_result <- PRIMEmodel::predict(
+    ctss_clean_slt,
     python_path     = reticulate::py_config()$python,
     score_threshold = 0.75,
     score_diff      = 0.1,
@@ -241,14 +264,20 @@ regions_result <- PRIMEmodel::predict(
 
 Run focal prediction on the predicted region for each K562 whole-cell CAGE :
 
-```{r focal}
+```{r subset-the-data}
 target_samples <- c("K562_C1", "K562_C2")
+ctss_slt <- ctss[, target_samples]
+ctss_slt <- GenomeInfoDb::keepSeqlevels(ctss_slt,
+                                        c("chr16", "chr17"),
+                                        pruning.mode = "coarse")
+```
 
-result_focal <- PRIMEmodel::predictFocal(
-    ctss[, target_samples],
-    regions_result,
+```{r focal}
+focal_result <- PRIMEmodel::predictFocal(
+    ctss_slt,
+    region_result,
     python_path = reticulate::py_config()$python
-)
+  )
 ```
 
 ## Full reproducibility
