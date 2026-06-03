@@ -44,22 +44,11 @@ library(ggplot2)
 
 ## Inputs: CTSSs and tag clusters
 
+Input CTSS can be found at `vignette("03-ctss-processing")`
+
 The starting point is a `RangedSummarizedExperiment` of CTSSs (from
 `CAGEfightR::quantifyCTSSs()`) with pooled signal computed, plus a set of
 tag clusters produced by `CAGEfightR::clusterUnidirectionally()`.
-
-### Quantify CTSSs and compute pooled signal
-
-```{r ctss}
-ctss <- CAGEfightR::quantifyCTSSs(
-  plusStrand  = bw_plus,
-  minusStrand = bw_minus,
-  design      = design
-)
-ctss <- CAGEfightR::calcTotalTags(ctss)
-ctss <- CAGEfightR::calcTPM(ctss)
-ctss <- CAGEfightR::calcPooled(ctss)
-```
 
 `calcPooled()` adds a `score` column to the CTSS row-ranges. This pooled
 signal is what `PRIME::decompose()` uses as the shape profile for
@@ -72,7 +61,7 @@ Note that the ctss object used here may be other ctss object (e.g. pooled),
 depending on the upstream CTSS calling workflow.
 ```{r tcs}
 TCs <- CAGEfightR::clusterUnidirectionally(
-  object       = ctss,
+  object       = ctss_clean,
   pooledCutoff = 0,
   mergeDist    = 60
 )
@@ -163,6 +152,7 @@ decomposed_corr <- PRIME::decomposeCorr(
   merge  = TRUE,
   scale  = TRUE
 )
+saveRDS(TCs_prom, "TCs_prom.rds")
 ```
 
 ### Parameter guidance for `corr_decompose`
