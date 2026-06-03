@@ -67,8 +67,6 @@ DLs <- lapply(names(CTSSs_by_chr), function(chr) {
 
 # Combine results across chromosomes
 DLs <- do.call(c, DLs)
-# Unlist to Granges if needed
-DLs <- unlist(as(DLs, "GRangesList"))
 ```
 
 ## Method 2: FANTOM5-style divergent loci
@@ -77,7 +75,8 @@ This approach first calls unidirectional tag clusters and then pairs them:
 
 ```{r fantom-method}
 # Pool CTSSs and call unidirectional tag clusters
-ctss_clean_pooled <- CAGEfightR::calcPooled(ctss_clean, inputAssay = "counts.noSingletons")
+ctss_clean_pooled <- CAGEfightR::calcPooled(ctss_clean,
+                                            inputAssay = "counts.noSingletons")
 ctss_clean_pooled <- subset(ctss_clean_pooled, score > 0)
 TCs <- CAGEfightR::clusterUnidirectionally(ctss_clean_pooled)
 
@@ -95,7 +94,7 @@ all samples using:
 
 ```{r quantify}
 DLs_quant <- PRIME::quantifyDivergentLoci(
-    DLs_fantom,
+    DLs,
     ctss,
     inputAssay = "counts"
 )
