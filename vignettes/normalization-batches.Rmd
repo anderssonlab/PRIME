@@ -78,6 +78,8 @@ ctss_prop <- PRIME::subsampleProportion(ctss, proportion = 0.5)
 When data are generated across multiple experimental batches, PRIME provides
 functions to assess and correct for batch effects:
 
+** The example here does not run because the example dataset does not have batch information,
+but the code can be adapted to your dataset by replacing `colData(ctss)$Batch` from the design matrix. **
 ```{r batch}
 # Assess support across batches
 # (batch is a factor vector with one entry per sample)
