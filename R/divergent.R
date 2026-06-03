@@ -523,7 +523,9 @@ divergentLociSummit<- function(object, ctss, max_gap=400, win_size=200,
 #' 
 divergentLociTCsSummit <- function(ctss, max_gap = 400, win_size = 200, inputAssay = "counts", callingAssay = "counts") {
     
-    base::message(base::paste("Running DL calling for",base::colnames(ctss)))
+    sample_names <- base::colnames(ctss)
+    sample_label <- base::paste(sample_names, collapse = ",")
+    base::message("Running DL calling for ", sample_label)
     
     ## Pool & subset
     ctss.o <- ctss
@@ -539,8 +541,9 @@ divergentLociTCsSummit <- function(ctss, max_gap = 400, win_size = 200, inputAss
     gr <- divergentLociSummit(object, ctss.o, max_gap = max_gap, win_size = win_size, inputAssay = inputAssay)
 
     if(base::length(gr) > 0) {
-        gr$sample <- base::colnames(ctss)
+        gr$sample <- sample_label
     }
     
     return(gr)
   }
+  
