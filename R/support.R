@@ -58,6 +58,10 @@ calcBatchSupport <- function(object, batch, inputAssay = "counts",
 #'
 #' @return A \code{SummarizedExperiment} object with the modified assay.
 #' @export
+#' 
+#' @importFrom assertthat assert_that is.string
+#' @importFrom SummarizedExperiment assay assayNames
+#' @importFrom Matrix drop0 which
 #'
 rmSingletons <- function(rse, inputAssay = "counts", outputAssay = "counts.noSingletons") {
   assertthat::assert_that(
@@ -69,9 +73,13 @@ rmSingletons <- function(rse, inputAssay = "counts", outputAssay = "counts.noSin
 
   rmS <- SummarizedExperiment::assay(rse, inputAssay)
   # Find the indices where values are equal to 1
-  idx <- which(rmS == 1, arr.ind = TRUE)
+  idx <- Matrix::which(rmS == 1, arr.ind = TRUE)
   # Replace the values at those indices with 0
   rmS[idx] <- 0
+  if (methods::is(rmS, "sparseMatrix")) {
+    rmS <- Matrix::drop0(rmS)
+  }
+  
   # Assign the modified assay back to the SummarizedExperiment object
   SummarizedExperiment::assay(rse, outputAssay) <- rmS
   rse
