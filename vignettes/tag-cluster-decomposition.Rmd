@@ -73,12 +73,13 @@ TCs <- CAGEfightR::calcTPM(TCs)
 
 If you have a `TxDb` annotation object, you can filter for promoter-associated
 clusters before decomposing:
-```{r txdb-object}
+
+```{r txdb-object, eval=FALSE, purl=FALSE}
 # Option 1: Load from file
 txdb <- AnnotationDbi::loadDb("path/to/annotation.sqlite")
 
 # Option 2: Load from R library
-BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+# BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
@@ -240,7 +241,7 @@ save(
 
 ## See also
 
-- `vignette("ctss-processing")` — CTSS quantification and tag clustering
-- `vignette("divergent-loci")` — divergent transcription analysis
-- `vignette("normalization-batches")` — normalization across samples
+- `vignette("03-ctss-processing")` — CTSS quantification
+- `vignette("04-divergent-loci")` — divergent transcription analysis
+- `vignette("05-normalization-batches")` — normalization across samples
 - [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)
