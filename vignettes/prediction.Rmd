@@ -36,7 +36,7 @@ Two prediction modes are available:
 
 Setup a PRIME-Compatible Virtual Environment
 
-```{r virtual-env}
+```{r virtual-env, purl=FALSE}
 txt_file <- file.path(find.package("PRIMEmodel"), "envfile", "environment.txt")
 txt_content <- readLines(txt_file)
 
@@ -56,7 +56,7 @@ virtualenv_install(envname = "PRIMEmodel", packages = txt_content)
 virtualenv_install(envname = "PRIMEmodel", packages = "matplotlib")
 ```
 
-```{r libraries}
+```{r libraries, purl=FALSE}
 library(PRIMEmodel)
 library(GenomicRanges)
 
@@ -147,7 +147,7 @@ result <- PRIMEmodel::predict(
 )
 ```
 
-The result is a `GRangesList` object with predictedregulatory element coordinates 
+The result is a `GRangesList` object with predicted regulatory element coordinates 
 and prediction scores.
 
 ### Running via the bash script
@@ -176,7 +176,7 @@ The `regions` object is a GRanges object containing the regions of interest.
 These should either have a uniform width of 401 bp 
 or include a 'thick' column to allow internal resizing/extension within the function.
 
-```{r rds-ctss}
+```{r rds-regions}
 # regions: a GRanges object with regions of interest
 regions <- readRDS(system.file("extdata", "predicted_regions_gr.rds", package = "PRIMEmodel"))
 ```

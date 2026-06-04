@@ -104,5 +104,5 @@ DLs_quant <- PRIME::quantifyDivergentLoci(
 
 - `vignette("03-ctss-processing")` — producing the CTSS object
 - `vignette("06-noise-estimation")` — estimating divergent background noise
-- `vignette("07-prediction")` — predicting enhancers and promoters with PRIMEmodel
+- `vignette("07-prediction")` — predicting interesting regions with PRIMEmodel
 - [Paper analysis code — Divergent Loci](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/3.DivergentLoci)

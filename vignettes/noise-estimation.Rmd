@@ -49,6 +49,11 @@ The mask excludes known functional regions from the random window sampling.
 A typical mask combines a genomic blacklist, transcription hotspots, and
 flanked exons:
 
+```{r txdb-object, eval=FALSE, purl=FALSE}
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
 ```{r mask}
 # ENCODE blacklist regions
 blacklist <- rtracklayer::import.bed("ENCFF356LFX.bed")

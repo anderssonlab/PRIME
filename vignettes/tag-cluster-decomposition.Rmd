@@ -241,7 +241,7 @@ save(
 
 ## See also
 
-- `vignette("03-ctss-processing")` — CTSS quantification
+- `vignette("03-ctss-processing")` — producing the CTSS object
 - `vignette("04-divergent-loci")` — divergent transcription analysis
 - `vignette("05-normalization-batches")` — normalization across samples
 - [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)

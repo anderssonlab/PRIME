@@ -150,7 +150,7 @@ ctss_clean <- PRIME::rmSingletons(ctss_pooled_sub)
 ```
 
 
-## Step 3: Assess complxity and noises
+## Step 3: Assess complexity and noise
 See `vignette("03-ctss-processing.Rmd")` and `vignette("06-noise-estimation")` for full details.
 
 ### Assess complexity on the replicated data (before pooling)
@@ -200,7 +200,7 @@ ggplot(df_complexity, aes(x = totalTags,
 #)
 ```
 
-## Step 3: Call divergent loci
+## Step 4: Call divergent loci
 
 ### Call divergent loci
 
@@ -218,7 +218,7 @@ DLs <- lapply(names(CTSSs_by_chr), function(chr) {
 DLs <- do.call(c, DLs)
 ```
 
-## Step 4: Predict regulatory elements with PRIMEmodel
+## Step 5: Predict regulatory elements with PRIMEmodel
 
 Typically, you can run PRIMEmodel::predict() on replicated CTSS data "without any prior filtering."
 However, this depends entirely on the specific downstream analysis steps you want the PRIMEmodel to predict.
@@ -236,7 +236,7 @@ Further details can be found in the manuscript.
 To ensure the process remains computationally efficient,
 only chromosomes 16 and 17 will be selected as an example.
 
-```{r subset-the-data}
+```{r subset-pool}
 pool_target_samples <- c("K562_C")
 ctss_clean_slt <- ctss_clean[, pool_target_samples]
 ctss_clean_slt <- GenomeInfoDb::keepSeqlevels(ctss_clean_slt,
@@ -247,7 +247,7 @@ ctss_clean_slt <- GenomeInfoDb::keepSeqlevels(ctss_clean_slt,
 The full setup for reticulate python environment, See `vignette("07-prediction")`
 Run the full PRIMEmodel prediction on this example data.
 
-```{r primemodel}
+```{r primemodel, purl=FALSE}
 library(reticulate)
 library(PRIMEmodel)
 library(GenomicRanges)
@@ -264,7 +264,7 @@ region_result <- PRIMEmodel::predict(
 
 Run focal prediction on the predicted region for each K562 whole-cell CAGE :
 
-```{r subset-the-data}
+```{r subset-replicates}
 target_samples <- c("K562_C1", "K562_C2")
 ctss_slt <- ctss[, target_samples]
 ctss_slt <- GenomeInfoDb::keepSeqlevels(ctss_slt,

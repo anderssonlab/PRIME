@@ -26,7 +26,7 @@ see `vignette("03-ctss-processing")` for how to build one.
 
 ## Setup
 
-```{r libraries}
+```{r libraries, purl=FALSE}
 library(PRIME)
 library(SummarizedExperiment)
 ```
@@ -104,7 +104,7 @@ ctss_cond <- PRIME::conditionalNormalize(
 After normalization, export per-sample BigWig files for visualization or
 downstream tools:
 
-```{r write-bw}
+```{r write-bw, purl=FALSE}
 # Create the directory if it doesn't already exist
 if (!dir.exists("bw_output")) {
   dir.create("bw_output", recursive = TRUE)
