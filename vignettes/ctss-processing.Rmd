@@ -52,7 +52,7 @@ rownames(design) <- design$Name
 
 Using the bundled example data:
 
-```{r design-example, eval=TRUE}
+```{r design-example}
 dir_design <- system.file("extdata", "design_matrix_first10pct.tsv",
                           package = "PRIME")
 design <- read.table(dir_design, header = TRUE, sep = "\t")
@@ -69,7 +69,7 @@ names(bw_plus) <- names(bw_minus) <- design$Name
 
 Using the bundled example data:
 
-```{r load-bw-example, eval=TRUE}
+```{r load-bw-example}
 dir_bw <- system.file("extdata", "cage_bw", package = "PRIME")
 bw_plus  <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigPlus))
 bw_minus <- rtracklayer::BigWigFileList(file.path(dir_bw, design$BigWigMinus))
