@@ -10,7 +10,11 @@ suppressPackageStartupMessages({
   library(SummarizedExperiment)
 })
 
-package_root <- normalizePath(file.path(dirname(sys.frame(1)$ofile %||% "data-raw/make-ctss-extdata.R"), ".."), mustWork = FALSE)
+script_file <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1])
+if (is.na(script_file)) {
+  script_file <- file.path("data-raw", "make-ctss-extdata.R")
+}
+package_root <- normalizePath(file.path(dirname(script_file), ".."), mustWork = FALSE)
 if (!file.exists(file.path(package_root, "DESCRIPTION"))) {
   package_root <- normalizePath(getwd(), mustWork = TRUE)
 }
@@ -47,6 +51,7 @@ ctss <- CAGEfightR::calcPooled(ctss)
 ctss <- GenomeInfoDb::keepStandardChromosomes(ctss, pruning.mode = "coarse")
 
 message("Creating singleton-filtered CTSS object")
+set.seed(1)
 min_depth <- min(SummarizedExperiment::colData(ctss)$totalTags)
 ctss_sub <- PRIME::subsampleTarget(ctss, target = min_depth)
 ctss_sub <- CAGEfightR::calcTPM(ctss_sub)
@@ -58,7 +63,3 @@ message("Writing: ", out_ctss_clean)
 saveRDS(ctss_clean, out_ctss_clean, compress = "xz")
 
 message("Done")
-
-`%||%` <- function(x, y) {
-  if (is.null(x)) y else x
-}
