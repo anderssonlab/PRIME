@@ -19,17 +19,16 @@ knitr::opts_chunk$set(
 
 A tag cluster (TC) can span tens to hundreds of base pairs and may contain
 several distinct transcription initiation peaks — each corresponding to an
-individual core promoter. PRIME provides two strategies to **decompose** a
-broad TC into finer sub-clusters:
+individual core promoter. PRIME provides a shape-based strategy to
+**decompose** a broad TC into finer sub-clusters:
 
 | Method | Function | When to use |
 |--------|----------|-------------|
 | **Shape-based** | `PRIME::decompose()` with `fn = PRIME::local_maxima_decompose` | Single-sample or pooled data; fast; no replicates needed |
-| **Correlation-based** | `PRIME::decomposeCorr()` with `fn = PRIME::corr_decompose` | Multi-sample data; leverages sample-to-sample variation to detect distinct regulatory elements |
 
-Both functions return a `GRanges` object of decomposed sub-clusters annotated
+The function returns a `GRanges` object of decomposed sub-clusters annotated
 with the same CAGEfightR-style statistics as ordinary tag clusters (`score`,
-`thick`, `tpm.dominant_ctss`, etc.), so they slot directly into downstream
+`thick`, `tpm.dominant_ctss`, etc.), so it slots directly into downstream
 CAGEfightR/PRIME workflows.
 
 ## Packages
@@ -61,8 +60,7 @@ tag clusters produced by `CAGEfightR::clusterUnidirectionally()`.
 
 `calcPooled()` adds a `score` column to the CTSS row-ranges. This pooled
 signal is what `PRIME::decompose()` uses as the shape profile for
-decomposition — it is required even if you later run the
-correlation-based method.
+decomposition.
 
 ### Call unidirectional tag clusters
 
@@ -83,7 +81,7 @@ TCs <- CAGEfightR::calcTPM(TCs)
 If you have a `TxDb` annotation object, you can filter for promoter-associated
 clusters before decomposing:
 
-```{r txdb-object, eval=FALSE, purl=FALSE}
+```{r txdb-object}
 # Option 1: Load from file
 # txdb <- AnnotationDbi::loadDb("path/to/annotation.sqlite")
 
@@ -140,39 +138,6 @@ directly. `pooled` is the full CTSS `RangedSummarizedExperiment` (must have
 | `maxGap` | `maximaDist` | Maximum gap (bp) allowed within a sub-cluster. Increase to bridge gapped coverage. |
 | `mergeDist` | `-1` | Sub-clusters within this distance are merged. `-1` disables final merging. |
 | `smoothPad` | `0` | Extends each sub-cluster by including non-zero CTSSs within this many bp. Useful for noisy signal. |
-
-## Correlation-based decomposition
-
-`PRIME::decomposeCorr()` uses Bayesian change-point analysis on the first
-eigenvector of the per-base Pearson correlation matrix across samples. This
-leverages differences in expression patterns between samples to identify
-boundaries between co-regulated initiation sites.
-
-This method requires multiple samples (replicates or conditions) and the
-assay values to be in `ctss` (e.g. `"TPM"`). It is more computationally
-intensive than the shape-based approach.
-
-```{r corr-decompose}
-decomposed_corr <- PRIME::decomposeCorr(
-  object = rowRanges(TCs_prom),
-  ctss   = ctss,
-  fn     = PRIME::corr_decompose,
-  assay  = "TPM",
-  thres  = 0.25,
-  merge  = TRUE,
-  scale  = TRUE
-)
-saveRDS(TCs_prom, "TCs_prom.rds")
-```
-
-### Parameter guidance for `corr_decompose`
-
-| Parameter | Default | Effect |
-|-----------|---------|--------|
-| `assay` | `"TPM"` | Assay used for correlation. `"TPM"` is recommended; raw `"counts"` can be used but may be noisier. |
-| `thres` | `0.25` | Posterior probability threshold for Bayesian change-point detection. Lower values detect more change points (more splits); higher values are more conservative. |
-| `merge` | `TRUE` | After splitting, merge adjacent sub-clusters whose cross-boundary correlation is positive. Reduces over-splitting. |
-| `scale` | `TRUE` | Scale assay values (z-score) before correlation. Recommended to remove library-size effects. |
 
 ## Re-quantify decomposed clusters
 
