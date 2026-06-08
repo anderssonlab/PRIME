@@ -10,14 +10,50 @@ suppressPackageStartupMessages({
   library(SummarizedExperiment)
 })
 
-script_file <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1])
-if (is.na(script_file)) {
-  script_file <- file.path("data-raw", "make-ctss-extdata.R")
+find_package_root <- function(starts) {
+  starts <- unique(normalizePath(starts, mustWork = FALSE))
+  starts <- starts[!is.na(starts) & nzchar(starts)]
+
+  for (start in starts) {
+    path <- if (dir.exists(start)) start else dirname(start)
+    repeat {
+      if (file.exists(file.path(path, "DESCRIPTION"))) {
+        return(path)
+      }
+      parent <- dirname(path)
+      if (identical(parent, path)) {
+        break
+      }
+      path <- parent
+    }
+  }
+
+  stop("Could not find package root; run from within the PRIME checkout.")
 }
-package_root <- normalizePath(file.path(dirname(script_file), ".."), mustWork = FALSE)
-if (!file.exists(file.path(package_root, "DESCRIPTION"))) {
-  package_root <- normalizePath(getwd(), mustWork = TRUE)
+
+with_seed <- function(seed, expr) {
+  had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (had_seed) {
+    old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  }
+
+  on.exit({
+    if (had_seed) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+
+  set.seed(seed)
+  force(expr)
 }
+
+file_arg <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1])
+frame_files <- vapply(sys.frames(), function(frame) {
+  if (is.null(frame$ofile)) NA_character_ else frame$ofile
+}, character(1))
+package_root <- find_package_root(c(file_arg, frame_files, getwd()))
 
 design_file <- file.path(package_root, "inst", "extdata", "design_matrix_first10pct.tsv")
 bw_dir <- file.path(package_root, "inst", "extdata", "cage_bw")
@@ -51,9 +87,10 @@ ctss <- CAGEfightR::calcPooled(ctss)
 ctss <- GenomeInfoDb::keepStandardChromosomes(ctss, pruning.mode = "coarse")
 
 message("Creating singleton-filtered CTSS object")
-set.seed(1)
 min_depth <- min(SummarizedExperiment::colData(ctss)$totalTags)
-ctss_sub <- PRIME::subsampleTarget(ctss, target = min_depth)
+# Keep regenerated RDS files reproducible without leaking RNG changes to
+# interactive sessions that source this script.
+ctss_sub <- with_seed(1, PRIME::subsampleTarget(ctss, target = min_depth))
 ctss_sub <- CAGEfightR::calcTPM(ctss_sub)
 ctss_clean <- PRIME::rmSingletons(ctss_sub)
 
