@@ -334,7 +334,6 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
 #'
 #' @return An \code{IRanges} object of decomposed tag clusters.
 #'
-#' @export
 corr_decompose_changepoint <- function(rse, gr, assay="TPM",
                                        penalty="MBIC", pen.value=0,
                                        method="PELT", minseglen=2,
