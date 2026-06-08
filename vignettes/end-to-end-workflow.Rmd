@@ -53,7 +53,7 @@ Each step is described in detail in the dedicated vignettes:
 - `vignette("preprocessing")` — PRIMEprep
 - `vignette("ctss-processing")` — CTSS quantification and QC
 - `vignette("divergent-loci")` — divergent loci calling
-- `vignette("normalization-batches")` — normalization and batch handling
+- `vignette("normalization-batches")` — normalization and subsampling
 - `vignette("noise-estimation")` — genomic background noise
 - `vignette("prediction")` — regulatory element prediction
 
@@ -90,6 +90,7 @@ library(CAGEfightR)
 library(PRIME)
 library(SummarizedExperiment)
 library(GenomeInfoDb)
+library(ggplot2)
 ```
 
 ### Bundled example data path
@@ -244,8 +245,9 @@ ctss_clean_slt <- GenomeInfoDb::keepSeqlevels(ctss_clean_slt,
                                               pruning.mode = "coarse")
 ```
 
-The full setup for reticulate python environment, See `vignette("prediction")`
-Run the full PRIMEmodel prediction on this example data.
+The full setup for the reticulate Python environment is described in
+`vignette("prediction")`. The full PRIMEmodel prediction can be run on this
+example data when that environment is available:
 
 ```{r primemodel, purl=FALSE}
 library(reticulate)
@@ -262,7 +264,19 @@ region_result <- PRIMEmodel::predict(
 )
 ```
 
-Run focal prediction on the predicted region for each K562 whole-cell CAGE :
+For a lightweight, self-contained example, load the precomputed prediction
+regions bundled with PRIMEmodel. This also keeps the focal prediction example
+independent of the optional genome-wide prediction chunk above.
+
+```{r region-result}
+region_result <- readRDS(system.file(
+    "extdata",
+    "predicted_regions_gr.rds",
+    package = "PRIMEmodel"
+))
+```
+
+Run focal prediction on the predicted region for each K562 whole-cell CAGE:
 
 ```{r subset-replicates}
 target_samples <- c("K562_C1", "K562_C2")
@@ -295,7 +309,7 @@ described in the paper.
 - `vignette("preprocessing")` — PRIMEprep in depth
 - `vignette("ctss-processing")` — CTSS quantification and QC
 - `vignette("divergent-loci")` — divergent loci calling
-- `vignette("normalization-batches")` — normalization and batch handling
+- `vignette("normalization-batches")` — normalization and subsampling
 - `vignette("noise-estimation")` — noise estimation
 - `vignette("prediction")` — PRIMEmodel prediction in depth
 - [PRIMEprep repository](https://github.com/anderssonlab/PRIMEprep)

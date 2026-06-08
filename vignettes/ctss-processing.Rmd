@@ -178,5 +178,5 @@ ctss_clean <- PRIME::rmSingletons(ctss_sub)
 - `vignette("getting-started")` — installation and overview
 - `vignette("preprocessing")` — generating BigWig files with PRIMEprep
 - `vignette("divergent-loci")` — calling divergent loci from CTSSs
-- `vignette("normalization-batches")` — normalization and batch handling
+- `vignette("normalization-batches")` — normalization and subsampling
 - [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)

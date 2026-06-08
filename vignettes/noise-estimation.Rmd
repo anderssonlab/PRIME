@@ -38,10 +38,25 @@ library(rtracklayer)
 library(GenomicRanges)
 library(GenomicFeatures)
 library(GenomeInfoDb)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 ```
 
-Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available;
-see `vignette("ctss-processing")` for how to build one.
+```{r load-ctss}
+ctss <- readRDS(system.file("extdata", "ctss.rds", package = "PRIME"))
+```
+
+```{r resource-helper}
+download_resource <- function(url) {
+    dest <- file.path(tempdir(), basename(url))
+    if (!file.exists(dest)) {
+        download.file(url, dest, mode = "wb", quiet = TRUE)
+    }
+    dest
+}
+```
+
+The CTSS object used here is bundled with PRIME. See
+`vignette("ctss-processing")` for how to build one from BigWig files.
 
 ## Prepare mask regions
 
@@ -49,17 +64,27 @@ The mask excludes known functional regions from the random window sampling.
 A typical mask combines a genomic blacklist, transcription hotspots, and
 flanked exons:
 
-```{r txdb-object, eval=FALSE, purl=FALSE}
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+```{r txdb-object}
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
 ```{r mask}
+external_resource_url <- paste0(
+    "https://raw.githubusercontent.com/anderssonlab/",
+    "nucCAGE_PRIME_paper/main/0.External_resources/"
+)
+
 # ENCODE blacklist regions
-blacklist <- rtracklayer::import.bed("ENCFF356LFX.bed")
+blacklist <- rtracklayer::import.bed(download_resource(paste0(
+    external_resource_url,
+    "ENCFF356LFX.bed.gz"
+)))
 
 # Transcription hotspot regions (e.g., extended and merged)
-hotspots <- rtracklayer::import.bed("hotspots_merged_ext_300.bed")
+hotspots <- rtracklayer::import.bed(download_resource(paste0(
+    external_resource_url,
+    "hotspots_merged_ext_300.bed.gz"
+)))
 
 # Flanked exons from a TxDb object (e.g., TxDb.Hsapiens.UCSC.hg38.knownGene)
 exons <- GenomicRanges::flank(
@@ -77,8 +102,24 @@ mask <- GenomicRanges::reduce(c(blacklist, hotspots, exons))
 Noise estimation is restricted to uniquely mappable genomic positions:
 
 ```{r mappable}
-map.gr.plus  <- rtracklayer::import.bed("uniquely.mappable.plus.bed")
-map.gr.minus <- rtracklayer::import.bed("uniquely.mappable.minus.bed")
+track_url <- paste0(
+    "https://raw.githubusercontent.com/anderssonlab/nucCAGE_PRIME_paper/",
+    "main/9.Noise/uniquely_mappable/tracks/",
+    "GRCh38_no_alt_analysis_set_GCA_000001405.15.73/"
+)
+
+map.gr.plus <- rtracklayer::import.bed(download_resource(paste0(
+    track_url,
+    "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.",
+    "uniquely.mappable.plus.bed.gz"
+)))
+
+map.gr.minus <- rtracklayer::import.bed(download_resource(paste0(
+    track_url,
+    "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.",
+    "uniquely.mappable.minus.bed.gz"
+)))
+
 mappable     <- GenomicRanges::reduce(c(map.gr.plus, map.gr.minus))
 ```
 
@@ -136,7 +177,7 @@ div_noise <- PRIME::estimateDivergentNoise(
 
 ## See also
 
-- `vignette("ctss-processing")` — building the CTSS object
-- `vignette("divergent-loci")` — calling divergent loci
-- `vignette("prediction")` — predicting regulatory elements with PRIMEmodel
-- [Paper analysis code — Noise Estimation](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/9.Noise)
+- `vignette("ctss-processing")` - building the CTSS object
+- `vignette("divergent-loci")` - calling divergent loci
+- `vignette("prediction")` - predicting regulatory elements with PRIMEmodel
+- [Paper analysis code - Noise Estimation](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/9.Noise)

@@ -51,5 +51,6 @@ Suggests:
     bcp,
     changepoint,
     knitr,
-    rmarkdown
+    rmarkdown,
+    TxDb.Hsapiens.UCSC.hg38.knownGene
 VignetteBuilder: knitr

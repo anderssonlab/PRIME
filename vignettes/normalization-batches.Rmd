@@ -1,8 +1,8 @@
 ---
-title: "Normalization, Subsampling, and Batch Handling"
+title: "Normalization and Subsampling"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Normalization, Subsampling, and Batch Handling}
+  %\VignetteIndexEntry{Normalization and Subsampling}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -17,18 +17,22 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-This vignette describes how PRIME handles normalization across libraries,
-subsampling for saturation analyses, and batch effects in multi-experiment
-CTSS datasets.
+This vignette describes how PRIME handles normalization across libraries and
+subsampling for saturation analyses in CTSS datasets.
 
-Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available;
-see `vignette("ctss-processing")` for how to build one.
+The examples use a CTSS `RangedSummarizedExperiment` object bundled with PRIME.
+See `vignette("ctss-processing")` for how to build this object from BigWig
+files.
 
 ## Setup
 
-```{r libraries, purl=FALSE}
+```{r libraries}
 library(PRIME)
 library(SummarizedExperiment)
+```
+
+```{r load-ctss}
+ctss <- readRDS(system.file("extdata", "ctss.rds", package = "PRIME"))
 ```
 
 ## Size factor normalization
@@ -64,7 +68,8 @@ for sequencing saturation experiments.
 ### Subsample to an absolute target depth
 
 ```{r subsample-target}
-ctss_sub <- PRIME::subsampleTarget(ctss, target = 30e6)
+target_depth <- min(colData(ctss)$totalTags)
+ctss_sub <- PRIME::subsampleTarget(ctss, target = target_depth)
 ```
 
 ### Subsample to a proportion of the library
@@ -73,31 +78,14 @@ ctss_sub <- PRIME::subsampleTarget(ctss, target = 30e6)
 ctss_prop <- PRIME::subsampleProportion(ctss, proportion = 0.5)
 ```
 
-## Batch handling
+## Batch-aware workflows
 
-When data are generated across multiple experimental batches, PRIME provides
-functions to assess and correct for batch effects:
-
-** The example here does not run because the example dataset does not have batch information,
-but the code can be adapted to your dataset by replacing `colData(ctss)$Batch` from the design matrix. **
-```{r batch}
-# Assess support across batches
-# (batch is a factor vector with one entry per sample)
-batch_support <- PRIME::calcBatchSupport(
-    ctss,
-    batch        = colData(ctss)$Batch,
-    inputAssay   = "counts",
-    unexpressed  = 0
-)
-
-# Conditional normalization (normalize within batches)
-ctss_cond <- PRIME::conditionalNormalize(
-    ctss,
-    batch        = colData(ctss)$Batch,
-    inputAssay   = "counts",
-    outputAssay  = "normalizedBatch"
-)
-```
+The bundled example data do not contain batch labels, so batch normalization is
+not run here. For multi-batch datasets, PRIME provides
+`PRIME::calcBatchSupport()` to summarize support across batches and
+`PRIME::conditionalNormalize()` to normalize within batches. Use a batch vector
+with one entry per sample, for example
+`batch = colData(ctss)$Batch`, when calling these functions.
 
 ## Export normalized BigWig files
 
@@ -119,7 +107,7 @@ PRIME::writeBw(
 
 ## See also
 
-- `vignette("ctss-processing")` — CTSS quantification and basic QC
-- `vignette("noise-estimation")` — estimating genomic background noise
-- `vignette("end-to-end-workflow")` — complete pipeline walkthrough
+- `vignette("ctss-processing")` - CTSS quantification and basic QC
+- `vignette("noise-estimation")` - estimating genomic background noise
+- `vignette("end-to-end-workflow")` - complete pipeline walkthrough
 - [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)
