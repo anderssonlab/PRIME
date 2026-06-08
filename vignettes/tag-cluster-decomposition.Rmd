@@ -44,7 +44,16 @@ library(ggplot2)
 
 ## Inputs: CTSSs and tag clusters
 
-Input CTSS can be found at `vignette("03-ctss-processing")`
+This vignette uses two CTSS objects produced in
+`vignette("03-ctss-processing")`. Serialized copies are included with PRIME so
+the decomposition workflow can be run directly:
+
+```{r load-ctss-objects}
+ctss <- readRDS(system.file("extdata", "ctss.rds",
+                            package = "PRIME"))
+ctss_clean <- readRDS(system.file("extdata", "ctss_clean.rds",
+                                  package = "PRIME"))
+```
 
 The starting point is a `RangedSummarizedExperiment` of CTSSs (from
 `CAGEfightR::quantifyCTSSs()`) with pooled signal computed, plus a set of
@@ -231,6 +240,7 @@ ggplot(df, aes(x = width, fill = source)) +
 ```{r save}
 save(
   ctss,
+  ctss_clean,
   TCs,
   TCs_prom,
   decomposed_shape,
