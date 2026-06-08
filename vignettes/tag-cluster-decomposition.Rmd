@@ -76,7 +76,7 @@ clusters before decomposing:
 
 ```{r txdb-object, eval=FALSE, purl=FALSE}
 # Option 1: Load from file
-txdb <- AnnotationDbi::loadDb("path/to/annotation.sqlite")
+# txdb <- AnnotationDbi::loadDb("path/to/annotation.sqlite")
 
 # Option 2: Load from R library
 # BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")

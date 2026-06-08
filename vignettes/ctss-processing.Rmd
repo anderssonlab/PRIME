@@ -45,11 +45,6 @@ The design matrix is a tab-separated file with one row per sample. Required
 columns are `Name`, `BigWigPlus`, and `BigWigMinus`. Additional columns (e.g.,
 `CellLine`, `Type`, `Replicate`) can be used for downstream grouping.
 
-```{r design}
-design <- read.table("design_matrix.tsv", header = TRUE, sep = "\t")
-rownames(design) <- design$Name
-```
-
 Using the bundled example data:
 
 ```{r design-example}
@@ -60,12 +55,6 @@ rownames(design) <- design$Name
 ```
 
 ## Load BigWig files
-
-```{r load-bw}
-bw_plus  <- rtracklayer::BigWigFileList(design$BigWigPlus)
-bw_minus <- rtracklayer::BigWigFileList(design$BigWigMinus)
-names(bw_plus) <- names(bw_minus) <- design$Name
-```
 
 Using the bundled example data:
 
