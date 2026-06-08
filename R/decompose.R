@@ -22,6 +22,18 @@
 decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
   
   assertthat::assert_that(identical(GenomeInfoDb::seqlengths(object), GenomeInfoDb::seqlengths(ctss)))
+
+  align_iranges_list <- function(x, target_names) {
+    missing_names <- setdiff(target_names, names(x))
+    if (length(missing_names) > 0) {
+      empty <- IRanges::IRangesList(
+        stats::setNames(rep(list(IRanges::IRanges()), length(missing_names)),
+                        missing_names)
+      )
+      x <- c(x, empty)
+    }
+    x[target_names]
+  }
   
   ## Split by strand
   message("Splitting and intersecting data...")
@@ -50,6 +62,8 @@ decomposeCorr <- function(object, ctss, fn=corr_decompose, ...) {
   
   names(irl_plus) <- names(grl_plus)
   names(irl_minus) <- names(grl_minus)
+  irl_plus <- align_iranges_list(irl_plus, names(covByStrand$`+`))
+  irl_minus <- align_iranges_list(irl_minus, names(covByStrand$`-`))
   
   message("Quantifying decomposed tag clusters...")
   decomposedTCs <- CAGEfightR:::TCstats(coverage_plus = covByStrand$`+`,
