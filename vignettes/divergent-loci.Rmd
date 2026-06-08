@@ -38,8 +38,16 @@ library(CAGEfightR)
 library(PRIME)
 ```
 
-Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available; see
-`vignette("03-ctss-processing")` for how to build one.
+This vignette uses CTSS objects produced in
+`vignette("ctss-processing")`. Serialized copies are included with PRIME so
+the divergent-loci workflow can be run directly:
+
+```{r load-ctss-objects}
+ctss <- readRDS(system.file("extdata", "ctss.rds",
+                            package = "PRIME"))
+ctss_clean <- readRDS(system.file("extdata", "ctss_clean.rds",
+                                  package = "PRIME"))
+```
 
 ## Method 1: Summit-based divergent loci (PRIME native)
 
@@ -102,7 +110,7 @@ DLs_quant <- PRIME::quantifyDivergentLoci(
 
 ## See also
 
-- `vignette("03-ctss-processing")` — producing the CTSS object
-- `vignette("06-noise-estimation")` — estimating divergent background noise
-- `vignette("07-prediction")` — predicting interesting regions with PRIMEmodel
+- `vignette("ctss-processing")` — producing the CTSS object
+- `vignette("noise-estimation")` — estimating divergent background noise
+- `vignette("prediction")` — predicting interesting regions with PRIMEmodel
 - [Paper analysis code — Divergent Loci](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/3.DivergentLoci)

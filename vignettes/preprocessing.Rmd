@@ -131,11 +131,11 @@ The `bw_files/` directory contains two BigWig files per sample:
 - `<sample>.minus.bw` — 5′ coverage on the minus strand
 
 These files are used directly as input to PRIME via `CAGEfightR::quantifyCTSSs()`.
-See `vignette("03-ctss-processing")` for the next step.
+See `vignette("ctss-processing")` for the next step.
 
 ## See also
 
-- `vignette("01-getting-started")` — installation and overview
-- `vignette("03-ctss-processing")` — loading BigWig files into PRIME
-- `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
+- `vignette("getting-started")` — installation and overview
+- `vignette("ctss-processing")` — loading BigWig files into PRIME
+- `vignette("end-to-end-workflow")` — complete pipeline walkthrough
 - [PRIMEprep repository](https://github.com/anderssonlab/PRIMEprep)

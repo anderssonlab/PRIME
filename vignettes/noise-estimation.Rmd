@@ -41,7 +41,7 @@ library(GenomeInfoDb)
 ```
 
 Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available;
-see `vignette("03-ctss-processing")` for how to build one.
+see `vignette("ctss-processing")` for how to build one.
 
 ## Prepare mask regions
 
@@ -136,7 +136,7 @@ div_noise <- PRIME::estimateDivergentNoise(
 
 ## See also
 
-- `vignette("03-ctss-processing")` — building the CTSS object
-- `vignette("04-divergent-loci")` — calling divergent loci
-- `vignette("07-prediction")` — predicting regulatory elements with PRIMEmodel
+- `vignette("ctss-processing")` — building the CTSS object
+- `vignette("divergent-loci")` — calling divergent loci
+- `vignette("prediction")` — predicting regulatory elements with PRIMEmodel
 - [Paper analysis code — Noise Estimation](https://github.com/anderssonlab/nucCAGE_PRIME_paper/tree/main/9.Noise)

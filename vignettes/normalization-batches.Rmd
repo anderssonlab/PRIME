@@ -22,7 +22,7 @@ subsampling for saturation analyses, and batch effects in multi-experiment
 CTSS datasets.
 
 Assumes a CTSS `RangedSummarizedExperiment` object `ctss` is available;
-see `vignette("03-ctss-processing")` for how to build one.
+see `vignette("ctss-processing")` for how to build one.
 
 ## Setup
 
@@ -119,7 +119,7 @@ PRIME::writeBw(
 
 ## See also
 
-- `vignette("03-ctss-processing")` — CTSS quantification and basic QC
-- `vignette("06-noise-estimation")` — estimating genomic background noise
-- `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
+- `vignette("ctss-processing")` — CTSS quantification and basic QC
+- `vignette("noise-estimation")` — estimating genomic background noise
+- `vignette("end-to-end-workflow")` — complete pipeline walkthrough
 - [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)

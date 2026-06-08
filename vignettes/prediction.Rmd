@@ -109,7 +109,7 @@ ctss <- GenomeInfoDb::keepStandardChromosomes(ctss, pruning.mode = "coarse")
 
 Option B is useful when you have already performed CTSS QC steps with PRIME
 (e.g., replicate pooling, subsampling, singleton removal) before running
-PRIMEmodel. See `vignette("03-ctss-processing")` for the full CTSS workflow.
+PRIMEmodel. See `vignette("ctss-processing")` for the full CTSS workflow.
 
 Due to the computationally heavy nature of these processing pipelines,
 we highly recommend running this function on a server.
@@ -217,10 +217,10 @@ BED files to the specified output directory. Each predicted element has:
 
 ## See also
 
-- `vignette("01-getting-started")` — installing PRIMEmodel
-- `vignette("03-ctss-processing")` — building CTSS input via CAGEfightR/PRIME
-- `vignette("04-divergent-loci")` — calling divergent loci for focal prediction
-- `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
+- `vignette("getting-started")` — installing PRIMEmodel
+- `vignette("ctss-processing")` — building CTSS input via CAGEfightR/PRIME
+- `vignette("divergent-loci")` — calling divergent loci for focal prediction
+- `vignette("end-to-end-workflow")` — complete pipeline walkthrough
 - [PRIMEmodel website](https://anderssonlab.github.io/PRIMEmodel/)
 - [PRIMEmodel reference](https://anderssonlab.github.io/PRIMEmodel/reference/)
 - [PRIMEmodel installation guide](https://anderssonlab.github.io/PRIMEmodel/articles/installation.html)

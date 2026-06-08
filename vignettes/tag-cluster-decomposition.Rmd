@@ -45,7 +45,7 @@ library(ggplot2)
 ## Inputs: CTSSs and tag clusters
 
 This vignette uses two CTSS objects produced in
-`vignette("03-ctss-processing")`. Serialized copies are included with PRIME so
+`vignette("ctss-processing")`. Serialized copies are included with PRIME so
 the decomposition workflow can be run directly:
 
 ```{r load-ctss-objects}
@@ -251,7 +251,7 @@ save(
 
 ## See also
 
-- `vignette("03-ctss-processing")` — producing the CTSS object
-- `vignette("04-divergent-loci")` — divergent transcription analysis
-- `vignette("05-normalization-batches")` — normalization across samples
+- `vignette("ctss-processing")` — producing the CTSS object
+- `vignette("divergent-loci")` — divergent transcription analysis
+- `vignette("normalization-batches")` — normalization across samples
 - [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)

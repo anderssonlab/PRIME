@@ -114,9 +114,9 @@ PRIMEprep depends on the following external tools (recommended versions):
 
 ## See also
 
-- `vignette("02-preprocessing")` — preprocessing CAGE data with PRIMEprep
-- `vignette("03-ctss-processing")` — CTSS quantification and QC with PRIME
-- `vignette("08-end-to-end-workflow")` — complete pipeline walkthrough
+- `vignette("preprocessing")` — preprocessing CAGE data with PRIMEprep
+- `vignette("ctss-processing")` — CTSS quantification and QC with PRIME
+- `vignette("end-to-end-workflow")` — complete pipeline walkthrough
 - [PRIMEprep repository](https://github.com/anderssonlab/PRIMEprep)
 - [PRIMEmodel repository](https://github.com/anderssonlab/PRIMEmodel)
 - [Paper analysis code](https://github.com/anderssonlab/nucCAGE_PRIME_paper)

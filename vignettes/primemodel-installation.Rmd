@@ -301,7 +301,7 @@ plc_example       <- PRIMEmodel::predictExample(python_path = "~/prime_env/bin/p
 
 ## See also
 
-- `vignette("01-getting-started")` — overview of the PRIME toolkit
+- `vignette("getting-started")` — overview of the PRIME toolkit
 - `vignette("installation")` — installing PRIME (R package)
-- `vignette("07-prediction")` — genome-wide regulatory element prediction with PRIMEmodel
+- `vignette("prediction")` — genome-wide regulatory element prediction with PRIMEmodel
 - [PRIMEmodel repository](https://github.com/anderssonlab/PRIMEmodel)
