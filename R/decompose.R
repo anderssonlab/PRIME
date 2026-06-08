@@ -3,7 +3,7 @@
 #' @param object A \code{GRanges} object of tag clusters.
 #' @param ctss A \code{RangedSummarizedExperiment} object containing the CTSSs.
 #' @param fn A function that carries out the actual decomposition. 
-#' Implemented functions are: corr_decompose.
+#' Implemented functions are: corr_decompose and corr_decompose_changepoint.
 #' It takes as input a RangedSummarizedExperiment object (and optional 
 #' arguments) and returns an IRanges object.
 #' @param ... Additional arguments passed on to the decomposition function.
@@ -208,7 +208,6 @@ summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
 #' @param scale If TRUE, the assay values will be scaled before correlation 
 #' calculation.
 #' 
-#' @importFrom bcp bcp
 #' @importFrom S4Vectors unname subjectHits queryHits
 #' @importFrom IRanges findOverlaps start
 #' @importFrom SummarizedExperiment assay rowRanges
@@ -220,6 +219,10 @@ summit_decompose <- function(views, fraction = 0.1, mergeDist=20) {
 #' @export
 corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE, 
                            scale=TRUE) {
+
+  if (!requireNamespace("bcp", quietly=TRUE)) {
+    stop("Package 'bcp' is required for corr_decompose().")
+  }
   
   splitAt <- function(x, pos) S4Vectors::unname(split(x, cumsum(seq_along(x) %in% pos)))
   
@@ -292,6 +295,135 @@ corr_decompose <- function(rse, gr, assay="TPM", thres=0.25, merge=TRUE,
   
   ## return IRanges object
   IRanges::IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
+}
+
+#' Decompose tag cluster into subclusters according to CTSS expression
+#' correlation across samples using changepoint detection.
+#'
+#' @param rse A \code{RangedSummarizedExperiment} object containing the CTSSs.
+#' @param gr A \code{GRanges} object of tag clusters.
+#' @param assay The assay to use for the correlation calculation.
+#' @param penalty Penalty used by \code{changepoint::cpt.mean()}.
+#' @param pen.value Numeric penalty value used when \code{penalty = "Manual"}.
+#' @param method Changepoint search method used by \code{changepoint::cpt.mean()}.
+#' @param minseglen Minimum segment length passed to \code{changepoint::cpt.mean()}.
+#' @param merge If TRUE, subclusters will be merged if positively correlated.
+#' @param scale If TRUE, the assay values will be scaled before correlation
+#' calculation.
+#' @param ... Additional arguments passed to \code{changepoint::cpt.mean()}.
+#'
+#' @importFrom S4Vectors unname subjectHits queryHits
+#' @importFrom IRanges findOverlaps start
+#' @importFrom SummarizedExperiment assay rowRanges
+#' @importFrom BiocParallel bplapply
+#' @importFrom stats cor
+#'
+#' @return An \code{IRanges} object of decomposed tag clusters.
+#'
+#' @export
+corr_decompose_changepoint <- function(rse, gr, assay="TPM",
+                                       penalty="MBIC", pen.value=0,
+                                       method="PELT", minseglen=2,
+                                       merge=TRUE, scale=TRUE, ...) {
+
+  if (!requireNamespace("changepoint", quietly=TRUE)) {
+    stop("Package 'changepoint' is required for corr_decompose_changepoint().")
+  }
+
+  splitAt <- function(x, pos) S4Vectors::unname(split(x, cumsum(seq_along(x) %in% pos)))
+
+  if (length(rse)==0)
+    return(IRanges::IRanges())
+
+  fo <- IRanges::findOverlaps(rse, gr)
+  hits <- sort(unique(S4Vectors::subjectHits(fo)))
+
+  assertthat::assert_that(length(hits) == length(gr))
+
+  pos <- BiocParallel::bplapply(hits, function(i) {
+
+    q <- S4Vectors::queryHits(fo)[which(S4Vectors::subjectHits(fo) == i)]
+
+    ## most common case: 1bp TC
+    if (length(q) == 1)
+      return(c(1,1))
+
+    r <- rse[q]
+
+    mat <- as.matrix(t(SummarizedExperiment::assay(r, assay)))
+    if (scale)
+      mat <- as.matrix(apply(mat, 2, scale))
+
+    corr <- stats::cor(mat, method="pearson")
+    if (anyNA(corr))
+      return(c(1, IRanges::width(gr[i])))
+
+    eig <- eigen(corr)$vectors[,1]
+    rel.pos <- IRanges::start(SummarizedExperiment::rowRanges(r)) -
+      IRanges::start(SummarizedExperiment::rowRanges(r))[1] + 1
+
+    if (length(eig) < 2 * minseglen)
+      return(c(1, rel.pos[length(q)]))
+
+    cpt_eig <- changepoint::cpt.mean(
+      eig,
+      method=minseglen_method(method, length(eig), minseglen),
+      penalty=penalty,
+      pen.value=pen.value,
+      minseglen=minseglen,
+      class=TRUE,
+      ...
+    )
+
+    bp <- changepoint::cpts(cpt_eig)
+
+    if (length(bp) == 0)
+      return(c(1, rel.pos[length(q)]))
+
+    if (max(bp) == length(q))
+      bp <- bp[-length(bp)]
+
+    if (length(bp) == 0)
+      return(c(1, rel.pos[length(q)]))
+
+    spl <- splitAt(1:length(q), bp+1)
+
+    starts <- sapply(spl, function(x) x[1])
+    ends <- sapply(spl, function(x) x[length(x)])
+
+    if (merge) {
+      nb.corr <- sapply(1:(length(spl)-1), function(j) mean(corr[spl[[j]],
+                                                                 spl[[j+1]]]))
+      keep <- 1:(length(starts)-1)
+
+      ## Merge decomposed clusters if positively correlated
+      if (any(nb.corr > 0))
+        keep <- which(nb.corr < 0)
+
+      starts <- c(starts[1],starts[keep+1])
+      ends <- c(ends[keep],ends[length(ends)])
+    }
+
+    return(as.vector(matrix(c(rel.pos[starts],rel.pos[ends]),
+                            ncol=length(starts),byrow=TRUE)))
+  })
+
+  pos <- matrix(unlist(lapply(hits, function(i) {
+    x <- pos[[i]]
+    lapply(seq(1,length(x),by=2), function(j) c(i,x[j],x[j+1]))
+  })),ncol=3,byrow=TRUE)
+
+  s <- IRanges::start(gr)[pos[,1]]
+
+  ## return IRanges object
+  IRanges::IRanges(start=pos[,2]+s-1,end=pos[,3]+s-1)
+}
+
+minseglen_method <- function(method, n, minseglen) {
+  if (identical(method, "PELT") && n < 2 * minseglen) {
+    return("BinSeg")
+  }
+  method
 }
 
 

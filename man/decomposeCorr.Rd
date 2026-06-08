@@ -12,7 +12,7 @@ decomposeCorr(object, ctss, fn = corr_decompose, ...)
 \item{ctss}{A \code{RangedSummarizedExperiment} object containing the CTSSs.}
 
 \item{fn}{A function that carries out the actual decomposition. 
-Implemented functions are: corr_decompose.
+Implemented functions are: corr_decompose and corr_decompose_changepoint.
 It takes as input a RangedSummarizedExperiment object (and optional 
 arguments) and returns an IRanges object.}
 

@@ -30,7 +30,6 @@ Imports:
     S4Vectors,
     SummarizedExperiment,
     assertthat,
-    bcp,
     caTools,
     data.table,
     dplyr,
@@ -49,6 +48,8 @@ Imports:
     tidyselect,
     zoo
 Suggests:
+    bcp,
+    changepoint,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
