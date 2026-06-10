@@ -187,20 +187,6 @@ ggplot(df_complexity, aes(x = totalTags,
   theme_bw()
 ```
 
-### Estimate genomic background noise
-```{r noise}
-# Requires mask (blacklist + hotspots + exons) and mappable regions
-# See vignette("noise-estimation") for full preparation steps
-#noise <- PRIME::estimateNoise(
-#    ctss_clean,
-#    mask       = mask,
-#    mappable   = mappable,
-#    strand     = "*",
-#    inputAssay = "counts",
-#    quantiles  = seq(0, 1, 0.0001)
-#)
-```
-
 ## Step 4: Call divergent loci
 
 ### Call divergent loci
