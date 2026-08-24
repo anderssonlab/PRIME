@@ -1,0 +1,66 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "PRIME"
+type: software
+
+authors:
+  - family-names: Einarsson
+    given-names: Hjörleifur
+  - family-names: Navamajiti
+    given-names: Natsuda
+  - family-names: Krautz
+    given-names: Robert
+  - family-names: Andersson
+    given-names: Robin
+
+repository-code: "https://github.com/anderssonlab/PRIME"
+
+preferred-citation:
+  type: article
+  title: "Mapping active cis-regulatory elements from transcription initiation events"
+  authors:
+    - family-names: Einarsson
+      given-names: Hjörleifur
+    - family-names: Navamajiti
+      given-names: Natsuda
+    - family-names: Vaagensø
+      given-names: Christian Skov
+    - family-names: Pellegrini
+      given-names: Stefano
+    - family-names: Jirström
+      given-names: Lykke
+    - family-names: Alcaraz
+      given-names: Nicolas
+    - family-names: Thodberg
+      given-names: Malte
+    - family-names: Solvie
+      given-names: Daniel A.
+    - family-names: Qiu
+      given-names: Wei-Lin
+    - family-names: Sheth
+      given-names: Maya U.
+    - family-names: Escudero
+      given-names: Marta Greedy
+    - family-names: Gorissen
+      given-names: Bram L.
+    - family-names: Salvatore
+      given-names: Marco
+    - family-names: Kasukawa
+      given-names: Takeya
+    - family-names: Takahashi
+      given-names: Hazuki
+    - family-names: Carninci
+      given-names: Piero
+    - family-names: Bernstein
+      given-names: Bradley E.
+    - family-names: Sandelin
+      given-names: Albin
+    - family-names: Engreitz
+      given-names: Jesse M.
+    - family-names: Krautz
+      given-names: Robert
+    - family-names: Andersson
+      given-names: Robin
+  journal: "bioRxiv"
+  year: 2026
+  doi: "10.64898/2026.05.11.724207"
